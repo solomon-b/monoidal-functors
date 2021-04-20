@@ -1,9 +1,11 @@
 module Control.Category.Tensor where
 
 import Prelude hiding (id)
+import Control.Applicative
 import Control.Category (Category, id)
 import Data.Bifunctor
 import Data.Functor.Contravariant
+import Data.Profunctor
 import Data.These
 
 class (Category p, Category q) => GBifunctor p q r t | t r -> p q where
@@ -25,6 +27,14 @@ instance GBifunctor (->) (->) (->) (These) where
   gbimap :: (a -> b) -> (c -> d) -> These a c -> These b d
   gbimap f g = bimap f g
 
+instance GBifunctor (Star Maybe) (Star Maybe) (Star Maybe) These where
+  gbimap :: Star Maybe a b -> Star Maybe c d -> Star Maybe (These a c) (These b d)
+  gbimap (Star f) (Star g) =
+    Star $ \case
+      This a -> This <$> f a
+      That c -> That <$> g c
+      These a c -> liftA2 These (f a) (g c)
+
 grmap :: GBifunctor p q r t => q c d -> r (t a c) (t a d)
 grmap = gbimap id
 
@@ -35,6 +45,20 @@ data Iso p a b = Iso { fwd :: p a b, bwd :: p b a }
 
 class (Category p, GBifunctor p p p t) => Associative t p where
   assoc :: forall a b c. Iso p (t a (t b c)) (t (t a b) c)
+
+instance Associative t (->) => Associative t Op where
+  assoc :: Iso Op (t a (t b c)) (t (t a b) c)
+  assoc = Iso
+    { fwd = Op $ bwd assoc
+    , bwd = Op $ fwd assoc
+    }
+
+instance (Monad m, Associative t (->), GBifunctor (Star m) (Star m) (Star m) t) => Associative t (Star m) where
+  assoc :: Iso (Star m) (t a (t b c)) (t (t a b) c)
+  assoc = Iso
+    { fwd = (`rmap` id) (fwd assoc)
+    , bwd = (`rmap` id) (bwd assoc)
+    }
 
 instance Associative (,) (->) where
   assoc :: Iso (->) (a, (b, c)) ((a, b), c)
@@ -56,3 +80,7 @@ instance Associative These (->) where
     { fwd = these (This . This) (glmap That) (glmap . These)
     , bwd = these (grmap This) (That . That) (flip $ grmap . flip These)
     }
+
+class Associative t p => Tensor t i p | t -> i where
+  lunit :: forall a. Iso p (t i a) a
+  runit :: forall a. Iso p (t a i) a
