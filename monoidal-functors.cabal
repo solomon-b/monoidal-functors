@@ -1,0 +1,47 @@
+cabal-version:       2.4
+name:                monoidal-functors
+category:            Control, Categories
+version:             0.1.0.0
+license:             BSD-2-Clause
+license-file:        LICENSE
+author:              Solomon Bothwell & Asad
+maintainer:          ssbothwell@gmail.com
+stability:           experimental
+homepage:            http://github.com/ssbothwell/monoidal-functors
+build-type:          Simple
+extra-source-files:  CHANGELOG.md
+
+library
+  build-depends:
+      base           >= 4.12    && < 5
+    -- , base-orphans  ^>= 0.8.4
+    , bifunctors
+    , comonad
+    , contravariant
+    , profunctors
+    , tagged
+    -- , transformers  ^>= 0.5
+
+  exposed-modules:
+    Data.Bifunctor.BiInvariant
+
+  ghc-options: -Wall -O2 -Wno-trustworthy-safe -Wno-star-is-type
+
+  if impl(ghc >= 9.0)
+    -- these flags may abort compilation with GHC-8.10
+    -- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/3295
+    ghc-options: -Winferred-safe-imports -Wmissing-safe-haskell-mode
+
+  hs-source-dirs:  src
+
+  default-language: Haskell2010
+
+  default-extensions: ConstraintKinds
+                      DeriveFunctor
+                      DerivingVia
+                      FlexibleInstances
+                      InstanceSigs
+                      KindSignatures
+                      QuantifiedConstraints
+                      RankNTypes
+                      StandaloneDeriving
