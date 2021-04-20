@@ -24,6 +24,7 @@ library
 
   exposed-modules:
     Data.Bifunctor.BiInvariant
+    Data.Functor.Invariant
 
   ghc-options: -Wall -O2 -Wno-trustworthy-safe -Wno-star-is-type
 
@@ -45,3 +46,4 @@ library
                       QuantifiedConstraints
                       RankNTypes
                       StandaloneDeriving
+                      UndecidableInstances
