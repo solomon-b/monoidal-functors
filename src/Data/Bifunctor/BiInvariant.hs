@@ -1,5 +1,6 @@
 module Data.Bifunctor.BiInvariant where
 
+import Prelude
 import Control.Arrow
 import Control.Comonad
 import Data.Bifunctor
@@ -28,6 +29,7 @@ import Data.Profunctor.Traversing
 import Data.Profunctor.Yoneda
 import Data.Semigroup (Arg)
 import Data.Tagged
+import Data.These
 import GHC.Generics (K1)
 
 
@@ -98,22 +100,23 @@ deriving via (FromProfunctor (Tannen f q))           instance (Functor f, Profun
 deriving via (FromProfunctor (WrappedArrow p))       instance Arrow p => BiInvariant (WrappedArrow p)
 deriving via (FromProfunctor (Yoneda p))             instance BiInvariant (Yoneda p)
 
-deriving via (FromBifunctor (,))                       instance BiInvariant (,)
 deriving via (FromBifunctor ((,,) x1))                 instance BiInvariant ((,,) x1)
 deriving via (FromBifunctor ((,,,) x1 x2))             instance BiInvariant ((,,,) x1 x2)
 deriving via (FromBifunctor ((,,,,) x1 x2 x3))         instance BiInvariant ((,,,,) x1 x2 x3)
 deriving via (FromBifunctor ((,,,,,) x1 x2 x3 x4))     instance BiInvariant ((,,,,,) x1 x2 x3 x4)
 deriving via (FromBifunctor ((,,,,,,) x1 x2 x3 x4 x5)) instance BiInvariant ((,,,,,,) x1 x2 x3 x4 x5)
+deriving via (FromBifunctor (,))                       instance BiInvariant (,)
 deriving via (FromBifunctor (Arg))                     instance BiInvariant (Arg)
+deriving via (FromBifunctor (Biap bi))                 instance Bifunctor bi => BiInvariant (Biap bi)
+deriving via (FromBifunctor (Biff p f g))              instance (Bifunctor p, Functor f, Functor g) => BiInvariant (Biff (FromBifunctor p) f g)
+deriving via (FromBifunctor (Clown f :: * -> * -> *))     instance Functor f => BiInvariant (Clown (FromFunctor f) :: * -> * -> *)
 deriving via (FromBifunctor (Const :: * -> * -> *))       instance BiInvariant (Const :: * -> * -> *)
 deriving via (FromBifunctor (Either))                  instance BiInvariant (Either)
-deriving via (FromBifunctor (K1 i :: * -> * -> *))        instance BiInvariant (K1 i :: * -> * -> *)
-deriving via (FromBifunctor (Biff p f g))              instance (Bifunctor p, Functor f, Functor g) => BiInvariant (Biff (FromBifunctor p) f g)
-deriving via (FromBifunctor (Biap bi))                 instance Bifunctor bi => BiInvariant (Biap bi)
-deriving via (FromBifunctor (Clown f :: * -> * -> *))     instance Functor f => BiInvariant (Clown (FromFunctor f) :: * -> * -> *)
 deriving via (FromBifunctor (Flip p))                  instance Bifunctor p => BiInvariant (Flip p)
 deriving via (FromBifunctor (Joker f :: * -> * -> *))     instance Functor f => BiInvariant (Joker (FromFunctor f) :: * -> * -> *)
+deriving via (FromBifunctor (K1 i :: * -> * -> *))        instance BiInvariant (K1 i :: * -> * -> *)
 deriving via (FromBifunctor (Product p q))             instance (Bifunctor p, Bifunctor q) => BiInvariant (Product (FromBifunctor p) (FromBifunctor q))
 deriving via (FromBifunctor (Sum p q))                 instance (Bifunctor p, Bifunctor q) => BiInvariant (Sum (FromBifunctor p) (FromBifunctor q))
 deriving via (FromBifunctor (Tannen f q))              instance (Functor f, Coercible1 f, Bifunctor q) => BiInvariant (Tannen (FromFunctor f) (FromBifunctor q))
+deriving via (FromBifunctor (These))                   instance BiInvariant (These)
 deriving via (FromBifunctor (WrappedBifunctor p))      instance Bifunctor p => BiInvariant (WrappedBifunctor p)

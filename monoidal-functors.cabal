@@ -20,9 +20,11 @@ library
     , contravariant
     , profunctors
     , tagged
+    , these
     -- , transformers  ^>= 0.5
 
   exposed-modules:
+    Control.Category.Tensor
     Data.Bifunctor.BiInvariant
     Data.Functor.Invariant
 
@@ -40,9 +42,13 @@ library
   default-extensions: ConstraintKinds
                       DeriveFunctor
                       DerivingVia
+                      FunctionalDependencies
                       FlexibleInstances
                       InstanceSigs
                       KindSignatures
+                      LambdaCase
+                      MultiParamTypeClasses
+                      NoImplicitPrelude
                       QuantifiedConstraints
                       RankNTypes
                       StandaloneDeriving
