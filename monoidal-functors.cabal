@@ -26,6 +26,7 @@ library
   exposed-modules:
     Control.Category.Tensor
     Data.Bifunctor.BiInvariant
+    Data.Bifunctor.Monoidal
     Data.Functor.Invariant
 
   ghc-options: -Wall -O2 -Wno-trustworthy-safe -Wno-star-is-type
