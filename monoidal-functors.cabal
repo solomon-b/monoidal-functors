@@ -53,5 +53,6 @@ library
                       QuantifiedConstraints
                       RankNTypes
                       StandaloneDeriving
+                      TypeApplications
                       TypeOperators
                       UndecidableInstances

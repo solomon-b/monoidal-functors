@@ -5,6 +5,7 @@ import Control.Applicative
 import Control.Category
 import Control.Category.Tensor
 import Data.Biapplicative
+import Data.Bifunctor.Clown
 import Data.Bifunctor.Joker
 import Data.Profunctor
 import Data.These
@@ -64,4 +65,48 @@ instance Applicative f => Semigroupal (->) (,) (,) (,) (Joker f) where
 
 instance Alternative f => Semigroupal (->) Either Either (,) (Joker f) where
   combine :: (Joker f x y, Joker f x' y') -> Joker f (Either x x') (Either y y')
-  combine (xy, xy') = biliftA2 (\_ x' -> Right x') (\_ y' -> Right y') xy xy'
+  combine  = uncurry $ biliftA2 (\_ x' -> Right x') (\_ y' -> Right y')
+
+instance Applicative f => Semigroupal (->) (,) (,) (,) (Clown f) where
+  combine :: (Clown f x y, Clown f x' y') -> Clown f (x, x') (y, y')
+  combine = uncurry $ biliftA2 (,) (,)
+
+instance Alternative f => Semigroupal (->) Either Either (,) (Clown f) where
+  combine :: (Clown f x y, Clown f x' y') -> Clown f (Either x x') (Either y y')
+  combine = uncurry $ biliftA2 (\_ x' -> Right x') (\_ y' -> Right y')
+
+instance Applicative f => Semigroupal (->) (,) (,) (,) (Star f) where
+  combine :: (Star f x y, Star f x' y') -> Star f (x, x') (y, y')
+  combine (Star fxy, Star fxy') = Star $ \(x, x') -> liftA2 (,) (fxy x) (fxy' x')
+
+instance Functor f => Semigroupal (->) Either Either (,) (Star f) where
+  combine :: (Star f x y, Star f x' y') -> Star f (Either x x') (Either y y')
+  combine (Star fxy, Star fxy') = Star $ either (fmap Left . fxy) (fmap Right . fxy')
+
+instance Alternative f => Semigroupal (->) Either Either Either (Star f) where
+  combine :: Either (Star f x y) (Star f x' y') -> Star f (Either x x') (Either y y')
+  combine = \case
+    Left (Star fxy) -> Star $ either (fmap Left . fxy) (const empty)
+    Right (Star fxy') -> Star $ either (const empty) (fmap Right . fxy')
+
+instance Alternative f => Semigroupal (->) (,) Either (,) (Star f) where
+  combine :: (Star f x y, Star f x' y') -> Star f (x, x') (Either y y')
+  combine (Star f, Star g) = Star $ \(x, x') -> (Left <$> f x) <|> (Right <$> g x')
+
+instance Alternative f => Semigroupal (->) (,) (,) (,) (Forget (f r)) where
+  combine :: (Forget (f r) x y, Forget (f r) x' y') -> Forget (f r) (x, x') (y, y')
+  combine (Forget f, Forget g) = Forget $ \(x, x') -> f x <|> g x'
+
+instance Semigroupal (->) Either Either (,) (Forget (f r)) where
+  combine :: (Forget (f r) x y, Forget (f r) x' y') -> Forget (f r) (Either x x') (Either y y')
+  combine (Forget f, Forget g) = Forget $ either f g
+
+instance Alternative f => Semigroupal (->) Either Either Either (Forget (f r)) where
+  combine :: Either (Forget (f r) x y) (Forget (f r) x' y') -> Forget (f r) (Either x x') (Either y y')
+  combine = \case
+    Left (Forget f) -> Forget $ either f (const empty)
+    Right (Forget g) -> Forget $ either (const empty) g
+
+instance Alternative f => Semigroupal (->) (,) Either (,) (Forget (f r)) where
+  combine :: (Forget (f r) x y, Forget (f r) x' y') -> Forget (f r) (x, x') (Either y y')
+  combine (Forget f, Forget g) = Forget $ \(x, x') -> f x <|> g x'
