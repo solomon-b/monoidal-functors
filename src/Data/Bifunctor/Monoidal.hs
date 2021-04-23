@@ -8,7 +8,9 @@ import Data.Biapplicative
 import Data.Bifunctor.Clown
 import Data.Bifunctor.Joker
 import Data.Profunctor
+import Data.Semigroupoid
 import Data.These
+import Data.Void
 
 class (Associative t1 cat, Associative t2 cat, Associative to cat) => Semigroupal cat t1 t2 to f where
   combine :: cat (to (f x y) (f x' y')) (f (t1 x x') (t2 y y'))
@@ -110,3 +112,69 @@ instance Alternative f => Semigroupal (->) Either Either Either (Forget (f r)) w
 instance Alternative f => Semigroupal (->) (,) Either (,) (Forget (f r)) where
   combine :: (Forget (f r) x y, Forget (f r) x' y') -> Forget (f r) (x, x') (Either y y')
   combine (Forget f, Forget g) = Forget $ \(x, x') -> f x <|> g x'
+
+class Unital cat i1 i2 io f where
+  introduce :: cat io (f i1 i2)
+
+instance (Profunctor p, Category p) => Unital (->) () () () (StrongCategory p) where
+  introduce :: () -> StrongCategory p () ()
+  introduce () = StrongCategory id
+
+instance Unital (->) () () () (,) where
+  introduce :: () -> ((), ())
+  introduce = dup
+
+instance Unital (->) Void Void Void (,) where
+  introduce :: Void -> (Void, Void)
+  introduce = absurd
+
+instance Unital (->) Void Void Void Either where
+  introduce :: Void -> Either Void Void
+  introduce = absurd
+
+instance Unital (->) Void () () Either where
+  introduce :: () -> Either Void ()
+  introduce = Right
+
+instance Unital (->) () () () (->) where
+  introduce :: () -> () -> ()
+  introduce () () = ()
+
+instance Unital (->) Void Void Void (->) where
+  introduce :: Void -> Void -> Void
+  introduce = absurd
+
+instance Applicative f => Unital (->) () () () (Joker f) where
+  introduce :: () -> Joker f () ()
+  introduce = Joker . pure
+
+instance Alternative f => Unital (->) Void Void () (Joker f) where
+  introduce :: () -> Joker f Void Void
+  introduce () = Joker empty
+
+instance Functor f => Unital (->) Void Void Void (Joker f) where
+  introduce :: Void -> Joker f Void Void
+  introduce = absurd
+
+instance Applicative f => Unital (->) () () () (Star f) where
+  introduce :: () -> Star f () ()
+  introduce () = Star pure
+
+instance Functor f => Unital (->) Void Void () (Star f) where
+  introduce :: () -> Star f Void Void
+  introduce () = Star absurd
+
+instance Alternative f => Unital (->) Void Void Void (Star f) where
+  introduce :: Void -> Star f Void Void
+  introduce = absurd
+
+instance Alternative f => Unital (->) () Void () (Star f) where
+  introduce :: () -> Star f () Void
+  introduce () = Star $ const empty
+
+newtype StrongCategory p a b = StrongCategory (p a b)
+  deriving (Functor, Applicative, Monad, Profunctor, Category)
+
+instance (Strong p, Semigroupoid p) => Semigroupal (->) (,) (,) (,) (StrongCategory p) where
+  combine :: (StrongCategory p x y, StrongCategory p x' y') -> StrongCategory p (x, x') (y, y')
+  combine (StrongCategory pxy, StrongCategory pxy') = StrongCategory $ first' pxy `o` second' pxy'

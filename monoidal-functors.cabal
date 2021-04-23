@@ -19,6 +19,7 @@ library
     , comonad
     , contravariant
     , profunctors
+    , semigroupoids
     , tagged
     , these
     -- , transformers  ^>= 0.5
@@ -45,6 +46,7 @@ library
                       DerivingVia
                       FunctionalDependencies
                       FlexibleInstances
+                      GeneralizedNewtypeDeriving
                       InstanceSigs
                       KindSignatures
                       LambdaCase
