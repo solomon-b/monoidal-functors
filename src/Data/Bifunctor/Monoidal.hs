@@ -69,6 +69,10 @@ instance Alternative f => Semigroupal (->) Either Either (,) (Joker f) where
   combine :: (Joker f x y, Joker f x' y') -> Joker f (Either x x') (Either y y')
   combine  = uncurry $ biliftA2 (\_ x' -> Right x') (\_ y' -> Right y')
 
+instance Functor f => Semigroupal (->) Either Either Either (Joker f) where
+  combine :: Either (Joker f x y) (Joker f x' y') -> Joker f (Either x x') (Either y y')
+  combine = either (Joker . fmap Left . runJoker ) (Joker . fmap Right . runJoker)
+
 instance Applicative f => Semigroupal (->) (,) (,) (,) (Clown f) where
   combine :: (Clown f x y, Clown f x' y') -> Clown f (x, x') (y, y')
   combine = uncurry $ biliftA2 (,) (,)
@@ -130,7 +134,7 @@ instance Unital (->) Void Void Void (,) where
 
 instance Unital (->) Void Void Void Either where
   introduce :: Void -> Either Void Void
-  introduce = absurd
+  introduce = bwd runit
 
 instance Unital (->) Void () () Either where
   introduce :: () -> Either Void ()
@@ -144,6 +148,10 @@ instance Unital (->) Void Void Void (->) where
   introduce :: Void -> Void -> Void
   introduce = absurd
 
+instance (Unital (->) Void Void () (->)) where
+  introduce :: () -> Void -> Void
+  introduce () = absurd
+
 instance Applicative f => Unital (->) () () () (Joker f) where
   introduce :: () -> Joker f () ()
   introduce = Joker . pure
@@ -152,7 +160,7 @@ instance Alternative f => Unital (->) Void Void () (Joker f) where
   introduce :: () -> Joker f Void Void
   introduce () = Joker empty
 
-instance Functor f => Unital (->) Void Void Void (Joker f) where
+instance Unital (->) Void Void Void (Joker f) where
   introduce :: Void -> Joker f Void Void
   introduce = absurd
 
@@ -160,7 +168,7 @@ instance Applicative f => Unital (->) () () () (Star f) where
   introduce :: () -> Star f () ()
   introduce () = Star pure
 
-instance Functor f => Unital (->) Void Void () (Star f) where
+instance Unital (->) Void Void () (Star f) where
   introduce :: () -> Star f Void Void
   introduce () = Star absurd
 
@@ -171,6 +179,29 @@ instance Alternative f => Unital (->) Void Void Void (Star f) where
 instance Alternative f => Unital (->) () Void () (Star f) where
   introduce :: () -> Star f () Void
   introduce () = Star $ const empty
+
+class (Tensor t1 i1 cat
+      , Tensor t2 i2 cat
+      , Tensor to io cat
+      , Semigroupal cat t1 t2 to f
+      , Unital cat i1 i2 io f
+      ) => Monoidal cat t1 i1 t2 i2 to io f
+
+instance (Strong p, Semigroupoid p, Category p) => Monoidal (->) (,) () (,) () (,) () (StrongCategory p)
+instance Monoidal (->) (,) () (,) () (,) () (,)
+instance Monoidal (->) Either Void Either Void Either Void (,)
+instance Monoidal (->) Either Void Either Void Either Void Either
+instance Monoidal (->) Either Void (,) () (,) () Either
+instance Monoidal (->) These Void (,) () (,) () Either
+instance Monoidal (->) (,) () (,) () (,) () (->)
+instance Monoidal (->) Either Void Either Void (,) () (->)
+instance Applicative f => Monoidal (->) (,) () (,) () (,) () (Joker f)
+instance Alternative f => Monoidal (->) Either Void Either Void (,) () (Joker f)
+instance Functor f => Monoidal (->) Either Void Either Void Either Void (Joker f)
+instance Applicative f => Monoidal (->) (,) () (,) () (,) () (Star f)
+instance Functor f => Monoidal (->) Either Void Either Void (,) () (Star f)
+instance Alternative f => Monoidal (->) Either Void Either Void Either Void (Star f)
+instance Alternative f => Monoidal (->) (,) () Either Void (,) () (Star f)
 
 newtype StrongCategory p a b = StrongCategory (p a b)
   deriving (Functor, Applicative, Monad, Profunctor, Category)

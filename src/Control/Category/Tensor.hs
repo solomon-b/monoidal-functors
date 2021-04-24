@@ -10,6 +10,27 @@ import Data.Profunctor
 import Data.These
 import Data.Void
 
+{-
+
+| Tensor | Unit |
++--------|------+
+| Either | Void |
+|  (,)   |  ()  |
+| These  | Void |
+
+tensor = monoidal structure =
+    category
+  + bifunctor on that category `t`
+  + unit object in that category `i`
+  + isomorphisms in that category `t i a <-> a`, `t a i <-> a`, `t a (t b c) <-> t (t a b) c`
+  + some equalities
+
+monoidal functor = a functor that goes between the underlying
+categories of two different monoidal structure, and has a pair of
+operations `t2 (f a) (f b) -> f (t1 a b)` and `i2 -> f i1`
+
+-}
+
 class (Category p, Category q) => GBifunctor p q r t | t r -> p q where
   gbimap :: a `p` b -> c `q` d -> (t a c) `r` (t b d)
 
