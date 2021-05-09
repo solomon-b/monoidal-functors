@@ -206,6 +206,10 @@ instance Alternative f => Monoidal (->) (,) () Either Void (,) () (Star f)
 newtype StrongCategory p a b = StrongCategory (p a b)
   deriving (Functor, Applicative, Monad, Profunctor, Category)
 
+instance Semigroupoid p => Semigroupoid (StrongCategory p) where
+  o :: StrongCategory p b c -> StrongCategory p a b -> StrongCategory p a c
+  o (StrongCategory f) (StrongCategory g) = StrongCategory (f `o` g)
+
 instance (Strong p, Semigroupoid p) => Semigroupal (->) (,) (,) (,) (StrongCategory p) where
   combine :: (StrongCategory p x y, StrongCategory p x' y') -> StrongCategory p (x, x') (y, y')
   combine (StrongCategory pxy, StrongCategory pxy') = StrongCategory $ first' pxy `o` second' pxy'

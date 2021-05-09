@@ -27,7 +27,9 @@ library
   exposed-modules:
     Control.Category.Tensor
     Data.Bifunctor.BiInvariant
+    Data.Bifunctor.Module
     Data.Bifunctor.Monoidal
+    Data.Bifunctor.Monoidal.Specialized
     Data.Functor.Invariant
 
   ghc-options: -Wall -O2 -Wno-trustworthy-safe -Wno-star-is-type
@@ -46,6 +48,7 @@ library
                       DerivingVia
                       FunctionalDependencies
                       FlexibleInstances
+                      FlexibleContexts
                       GeneralizedNewtypeDeriving
                       InstanceSigs
                       KindSignatures
