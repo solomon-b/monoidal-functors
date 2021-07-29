@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 module Data.Bifunctor.Monoidal.Specialized where
 
 import Prelude hiding ((&&), (||))
@@ -6,6 +7,7 @@ import Control.Category.Tensor
 import Data.Bifunctor.Monoidal
 import Data.Functor.Contravariant
 import Data.Profunctor
+import Data.Void
 
 mux :: Semigroupal (->) (,) (,) (,) p => p a b -> p c d -> p (a, c) (b, d)
 mux = curry combine
@@ -76,5 +78,41 @@ ultraleft = zag . Left . zig . Left
 ultraright :: (Profunctor p, Semigroupal (->) Either Either Either p) => p a b -> p (Either x a) (Either y b)
 ultraright = zag . Right . zig . Right
 
---comux :: forall p a b c d. Semigroupal Op (,) (,) (,) p => p (a, c) (b, d) -> (p a b, p c d)
---comux = getOp Op (combine @Op @(,) @(,) @(,) @p)
+comux :: forall p a b c d. Semigroupal Op (,) (,) (,) p => p (a, c) (b, d) -> (p a b, p c d)
+comux = getOp combine
+
+undivide :: forall p x a b. Profunctor p => Semigroupal Op (,) (,) (,) p => p (a, b) x -> (p a x, p b x)
+undivide = comux . rmap dup
+
+codemux :: forall p a b c d. Semigroupal Op Either Either (,) p => p (Either a c) (Either b d) -> (p a b, p c d)
+codemux = getOp combine
+
+partition :: forall p x a b. Profunctor p => Semigroupal Op Either Either (,) p => p x (Either a b) -> (p x a, p x b)
+partition = codemux . lmap merge
+
+coswitch :: forall p a b c d. Semigroupal Op Either (,) (,) p => p (Either a c) (b, d) -> (p a b, p c d)
+coswitch = getOp combine
+
+unfanin :: forall p x a b. Profunctor p => Semigroupal Op Either (,) (,) p => p (Either a b) x -> (p a x, p b x)
+unfanin = coswitch . rmap dup
+
+unzip :: forall p x a b. Profunctor p => Semigroupal Op Either (,) (,) p => p x (a, b) -> (p x a, p x b)
+unzip = coswitch . lmap merge
+
+cosplice :: forall p a b c d. Semigroupal Op (,) Either (,) p => p (a, c) (Either b d) -> (p a b, p c d)
+cosplice = getOp combine
+
+terminal :: forall p a. Profunctor p => Unital (->) () () () p => p a ()
+terminal = lmap (const ()) $ introduce ()
+
+ppure :: forall p a. Profunctor p => Unital (->) () () () p => Strong p => p a a
+ppure = dimap ((),) snd $ first' (introduce () :: p () ())
+
+initial :: forall p a. Profunctor p => Unital (->) Void Void () p => p Void a
+initial = rmap absurd $ introduce ()
+
+poly :: forall p a b. Profunctor p => Unital (->) () Void () p => p a b
+poly = dimap (const ()) absurd $ introduce ()
+
+mono :: forall p. Unital (->) Void () () p => p Void ()
+mono = introduce ()

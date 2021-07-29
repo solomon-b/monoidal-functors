@@ -6,10 +6,10 @@ let
     pkgs.hlint
     pkgs.cabal-install
     pkgs.cabal2nix
-    #pkgs.haskell.packages.ghc8102.haskell-language-server
+    pkgs.haskell-language-server
   ];
 
-  buildDeps = [ pkgs.haskell.compiler.ghc8102 ];
+  buildDeps = [ pkgs.haskell.compiler.ghc8104 ];
 in
 pkgs.mkShell {
   buildInputs = editorTooling ++ buildDeps;
