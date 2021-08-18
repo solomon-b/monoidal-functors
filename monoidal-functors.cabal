@@ -31,6 +31,7 @@ library
     Data.Bifunctor.Monoidal
     Data.Bifunctor.Monoidal.Specialized
     Data.Functor.Invariant
+    Data.Functor.Monoidal
 
   ghc-options: -Wall -O2 -Wno-trustworthy-safe -Wno-star-is-type
 

@@ -31,8 +31,8 @@ operations `t2 (f a) (f b) -> f (t1 a b)` and `i2 -> f i1`
 
 -}
 
-class (Category p, Category q) => GBifunctor p q r t | t r -> p q where
-  gbimap :: a `p` b -> c `q` d -> (t a c) `r` (t b d)
+class (Category cat1, Category cat2) => GBifunctor cat1 cat2 r t | t r -> cat1 cat2 where
+  gbimap :: a `cat1` b -> c `cat2` d -> t a c `r` t b d
 
 instance GBifunctor (->) (->) (->) t => GBifunctor Op Op Op t where
   gbimap :: Op a b -> Op c d -> Op (t a c) (t b d)
@@ -42,11 +42,11 @@ instance GBifunctor (->) (->) (->) (,) where
   gbimap :: (a -> b) -> (c -> d) -> (a, c) -> (b, d)
   gbimap f g = bimap f g
 
-instance GBifunctor (->) (->) (->) (Either) where
+instance GBifunctor (->) (->) (->) Either where
   gbimap :: (a -> b) -> (c -> d) -> Either a c -> Either b d
   gbimap f g = bimap f g
 
-instance GBifunctor (->) (->) (->) (These) where
+instance GBifunctor (->) (->) (->) These where
   gbimap :: (a -> b) -> (c -> d) -> These a c -> These b d
   gbimap f g = bimap f g
 
@@ -58,16 +58,16 @@ instance GBifunctor (Star Maybe) (Star Maybe) (Star Maybe) These where
       That c -> That <$> g c
       These a c -> liftA2 These (f a) (g c)
 
-grmap :: GBifunctor p q r t => c `q` d -> (t a c) `r` (t a d)
+grmap :: GBifunctor cat1 cat2 r t => c `cat2` d -> t a c `r` t a d
 grmap = gbimap id
 
-glmap :: GBifunctor p q r t => a `p` b -> (t a c) `r` (t b c)
+glmap :: GBifunctor cat1 cat2 r t => a `cat1` b -> t a c `r` t b c
 glmap = flip gbimap id
 
-data Iso p a b = Iso { fwd :: a `p` b, bwd :: b `p` a }
+data Iso cat a b = Iso { fwd :: a `cat` b, bwd :: b `cat` a }
 
-class (Category p, GBifunctor p p p t) => Associative t p where
-  assoc :: Iso p (t a (t b c)) (t (t a b) c)
+class (Category cat, GBifunctor cat cat cat t) => Associative t cat where
+  assoc :: Iso cat (a `t` (b `t` c)) ((a `t` b) `t` c)
 
 instance Associative t (->) => Associative t Op where
   assoc :: Iso Op (t a (t b c)) (t (t a b) c)
@@ -94,7 +94,7 @@ instance Associative Either (->) where
   assoc :: Iso (->) (Either a (Either b c)) (Either (Either a b) c)
   assoc = Iso
     { fwd = either (Left . Left) (either (Left . Right) Right)
-    , bwd = either (either Left (Right . Left)) (Right . Right)
+    , bwd = either (fmap Left) (Right . Right)
     }
 
 instance Associative These (->) where
@@ -104,9 +104,9 @@ instance Associative These (->) where
     , bwd = these (grmap This) (That . That) (flip $ grmap . flip These)
     }
 
-class Associative t p => Tensor t i p | t -> i where
-  lunit :: Iso p (t i a) a
-  runit :: Iso p (t a i) a
+class Associative t cat => Tensor t i cat | t -> i where
+  lunit :: Iso cat (t i a) a
+  runit :: Iso cat (t a i) a
 
 instance (Tensor t i (->)) => Tensor t i Op where
   lunit :: Iso Op (t i a) a
@@ -162,7 +162,7 @@ instance Tensor Either Void (->) where
 instance Tensor These Void (->) where
   lunit :: Iso (->) (These Void a) a
   lunit = Iso
-    { fwd = these absurd id (flip const)
+    { fwd = these absurd id (\ _ x -> x)
     , bwd = That
     }
 
@@ -172,8 +172,8 @@ instance Tensor These Void (->) where
     , bwd = This
     }
 
-class Associative t p => Symmetric t p where
-  swap :: (t a b) `p` (t b a)
+class Associative t cat => Symmetric t cat where
+  swap :: t a b `cat` t b a
 
 instance (Symmetric t (->)) => Symmetric t Op where
   swap :: Op (t a b) (t b a)
@@ -195,9 +195,9 @@ instance Symmetric These (->) where
   swap :: These a b -> These b a
   swap = these That This (flip These)
 
-class (Symmetric t p, Tensor t i p) => Cartesian t i p | i -> t, t -> i where
-  diagonal :: a `p` (t a a)
-  terminal :: a `p` i
+class (Symmetric t cat, Tensor t i cat) => Cartesian t i cat | i -> t, t -> i where
+  diagonal :: a `cat` t a a
+  terminal :: a `cat` i
 
 instance Cartesian (,) () (->) where
   diagonal :: a -> (a , a)

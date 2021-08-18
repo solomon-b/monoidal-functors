@@ -1,14 +1,26 @@
 {
+    "easy-hls-nix": {
+        "branch": "main",
+        "description": "Easy Haskell Language Server tooling with Nix!",
+        "homepage": "",
+        "owner": "jkachmar",
+        "repo": "easy-hls-nix",
+        "rev": "db85cac9d0405b4769b75cba0b004aed3beaf2de",
+        "sha256": "10nff6mqflrd6dz1fp2l9vmfwbgk0r7zm81qh2xnjj19a47pd7v3",
+        "type": "tarball",
+        "url": "https://github.com/jkachmar/easy-hls-nix/archive/db85cac9d0405b4769b75cba0b004aed3beaf2de.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "niv": {
         "branch": "master",
         "description": "Easy dependency management for Nix projects",
         "homepage": "https://github.com/nmattia/niv",
         "owner": "nmattia",
         "repo": "niv",
-        "rev": "af958e8057f345ee1aca714c1247ef3ba1c15f5e",
-        "sha256": "1qjavxabbrsh73yck5dcq8jggvh3r2jkbr6b5nlz5d9yrqm9255n",
+        "rev": "e0ca65c81a2d7a4d82a189f1e23a48d59ad42070",
+        "sha256": "1pq9nh1d8nn3xvbdny8fafzw87mj7gsmp6pxkdl65w2g18rmcmzx",
         "type": "tarball",
-        "url": "https://github.com/nmattia/niv/archive/af958e8057f345ee1aca714c1247ef3ba1c15f5e.tar.gz",
+        "url": "https://github.com/nmattia/niv/archive/e0ca65c81a2d7a4d82a189f1e23a48d59ad42070.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs": {
@@ -17,10 +29,10 @@
         "homepage": "",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "82151321eeaef290b8345803e0b217a261b7c4e1",
-        "sha256": "1n53jn8793midwdwiqk74l4vf0g94wg1bypab4cx1ydlbs20x882",
+        "rev": "97c5d0cbe76901da0135b05cdbdfc5b068a7942c",
+        "sha256": "05zisan8s08r45jbn9xc3dysnsdh639qn7jhczsd71mjfg85n13v",
         "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/82151321eeaef290b8345803e0b217a261b7c4e1.tar.gz",
+        "url": "https://github.com/NixOS/nixpkgs/archive/97c5d0cbe76901da0135b05cdbdfc5b068a7942c.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
