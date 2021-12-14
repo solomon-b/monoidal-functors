@@ -1,62 +1,41 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeApplications #-}
 module Control.Category.Tensor.Expr where
 
+import Prelude (Show, Eq, Ord)
 import Control.Category.Tensor
 import Data.Function
 import Data.Kind
 
-type Tensored
-  :: (Type -> Type -> Type)
-  -> Type
-  -> [Type]
-  -> Type
-data Tensored t i vs
+type MConcat :: (Type -> Type -> Type) -> Type -> [Type] -> Type
+type family MConcat mappend mempty xs
   where
-  ANil :: i -> Tensored t i '[]
-  ACons :: t v (Tensored t i vs) -> Tensored t i (v ': vs)
+  MConcat mappend mempty '[] = mempty
+  MConcat mappend mempty (x ': xs) = mappend x (MConcat mappend mempty xs)
+
+newtype Tensored t i xs = Tensored { getTensored :: MConcat t i xs }
+
+deriving newtype instance Show (MConcat t i xs) => Show (Tensored t i xs)
+deriving newtype instance Eq (MConcat t i xs) => Eq (Tensored t i xs)
+deriving newtype instance Ord (MConcat t i xs) => Ord (Tensored t i xs)
 
 {-
 Examples:
 foo :: Tensored (,) () '[Bool, Int]
-foo = bwd asNested (True, (8, ()))
+foo = Tensored (True, (8, ()))
 
 bar :: Tensored Either Void '[Bool, Int]
-bar = bwd asNested $ Right $ Left 8
+bar = Tensored $ Right $ Left 8
 
 baz :: Tensored These Void '[Bool, Int]
-baz = bwd asNested $ These True $ This 8
+baz = Tensored $ These True $ This 8
 -}
-
-type AsNested :: (Type -> Type -> Type) -> Type -> [Type] -> Type -> Constraint
-class Tensor t i (->) => AsNested t i xs unwrapped | t i xs -> unwrapped
-  where
-  asNested :: Tensor t i (->) => Iso (->) (Tensored t i xs) unwrapped
-
-instance Tensor t i (->) => AsNested t i '[] i
-  where
-  asNested :: Tensor t i (->) => Iso (->) (Tensored t i '[]) i
-  asNested = Iso to from
-    where
-      to :: Tensor t i (->) => Tensored t i '[] -> i
-      to = \case
-        ANil i -> i
-      from :: Tensor t i (->) => i -> Tensored t i '[]
-      from = ANil 
-  
-instance (Tensor t i (->), AsNested t i xs r) => AsNested t i (x ': xs) (x `t` r)
-  where
-  asNested :: Tensor t i (->) => Iso (->) (Tensored t i (x ': xs)) (x `t` r)
-  asNested = Iso to from
-    where
-      to :: (AsNested t i xs r, Tensor t i (->)) => Tensored t i (x ': xs) -> (x `t` r)
-      to = \case
-        ACons xxs -> grmap (fwd asNested) xxs
-      from :: (AsNested t i xs r, Tensor t i (->)) => (x `t` r) -> Tensored t i (x ': xs)
-      from xtr = ACons $ grmap (bwd asNested) xtr
 
 type (++) :: [k] -> [k] -> [k]
 type family xs ++ ys
@@ -73,8 +52,9 @@ class AppendTensored xs
 
 instance AppendTensored '[]
   where
-  appendTensored = fwd lunit . glmap (\case { ANil i -> i })
+  appendTensored = fwd lunit . glmap getTensored 
 
 instance AppendTensored xs => AppendTensored (x ': xs)
   where
-  appendTensored = ACons . grmap appendTensored . bwd assoc . glmap (\case { ACons i -> i })
+  appendTensored = Tensored . grmap (getTensored . appendTensored @xs . glmap Tensored) . bwd assoc . glmap getTensored
+
