@@ -5,17 +5,38 @@ import Control.Applicative
 import Control.Category.Tensor
 import Data.Void
 
-class (Associative t1 cat, Associative t0 cat) => Semigroupal cat t1 t0 f where
-  combine :: (f x `t0` f x') `cat` f (x `t1` x')
-
-class Unital cat i1 i0 f where
-  introduce :: i0 `cat` f i1
-
+-- | A <https://ncatlab.org/nlab/show/monoidal+functor Monoidal Functor> is a Functor between two Monoidal Categories
+-- which preserves the monoidal structure. Eg., a homomorphism of
+-- monoidal categories.
+--
+-- = Laws
+-- Associativity:
+--   combine (combine fx fy) fz ⟶ combine fx (combine fy fz)
+--              ↓                         ↓
+--   f (x `t1` y) `t1` fz         combine fx (f (y `t1` z))
+--              ↓                         ↓
+--   f ((x `t1` y) `t1` z)      ⟶ (f x `t1` (y `t1` z))
+--
+-- Left Unitality:
+--   empty `t1` f x     ⟶  f empty `t1` f x
+--         ↓                        ↓
+--        f x           ←  f (empty `t0` x)
+--
+-- Right Unitality:
+--   f x `t1` empty     ⟶  f x `t1` f empty
+--         ↓                        ↓
+--        f x           ←  f (x `t0` empty)
 class ( Tensor t1 i1 cat
       , Tensor t0 i0 cat
       , Semigroupal cat t1 t0 f
       , Unital cat i1 i0 f
       ) => Monoidal cat t1 i1 t0 i0 f
+
+class (Associative t1 cat, Associative t0 cat) => Semigroupal cat t1 t0 f where
+  combine :: (f x `t0` f x') `cat` f (x `t1` x')
+
+class Unital cat i1 i0 f where
+  introduce :: i0 `cat` f i1
 
 -- TODO: Should we create an Apply class?
 instance Applicative f => Semigroupal (->) (,) (,) f where
