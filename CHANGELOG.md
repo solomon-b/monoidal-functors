@@ -1,5 +1,9 @@
 # Revision history for monoidal-functors
 
+## Upcoming
+
+* Adds Tensored Type
+
 ## 0.1.1 -- 2021-12-13
 
 * Removes redundant `Iso` types.
