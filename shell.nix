@@ -13,6 +13,7 @@ let
 
   editorTooling = [
     pkgs.cabal-install
+    pkgs.ghcid
     easy-hls
   ];
 
