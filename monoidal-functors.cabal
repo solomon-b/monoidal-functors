@@ -31,6 +31,7 @@ library
 
   exposed-modules:
     Control.Category.Tensor
+    Control.Category.Tensor.Expr
     Data.Bifunctor.BiInvariant
     Data.Bifunctor.Module
     Data.Bifunctor.Monoidal
