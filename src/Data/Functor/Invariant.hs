@@ -2,6 +2,7 @@ module Data.Functor.Invariant where
 
 import Prelude
 import Control.Applicative (ZipList)
+import Control.Category.Tensor
 import Data.Functor.Contravariant
 import Data.Functor.Compose
 import Data.Functor.Identity
@@ -12,10 +13,7 @@ import Data.List.NonEmpty (NonEmpty)
 class Invariant f where
   invmap :: (a -> a') -> (a' -> a) -> f a -> f a'
 
--- Invariant witnesses an Isomorphism
-data Iso a b = Iso (a -> b) (b -> a)
-
-invIso :: Invariant f => Iso a a' -> Iso (f a) (f a')
+invIso :: Invariant f => Iso (->) a a' -> Iso (->) (f a) (f a')
 invIso (Iso f g)  = Iso (invmap f g) (invmap g f)
 
 newtype FromFunctor f a = FromFunctor { runBi :: f a }

@@ -2,6 +2,7 @@ module Data.Bifunctor.BiInvariant where
 
 import Prelude
 import Control.Arrow
+import Control.Category.Tensor
 import Control.Comonad
 import Data.Bifunctor
 import Data.Bifunctor.Biap
@@ -37,8 +38,7 @@ class BiInvariant p where
   biinvmap :: (a' -> a) -> (a -> a') -> (b' -> b) -> (b -> b') -> p a b -> p a' b'
 
 -- BiInvariant witnesses an Isomorphism
-data Iso a b = Iso (a -> b) (b -> a)
-biinvIso :: BiInvariant p => Iso a a' -> Iso b b' -> Iso (p a b) (p a' b')
+biinvIso :: BiInvariant p => Iso (->) a a' -> Iso (->) b b' -> Iso (->) (p a b) (p a' b')
 biinvIso (Iso f f') (Iso g g') = Iso (biinvmap f' f g' g) (biinvmap f f' g g')
 
 newtype FromProfunctor p a b = FromProfunctor { runPro :: p a b}
