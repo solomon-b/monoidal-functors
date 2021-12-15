@@ -15,6 +15,7 @@ class Symmetric cat t => Semicartesian cat t where
   fork :: cat a x -> cat a y -> cat a (x `t` y)
   fork f g = split >>> f # g
 
+  infixr 9 /\
   (/\) :: cat a x -> cat a y -> cat a (x `t` y)
   (/\) = fork
 
@@ -24,6 +25,7 @@ class Symmetric cat t => Semicocartesian cat t where
   fuse :: cat x a -> cat y a -> cat (x `t` y) a
   fuse f g = f # g >>> merge
 
+  infixr 9 \/
   (\/) :: cat x a -> cat y a -> cat (x `t` y) a
   (\/) = fuse
 
