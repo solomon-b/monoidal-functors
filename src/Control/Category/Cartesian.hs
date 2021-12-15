@@ -50,7 +50,20 @@ instance Semicocartesian (->) Either where
   merge :: Either a a -> a
   merge =  either id id
 
-
+-- | A 'Symmetric' Bifunctor equipped with a 'Tensor' has an operation
+-- 'terminal' mapping from any type 'a' to the unit type 'i' and an
+-- operation 'diagnol' from any type 'a' to 'a `t` a'.
+--
+-- = Examples
+--
+-- >>> kill @(->) @(,) @_ True
+-- ()
+--
+-- >>> projr @(->) @(,) (True, "hello")
+-- "hello"
+--
+-- >>> projl @(->) @(,) (True, "hello")
+-- True
 class (Semicartesian cat t, Tensor cat t i) => Cartesian cat t i | i -> t, t -> i where
   kill :: cat a i
 
@@ -64,7 +77,6 @@ class (Semicartesian cat t, Tensor cat t i) => Cartesian cat t i | i -> t, t -> 
   unfork h = (h >>> projl, h >>> projr)
 
   {-# MINIMAL kill #-}
-
 
 class (Semicocartesian cat t, Tensor cat t i) => Cocartesian cat t i | i -> t, t -> i where
   spawn :: cat i a

@@ -26,6 +26,7 @@ library
     tagged               >= 0.8.6  && < 0.9,
     contravariant        >= 1.5.5  && < 1.6,
     profunctors          >= 5.6.2  && < 5.7,
+    semialign,
     semigroupoids        >= 5.3.6  && < 5.4,
     these                >= 1.1.1  && < 1.2,
 
@@ -74,3 +75,4 @@ library
     TypeApplications
     TypeOperators
     UndecidableInstances
+  
