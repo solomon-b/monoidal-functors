@@ -40,7 +40,7 @@ class (Category cat1, Category cat2, Category cat3) => GBifunctor cat1 cat2 cat3
   infixr 9 #
   (#) :: cat1 a b -> cat2 c d -> cat3 (a `t` c)  (b `t` d)
   (#) = gbimap
-  {-# MINIMAL gbimap | (-) #-}
+  {-# MINIMAL gbimap | (#) #-}
 
 
 instance GBifunctor (->) (->) (->) t => GBifunctor Op Op Op t where
