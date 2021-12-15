@@ -1,17 +1,17 @@
 module Data.Bifunctor.Monoidal where
 
-import           Control.Applicative
-import           Control.Category
-import           Control.Category.Cartesian
-import           Control.Category.Tensor
-import           Data.Biapplicative
-import           Data.Bifunctor.Clown
-import           Data.Bifunctor.Joker
-import           Data.Profunctor
-import           Data.Semigroupoid
-import           Data.These
-import           Data.Void
-import           Prelude                    hiding (id, (.))
+import Control.Applicative
+import Control.Category
+import Control.Category.Cartesian
+import Control.Category.Tensor
+import Data.Biapplicative
+import Data.Bifunctor.Clown
+import Data.Bifunctor.Joker
+import Data.Profunctor
+import Data.Semigroupoid
+import Data.These
+import Data.Void
+import Prelude hiding (id, (.))
 
 class (Associative cat t1, Associative cat t2, Associative cat to) => Semigroupal cat t1 t2 to f where
   combine :: cat (to (f x y) (f x' y')) (f (t1 x x') (t2 y y'))

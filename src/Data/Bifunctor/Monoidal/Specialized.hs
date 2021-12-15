@@ -1,14 +1,14 @@
 {-# LANGUAGE TupleSections #-}
 module Data.Bifunctor.Monoidal.Specialized where
 
-import           Prelude                    hiding ((&&), (||))
+import Prelude hiding ((&&), (||))
 
-import           Control.Category.Cartesian
-import           Control.Category.Tensor    ()
-import           Data.Bifunctor.Monoidal
-import           Data.Functor.Contravariant
-import           Data.Profunctor
-import           Data.Void
+import Control.Category.Cartesian
+import Control.Category.Tensor ()
+import Data.Bifunctor.Monoidal
+import Data.Functor.Contravariant
+import Data.Profunctor
+import Data.Void
 
 mux :: Semigroupal (->) (,) (,) (,) p => p a b -> p c d -> p (a, c) (b, d)
 mux = curry combine

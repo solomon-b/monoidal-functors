@@ -1,37 +1,37 @@
 module Data.Bifunctor.BiInvariant where
 
-import           Control.Arrow
-import           Control.Category.Tensor
-import           Control.Comonad
-import           Data.Bifunctor
-import           Data.Bifunctor.Biap
-import           Data.Bifunctor.Biff
-import           Data.Bifunctor.Clown
-import           Data.Bifunctor.Flip
-import           Data.Bifunctor.Joker
-import           Data.Bifunctor.Product
-import           Data.Bifunctor.Sum
-import           Data.Bifunctor.Tannen
-import           Data.Bifunctor.Wrapped
-import           Data.Coerce
-import           Data.Functor.Const
-import           Data.Functor.Contravariant
-import           Data.Kind
-import           Data.Profunctor
-import           Data.Profunctor.Cayley
-import           Data.Profunctor.Choice
-import           Data.Profunctor.Closed
-import           Data.Profunctor.Composition
-import           Data.Profunctor.Mapping
-import           Data.Profunctor.Ran
-import           Data.Profunctor.Strong
-import           Data.Profunctor.Traversing
-import           Data.Profunctor.Yoneda
-import           Data.Semigroup              (Arg)
-import           Data.Tagged
-import           Data.These
-import           GHC.Generics                (K1)
-import           Prelude
+import Control.Arrow
+import Control.Category.Tensor
+import Control.Comonad
+import Data.Bifunctor
+import Data.Bifunctor.Biap
+import Data.Bifunctor.Biff
+import Data.Bifunctor.Clown
+import Data.Bifunctor.Flip
+import Data.Bifunctor.Joker
+import Data.Bifunctor.Product
+import Data.Bifunctor.Sum
+import Data.Bifunctor.Tannen
+import Data.Bifunctor.Wrapped
+import Data.Coerce
+import Data.Functor.Const
+import Data.Functor.Contravariant
+import Data.Kind
+import Data.Profunctor
+import Data.Profunctor.Cayley
+import Data.Profunctor.Choice
+import Data.Profunctor.Closed
+import Data.Profunctor.Composition
+import Data.Profunctor.Mapping
+import Data.Profunctor.Ran
+import Data.Profunctor.Strong
+import Data.Profunctor.Traversing
+import Data.Profunctor.Yoneda
+import Data.Semigroup (Arg)
+import Data.Tagged
+import Data.These
+import GHC.Generics (K1)
+import Prelude
 
 
 class BiInvariant p where

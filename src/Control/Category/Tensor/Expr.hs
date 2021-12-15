@@ -8,10 +8,10 @@
 {-# LANGUAGE TypeFamilies             #-}
 module Control.Category.Tensor.Expr where
 
-import           Control.Category.Tensor
-import           Data.Function
-import           Data.Kind
-import           Prelude                 (Eq, Ord, Show)
+import Control.Category.Tensor
+import Data.Function
+import Data.Kind
+import Prelude (Eq, Ord, Show)
 
 type MConcat :: (Type -> Type -> Type) -> Type -> [Type] -> Type
 type family MConcat mappend mempty xs

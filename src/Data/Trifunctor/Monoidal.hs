@@ -1,6 +1,6 @@
 module Data.Trifunctor.Monoidal where
 
-import           Control.Category.Tensor
+import Control.Category.Tensor
 
 class
   ( Associative cat t1

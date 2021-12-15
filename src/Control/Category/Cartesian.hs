@@ -1,12 +1,12 @@
 {-# LANGUAGE MonoLocalBinds #-}
 module Control.Category.Cartesian where
 
-import           Control.Category           (id, (>>>))
-import           Data.Functor.Contravariant
-import           Data.Void
-import           Prelude                    hiding (id)
+import Control.Category (id, (>>>))
+import Data.Functor.Contravariant
+import Data.Void
+import Prelude hiding (id)
 
-import           Control.Category.Tensor
+import Control.Category.Tensor
 
 
 class Symmetric cat t => Semicartesian cat t where

@@ -1,9 +1,9 @@
 module Data.Functor.Monoidal where
 
-import           Control.Applicative
-import           Control.Category.Tensor
-import           Data.Void
-import           Prelude
+import Control.Applicative
+import Control.Category.Tensor
+import Data.Void
+import Prelude
 
 -- | A <https://ncatlab.org/nlab/show/monoidal+functor Monoidal Functor> is a Functor between two Monoidal Categories
 -- which preserves the monoidal structure. Eg., a homomorphism of

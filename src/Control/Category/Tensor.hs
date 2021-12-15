@@ -1,14 +1,14 @@
 {-# LANGUAGE MonoLocalBinds #-}
 module Control.Category.Tensor where
 
-import           Control.Applicative
-import           Control.Category           (Category, id)
-import           Data.Biapplicative
-import           Data.Functor.Contravariant
-import           Data.Profunctor
-import           Data.These
-import           Data.Void
-import           Prelude                    hiding (id)
+import Control.Applicative
+import Control.Category (Category, id)
+import Data.Biapplicative
+import Data.Functor.Contravariant
+import Data.Profunctor
+import Data.These
+import Data.Void
+import Prelude hiding (id)
 
 {-
 
