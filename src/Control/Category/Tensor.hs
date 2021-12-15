@@ -1,9 +1,9 @@
 {-# LANGUAGE MonoLocalBinds #-}
 module Control.Category.Tensor where
 
-import Prelude hiding (id)
+import Prelude hiding ((.), id)
 import Control.Applicative
-import Control.Category (Category, id)
+import Control.Category
 import Data.Biapplicative
 import Data.Functor.Contravariant
 import Data.Profunctor
@@ -30,6 +30,16 @@ categories of two different monoidal structure, and has a pair of
 operations `t2 (f a) (f b) -> f (t1 a b)` and `i2 -> f i1`
 
 -}
+
+-- | An invertible mapping between 'a' and 'b' in category 'cat'.
+data Iso cat a b = Iso { fwd :: cat a b, bwd :: cat b a }
+
+instance Category cat => Category (Iso cat) where
+  id :: Iso cat a a
+  id = Iso id id
+
+  (.) :: Iso cat b c -> Iso cat a b -> Iso cat a c
+  bc . ab = Iso (fwd bc . fwd ab) (bwd ab . bwd bc)
 
 class (Category cat1, Category cat2) => GBifunctor cat1 cat2 r t | t r -> cat1 cat2 where
   gbimap :: a `cat1` b -> c `cat2` d -> t a c `r` t b d
@@ -58,13 +68,15 @@ instance GBifunctor (Star Maybe) (Star Maybe) (Star Maybe) These where
       That c -> That <$> g c
       These a c -> liftA2 These (f a) (g c)
 
+instance GBifunctor cat cat cat t => GBifunctor (Iso cat) (Iso cat) (Iso cat) t where
+  gbimap :: Iso cat a b -> Iso cat c d -> Iso cat (t a c) (t b d)
+  gbimap iso1 iso2 = Iso (gbimap (fwd iso1) (fwd iso2)) (gbimap (bwd iso1) (bwd iso2))
+
 grmap :: GBifunctor cat1 cat2 r t => c `cat2` d -> t a c `r` t a d
 grmap = gbimap id
 
 glmap :: GBifunctor cat1 cat2 r t => a `cat1` b -> t a c `r` t b c
 glmap = flip gbimap id
-
-data Iso cat a b = Iso { fwd :: a `cat` b, bwd :: b `cat` a }
 
 class (Category cat, GBifunctor cat cat cat t) => Associative t cat where
   assoc :: Iso cat (a `t` (b `t` c)) ((a `t` b) `t` c)
@@ -102,6 +114,13 @@ instance Associative These (->) where
   assoc = Iso
     { fwd = these (This . This) (glmap That) (glmap . These)
     , bwd = these (grmap This) (That . That) (flip $ grmap . flip These)
+    }
+
+instance Associative t cat => Associative t (Iso cat) where
+  assoc :: Iso (Iso cat) (t a (t b c)) (t (t a b) c)
+  assoc = Iso
+    { fwd = assoc -- Iso (fwd assoc) (bwd assoc)
+    , bwd = Iso (bwd assoc) (fwd assoc)
     }
 
 class Associative t cat => Tensor t i cat | t -> i where
@@ -172,6 +191,19 @@ instance Tensor These Void (->) where
     , bwd = This
     }
 
+instance Tensor t i cat => Tensor t i (Iso cat) where
+  lunit :: Iso (Iso cat) (t i a) a
+  lunit = Iso
+    { fwd = Iso (fwd lunit) (bwd lunit)
+    , bwd = Iso (bwd lunit) (fwd lunit)
+    }
+
+  runit :: Iso (Iso cat) (t a i) a
+  runit = Iso
+    { fwd = Iso (fwd runit) (bwd runit)
+    , bwd = Iso (bwd runit) (fwd runit)
+    }
+
 class Associative t cat => Symmetric t cat where
   swap :: t a b `cat` t b a
 
@@ -194,6 +226,13 @@ instance Symmetric Either (->) where
 instance Symmetric These (->) where
   swap :: These a b -> These b a
   swap = these That This (flip These)
+
+instance Symmetric t cat => Symmetric t (Iso cat) where
+  swap :: Iso cat (t a b) (t b a)
+  swap = Iso
+    { fwd = swap
+    , bwd = swap
+    }
 
 class (Symmetric t cat, Tensor t i cat) => Cartesian t i cat | i -> t, t -> i where
   diagonal :: a `cat` t a a
