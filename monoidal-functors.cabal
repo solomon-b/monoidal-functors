@@ -20,17 +20,18 @@ source-repository head
 
 library
   build-depends:
-    base           >= 4.12    && < 5,
+    base                 >= 4.12   && < 5,
     bifunctors           >= 5.5.11 && < 5.6,
-    comonad              >= 5.0.8 && < 5.1,
-    tagged               >= 0.8.6 && < 0.9,
-    contravariant        >= 1.5.5 && < 1.6,
-    profunctors          >= 5.6.2 && < 5.7,
-    semigroupoids        >= 5.3.6 && < 5.4,
-    these                >= 1.1.1 && < 1.2,
+    comonad              >= 5.0.8  && < 5.1,
+    tagged               >= 0.8.6  && < 0.9,
+    contravariant        >= 1.5.5  && < 1.6,
+    profunctors          >= 5.6.2  && < 5.7,
+    semigroupoids        >= 5.3.6  && < 5.4,
+    these                >= 1.1.1  && < 1.2,
 
   exposed-modules:
     Control.Category.Tensor
+    Control.Category.Cartesian
     Control.Category.Tensor.Expr
     Data.Bifunctor.BiInvariant
     Data.Bifunctor.Module

@@ -10,10 +10,10 @@ import           Control.Category.Tensor
 
 
 class Symmetric cat t => Semicartesian cat t where
-  copy :: cat a (a `t` a)
+  split :: cat a (a `t` a)
 
   fork :: cat a x -> cat a y -> cat a (x `t` y)
-  fork f g = copy >>> f # g
+  fork f g = split >>> f # g
 
   (/\) :: cat a x -> cat a y -> cat a (x `t` y)
   (/\) = fork
@@ -29,15 +29,15 @@ class Symmetric cat t => Semicocartesian cat t where
 
 
 instance Semicartesian (->) t => Semicocartesian Op t where
-  merge = Op copy
+  merge = Op split
 
 instance Semicocartesian (->) t => Semicartesian Op t where
-  copy = Op merge
+  split = Op merge
 
 
 instance Semicartesian (->) (,) where
-  copy :: a -> (a, a)
-  copy    a =  (a, a)
+  split :: a -> (a, a)
+  split    a =  (a, a)
 
 instance Semicocartesian (->) Either where
   merge :: Either a a -> a
