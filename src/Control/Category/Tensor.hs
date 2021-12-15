@@ -10,6 +10,7 @@ import Data.Profunctor
 import Data.These
 import Data.Void
 
+-- | An invertible mapping between 'a' and 'b' in category 'cat'.
 data Iso cat a b = Iso { fwd :: cat a b, bwd :: cat b a }
 
 instance Category cat => Category (Iso cat) where
@@ -31,12 +32,21 @@ instance Category cat => Category (Iso cat) where
 --
 -- >>> gbimap @(->) @(->) @(->) @Either show not (Right False)
 -- Right True
+--
+-- >>> getOp (gbimap @Op @Op @Op @Either (Op (+ 1)) (Op show)) (Right True)
+-- Right "True"
 class (Category cat1, Category cat2, Category cat3) => GBifunctor cat1 cat2 cat3 t | t cat3 -> cat1 cat2 where
   gbimap :: cat1 a b -> cat2 c d -> cat3 (a `t` c)  (b `t` d)
 
 infixr 9 #
 (#) :: GBifunctor cat1 cat2 cat3 t => cat1 a b -> cat2 c d -> cat3 (a `t` c)  (b `t` d)
 (#) = gbimap
+
+grmap :: GBifunctor cat1 cat2 cat3 t => cat2 c d -> cat3 (a `t` c) (a `t` d)
+grmap = (#) id
+
+glmap :: GBifunctor cat1 cat2 cat3 t => cat1 a b -> cat3 (a `t` c) (b `t` c)
+glmap = flip (#) id
 
 instance GBifunctor (->) (->) (->) t => GBifunctor Op Op Op t where
   gbimap :: Op a b -> Op c d -> Op (t a c) (t b d)
@@ -57,13 +67,6 @@ instance GBifunctor (Star Maybe) (Star Maybe) (Star Maybe) These where
 instance GBifunctor cat cat cat t => GBifunctor (Iso cat) (Iso cat) (Iso cat) t where
   gbimap :: Iso cat a b -> Iso cat c d -> Iso cat (t a c) (t b d)
   gbimap iso1 iso2 = Iso (gbimap (fwd iso1) (fwd iso2)) (gbimap (bwd iso1) (bwd iso2))
-
-
-grmap :: GBifunctor cat1 cat2 cat3 t => cat2 c d -> cat3 (a `t` c) (a `t` d)
-grmap = (#) id
-
-glmap :: GBifunctor cat1 cat2 cat3 t => cat1 a b -> cat3 (a `t` c) (b `t` c)
-glmap = flip (#) id
 
 -- | An Associative 'Bifunctor' is one whose type operator 't' is
 -- associative.
@@ -116,7 +119,7 @@ instance (Monad m, Associative (->) t, GBifunctor (Star m) (Star m) (Star m) t) 
     }
 
 -- | A Tensor is an Associative Bifunctor 't' equipped with an
--- identity type 'i' such that the left and right unit laws hold.
+-- identity type 'i' and a pair of left and right unit isomorphisms.
 --
 -- = Examples
 --
