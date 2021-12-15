@@ -37,10 +37,9 @@ data Iso cat a b = Iso { fwd :: cat a b, bwd :: cat b a }
 class (Category cat1, Category cat2, Category cat3) => GBifunctor cat1 cat2 cat3 t | t cat3 -> cat1 cat2 where
   gbimap :: cat1 a b -> cat2 c d -> cat3 (a `t` c)  (b `t` d)
 
-  infixr 9 #
-  (#) :: cat1 a b -> cat2 c d -> cat3 (a `t` c)  (b `t` d)
-  (#) = gbimap
-  {-# MINIMAL gbimap | (#) #-}
+infixr 9 #
+(#) :: GBifunctor cat1 cat2 cat3 t => cat1 a b -> cat2 c d -> cat3 (a `t` c)  (b `t` d)
+(#) = gbimap
 
 
 instance GBifunctor (->) (->) (->) t => GBifunctor Op Op Op t where
