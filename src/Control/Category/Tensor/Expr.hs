@@ -1,17 +1,17 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE AllowAmbiguousTypes      #-}
+{-# LANGUAGE DataKinds                #-}
+{-# LANGUAGE GADTs                    #-}
+{-# LANGUAGE PolyKinds                #-}
+{-# LANGUAGE ScopedTypeVariables      #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeApplications         #-}
+{-# LANGUAGE TypeFamilies             #-}
 module Control.Category.Tensor.Expr where
 
-import Prelude (Show, Eq, Ord)
-import Control.Category.Tensor
-import Data.Function
-import Data.Kind
+import           Control.Category.Tensor
+import           Data.Function
+import           Data.Kind
+import           Prelude                 (Eq, Ord, Show)
 
 type MConcat :: (Type -> Type -> Type) -> Type -> [Type] -> Type
 type family MConcat mappend mempty xs
@@ -46,13 +46,13 @@ type family xs ++ ys
 class AppendTensored xs
   where
   appendTensored
-    :: Tensor t i (->)
+    :: Tensor (->) t i
     => Tensored t i xs `t` Tensored t i ys
     -> Tensored t i (xs ++ ys)
 
 instance AppendTensored '[]
   where
-  appendTensored = fwd lunit . glmap getTensored 
+  appendTensored = fwd unitl . glmap getTensored
 
 instance AppendTensored xs => AppendTensored (x ': xs)
   where
