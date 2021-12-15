@@ -181,7 +181,7 @@ instance Alternative f => Unital (->) () Void () (Star f) where
   introduce :: () -> Star f () Void
   introduce () = Star $ const empty
 
-class (Tensor cat t1 i1
+class ( Tensor cat t1 i1
       , Tensor cat t2 i2
       , Tensor cat to io
       , Semigroupal cat t1 t2 to f

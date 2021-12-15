@@ -26,11 +26,12 @@ import           Prelude
 --   f x `t1` empty     ⟶  f x `t1` f empty
 --         ↓                        ↓
 --        f x           ←  f (x `t0` empty)
-class ( Tensor cat t1 i1
-      , Tensor cat t0 i0
-      , Semigroupal cat t1 t0 f
-      , Unital cat i1 i0 f
-      ) => Monoidal cat t1 i1 t0 i0 f
+class
+  ( Tensor cat t1 i1
+  , Tensor cat t0 i0
+  , Semigroupal cat t1 t0 f
+  , Unital cat i1 i0 f
+  ) => Monoidal cat t1 i1 t0 i0 f
 
 class (Associative cat t1, Associative cat t0) => Semigroupal cat t1 t0 f where
   combine :: (f x `t0` f x') `cat` f (x `t1` x')
