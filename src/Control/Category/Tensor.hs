@@ -1,14 +1,14 @@
 {-# LANGUAGE MonoLocalBinds #-}
 module Control.Category.Tensor where
 
-import Prelude hiding (id)
-import Control.Applicative
-import Control.Category (Category, id)
-import Data.Biapplicative
-import Data.Functor.Contravariant
-import Data.Profunctor
-import Data.These
-import Data.Void
+import           Control.Applicative
+import           Control.Category           (Category, id, (>>>))
+import           Data.Biapplicative
+import           Data.Functor.Contravariant
+import           Data.Profunctor
+import           Data.These
+import           Data.Void
+import           Prelude                    hiding (id)
 
 {-
 
@@ -18,21 +18,25 @@ import Data.Void
 |  (,)   |  ()  |
 | These  | Void |
 
-tensor = monoidal structure =
-    category
-  + bifunctor on that category `t`
-  + unit object in that category `i`
-  + isomorphisms in that category `t i a <-> a`, `t a i <-> a`, `t a (t b c) <-> t (t a b) c`
-  + some equalities
+tensor (or monoidal category) structure
+  = category `cat`
+  + bifunctor `t` on `cat`
+  + unit object `i` in `cat`
+  + isomorphisms in `cat`: `t i a <-> a`, `t a i <-> a`, `t a (t b c) <-> t (t a b) c`
+  + some equational laws
 
-monoidal functor = a functor that goes between the underlying
+lax monoidal functor = a functor that goes between the underlying
 categories of two different monoidal structure, and has a pair of
 operations `t2 (f a) (f b) -> f (t1 a b)` and `i2 -> f i1`
 
 -}
 
-class (Category cat1, Category cat2) => GBifunctor cat1 cat2 r t | t r -> cat1 cat2 where
-  gbimap :: a `cat1` b -> c `cat2` d -> t a c `r` t b d
+class (Category cat1, Category cat2, Category cat3) => GBifunctor cat1 cat2 cat3 t | t cat3 -> cat1 cat2 where
+  gbimap :: cat1 a b -> cat2 c d -> cat3 (a `t` c)  (b `t` d)
+
+  infixr 9 #
+  (#) :: cat1 a b -> cat2 c d -> cat3 (a `t` c)  (b `t` d)
+  (#) = gbimap
 
 instance GBifunctor (->) (->) (->) t => GBifunctor Op Op Op t where
   gbimap :: Op a b -> Op c d -> Op (t a c) (t b d)
@@ -54,167 +58,144 @@ instance GBifunctor (Star Maybe) (Star Maybe) (Star Maybe) These where
   gbimap :: Star Maybe a b -> Star Maybe c d -> Star Maybe (These a c) (These b d)
   gbimap (Star f) (Star g) =
     Star $ \case
-      This a -> This <$> f a
-      That c -> That <$> g c
+      This a    -> This <$> f a
+      That c    -> That <$> g c
       These a c -> liftA2 These (f a) (g c)
 
-grmap :: GBifunctor cat1 cat2 r t => c `cat2` d -> t a c `r` t a d
-grmap = gbimap id
+grmap :: GBifunctor cat1 cat2 cat3 t => cat2 c d -> cat3 (a `t` c) (a `t` d)
+grmap = (#) id
 
-glmap :: GBifunctor cat1 cat2 r t => a `cat1` b -> t a c `r` t b c
-glmap = flip gbimap id
+glmap :: GBifunctor cat1 cat2 cat3 t => cat1 a b -> cat3 (a `t` c) (b `t` c)
+glmap = flip (#) id
 
-data Iso cat a b = Iso { fwd :: a `cat` b, bwd :: b `cat` a }
+data Iso cat a b = Iso { fwd :: cat a b, bwd :: cat b a }
 
-class (Category cat, GBifunctor cat cat cat t) => Associative t cat where
+class (Category cat, GBifunctor cat cat cat t) => Associative cat t where
   assoc :: Iso cat (a `t` (b `t` c)) ((a `t` b) `t` c)
 
-instance Associative t (->) => Associative t Op where
+instance Associative (->) t => Associative Op t where
   assoc :: Iso Op (t a (t b c)) (t (t a b) c)
   assoc = Iso
     { fwd = Op $ bwd assoc
     , bwd = Op $ fwd assoc
     }
 
-instance (Monad m, Associative t (->), GBifunctor (Star m) (Star m) (Star m) t) => Associative t (Star m) where
+instance (Monad m, Associative (->) t, GBifunctor (Star m) (Star m) (Star m) t) => Associative (Star m) t where
   assoc :: Iso (Star m) (t a (t b c)) (t (t a b) c)
   assoc = Iso
     { fwd = (`rmap` id) (fwd assoc)
     , bwd = (`rmap` id) (bwd assoc)
     }
 
-instance Associative (,) (->) where
+instance Associative (->) (,) where
   assoc :: Iso (->) (a, (b, c)) ((a, b), c)
   assoc = Iso
     { fwd = \(a, (b, c)) -> ((a, b), c)
     , bwd = \((a, b), c) -> (a, (b, c))
     }
 
-instance Associative Either (->) where
+instance Associative (->) Either where
   assoc :: Iso (->) (Either a (Either b c)) (Either (Either a b) c)
   assoc = Iso
     { fwd = either (Left . Left) (either (Left . Right) Right)
     , bwd = either (fmap Left) (Right . Right)
     }
 
-instance Associative These (->) where
+instance Associative (->) These where
   assoc :: Iso (->) (These a (These b c)) (These (These a b) c)
   assoc = Iso
     { fwd = these (This . This) (glmap That) (glmap . These)
     , bwd = these (grmap This) (That . That) (flip $ grmap . flip These)
     }
 
-class Associative t cat => Tensor t i cat | t -> i where
-  lunit :: Iso cat (t i a) a
-  runit :: Iso cat (t a i) a
+class Associative cat t => Tensor cat t i | t -> i where
+  unitl :: Iso cat (i `t` a) a
+  unitr :: Iso cat (a `t` i) a
 
-instance (Tensor t i (->)) => Tensor t i Op where
-  lunit :: Iso Op (t i a) a
-  lunit = Iso
-    { fwd = Op $ bwd lunit
-    , bwd = Op $ fwd lunit
+instance (Tensor (->) t i) => Tensor Op t i where
+  unitl :: Iso Op (i `t` a) a
+  unitl = Iso
+    { fwd = Op $ bwd unitl
+    , bwd = Op $ fwd unitl
     }
 
-  runit :: Iso Op (t a i) a
-  runit = Iso
-    { fwd = Op $ bwd runit
-    , bwd = Op $ fwd runit
+  unitr :: Iso Op (a `t` i) a
+  unitr = Iso
+    { fwd = Op $ bwd unitr
+    , bwd = Op $ fwd unitr
     }
 
-instance (Monad m, Tensor t i (->), Associative t (Star m)) => Tensor t i (Star m) where
-  lunit :: Iso (Star m) (t i a) a
-  lunit = Iso
-    { fwd = (`rmap` id) (fwd lunit)
-    , bwd = (`rmap` id) (bwd lunit)
+instance (Monad m, Tensor (->) t i, Associative (Star m) t) => Tensor (Star m) t i where
+  unitl :: Iso (Star m) (i `t` a) a
+  unitl = Iso
+    { fwd = (`rmap` id) (fwd unitl)
+    , bwd = (`rmap` id) (bwd unitl)
     }
 
-  runit = Iso
-    { fwd = (`rmap` id) (fwd runit)
-    , bwd = (`rmap` id) (bwd runit)
+  unitr :: Iso (Star m) (a `t` i) a
+  unitr = Iso
+    { fwd = (`rmap` id) (fwd unitr)
+    , bwd = (`rmap` id) (bwd unitr)
     }
 
-instance Tensor (,) () (->) where
-  lunit :: Iso (->) ((), a) a
-  lunit = Iso
+instance Tensor (->) (,) () where
+  unitl :: Iso (->) ((), a) a
+  unitl = Iso
     { fwd = snd
     , bwd = bipure ()
     }
 
-  runit :: Iso (->) (a, ()) a
-  runit = Iso
+  unitr :: Iso (->) (a, ()) a
+  unitr = Iso
     { fwd = fst
     , bwd = (`bipure` ())
     }
 
-instance Tensor Either Void (->) where
-  lunit :: Iso (->) (Either Void a) a
-  lunit = Iso
+instance Tensor (->) Either Void where
+  unitl :: Iso (->) (Either Void a) a
+  unitl = Iso
      { fwd = either absurd id
      , bwd = pure
      }
 
-  runit :: Iso (->) (Either a Void) a
-  runit = Iso
+  unitr :: Iso (->) (Either a Void) a
+  unitr = Iso
     { fwd = either id absurd
     , bwd = Left
     }
 
-instance Tensor These Void (->) where
-  lunit :: Iso (->) (These Void a) a
-  lunit = Iso
+instance Tensor (->) These Void where
+  unitl :: Iso (->) (These Void a) a
+  unitl = Iso
     { fwd = these absurd id (\ _ x -> x)
     , bwd = That
     }
 
-  runit :: Iso (->) (These a Void) a
-  runit = Iso
+  unitr :: Iso (->) (These a Void) a
+  unitr = Iso
     { fwd = these id absurd const
     , bwd = This
     }
 
-class Associative t cat => Symmetric t cat where
-  swap :: t a b `cat` t b a
+class Associative cat t => Symmetric cat t where
+  swap :: cat (a `t` b) (b `t` a)
 
-instance (Symmetric t (->)) => Symmetric t Op where
-  swap :: Op (t a b) (t b a)
+instance (Symmetric (->) t) => Symmetric Op t where
+  swap :: Op (a `t` b) (b `t` a)
   swap = Op swap
 
-instance (Monad m, Symmetric t (->), Associative t (Star m)) => Symmetric t (Star m) where
-  swap :: Star m (t a b) (t b a)
+instance (Monad m, Symmetric (->) t, Associative (Star m) t) => Symmetric (Star m) t where
+  swap :: Star m (a `t` b) (b `t` a)
   swap = Star $ pure . swap
 
-instance Symmetric (,) (->) where
+instance Symmetric (->) (,) where
   swap :: (a, b) -> (b, a)
   swap (a, b) = (b, a)
 
-instance Symmetric Either (->) where
+instance Symmetric (->) Either where
   swap :: Either a b -> Either b a
   swap = either Right Left
 
-instance Symmetric These (->) where
+instance Symmetric (->) These where
   swap :: These a b -> These b a
   swap = these That This (flip These)
-
-class (Symmetric t cat, Tensor t i cat) => Cartesian t i cat | i -> t, t -> i where
-  diagonal :: a `cat` t a a
-  terminal :: a `cat` i
-
-instance Cartesian (,) () (->) where
-  diagonal :: a -> (a , a)
-  diagonal = dup
-
-  terminal :: a -> ()
-  terminal = const ()
-
-instance Cartesian Either Void Op where
-  diagonal :: Op a (Either a a)
-  diagonal = Op merge
-
-  terminal :: Op a Void
-  terminal = Op absurd
-
-dup :: a -> (a, a)
-dup a = (a, a)
-
-merge :: Either a a -> a
-merge = either id id
