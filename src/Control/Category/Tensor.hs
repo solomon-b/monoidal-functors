@@ -9,7 +9,6 @@ import Data.Functor.Contravariant
 import Data.Profunctor
 import Data.These
 import Data.Void
-import Prelude hiding (id)
 
 {-
 
@@ -64,8 +63,6 @@ instance GBifunctor cat cat cat t => GBifunctor (Iso cat) (Iso cat) (Iso cat) t 
   gbimap :: Iso cat a b -> Iso cat c d -> Iso cat (t a c) (t b d)
   gbimap iso1 iso2 = Iso (gbimap (fwd iso1) (fwd iso2)) (gbimap (bwd iso1) (bwd iso2))
 
-grmap :: GBifunctor cat1 cat2 r t => c `cat2` d -> t a c `r` t a d
-grmap = gbimap id
 
 grmap :: GBifunctor cat1 cat2 cat3 t => cat2 c d -> cat3 (a `t` c) (a `t` d)
 grmap = (#) id
