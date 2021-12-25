@@ -15,11 +15,7 @@ class Symmetric cat t => Semicartesian cat t where
   fork :: cat a x -> cat a y -> cat a (x `t` y)
   fork f g = split >>> f # g
 
-  infixr 9 /\
-  (/\) :: cat a x -> cat a y -> cat a (x `t` y)
-  (/\) = fork
   {-# MINIMAL split #-}
-
 
 class Symmetric cat t => Semicocartesian cat t where
   merge :: cat (a `t` a) a
@@ -27,10 +23,16 @@ class Symmetric cat t => Semicocartesian cat t where
   fuse :: cat x a -> cat y a -> cat (x `t` y) a
   fuse f g = f # g >>> merge
 
-  infixr 9 \/
-  (\/) :: cat x a -> cat y a -> cat (x `t` y) a
-  (\/) = fuse
   {-# MINIMAL merge #-}
+
+
+infixr 9 /\
+(/\) :: Semicartesian cat t =>  cat a x -> cat a y -> cat a (x `t` y)
+(/\) = fork
+
+infixr 9 \/
+(\/) :: Semicocartesian cat t => cat x a -> cat y a -> cat (x `t` y) a
+(\/) = fuse
 
 
 instance Semicartesian (->) t => Semicocartesian Op t where
@@ -77,6 +79,7 @@ class (Semicocartesian cat t, Tensor cat t i) => Cocartesian cat t i | i -> t, t
   unfuse h = (incll >>> h, inclr >>> h)
 
   {-# MINIMAL spawn #-}
+
 
 instance Cartesian (->) t i => Cocartesian Op t i where
   spawn = Op kill
