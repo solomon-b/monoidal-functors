@@ -1,8 +1,9 @@
 {-# LANGUAGE MonoLocalBinds #-}
 module Control.Category.Tensor where
 
+import Prelude hiding ((.), id)
 import Control.Applicative
-import Control.Category (Category, id)
+import Control.Category
 import Data.Biapplicative
 import Data.Functor.Contravariant
 import Data.Profunctor
@@ -59,6 +60,12 @@ instance GBifunctor (Star Maybe) (Star Maybe) (Star Maybe) These where
       That c    -> That <$> g c
       These a c -> liftA2 These (f a) (g c)
 
+instance GBifunctor cat cat cat t => GBifunctor (Iso cat) (Iso cat) (Iso cat) t where
+  gbimap :: Iso cat a b -> Iso cat c d -> Iso cat (t a c) (t b d)
+  gbimap iso1 iso2 = Iso (gbimap (fwd iso1) (fwd iso2)) (gbimap (bwd iso1) (bwd iso2))
+
+grmap :: GBifunctor cat1 cat2 r t => c `cat2` d -> t a c `r` t a d
+grmap = gbimap id
 
 grmap :: GBifunctor cat1 cat2 cat3 t => cat2 c d -> cat3 (a `t` c) (a `t` d)
 grmap = (#) id
