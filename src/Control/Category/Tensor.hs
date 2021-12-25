@@ -33,6 +33,13 @@ operations `t2 (f a) (f b) -> f (t1 a b)` and `i2 -> f i1`
 
 data Iso cat a b = Iso { fwd :: cat a b, bwd :: cat b a }
 
+instance Category cat => Category (Iso cat) where
+  id :: Iso cat a a
+  id = Iso id id
+
+  (.) :: Iso cat b c -> Iso cat a b -> Iso cat a c
+  bc . ab = Iso (fwd bc . fwd ab) (bwd ab . bwd bc)
+
 -- Bifunctors
 class (Category cat1, Category cat2, Category cat3) => GBifunctor cat1 cat2 cat3 t | t cat3 -> cat1 cat2 where
   gbimap :: cat1 a b -> cat2 c d -> cat3 (a `t` c)  (b `t` d)
