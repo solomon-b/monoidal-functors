@@ -1,9 +1,9 @@
 module Data.Functor.Monoidal where
 
-import Prelude
 import Control.Applicative
 import Control.Category.Tensor
 import Data.Void
+import Prelude
 
 -- | A <https://ncatlab.org/nlab/show/monoidal+functor Monoidal Functor> is a Functor between two Monoidal Categories
 -- which preserves the monoidal structure. Eg., a homomorphism of
@@ -26,13 +26,14 @@ import Data.Void
 --   f x `t1` empty     ⟶  f x `t1` f empty
 --         ↓                        ↓
 --        f x           ←  f (x `t0` empty)
-class ( Tensor t1 i1 cat
-      , Tensor t0 i0 cat
-      , Semigroupal cat t1 t0 f
-      , Unital cat i1 i0 f
-      ) => Monoidal cat t1 i1 t0 i0 f
+class
+  ( Tensor cat t1 i1
+  , Tensor cat t0 i0
+  , Semigroupal cat t1 t0 f
+  , Unital cat i1 i0 f
+  ) => Monoidal cat t1 i1 t0 i0 f
 
-class (Associative t1 cat, Associative t0 cat) => Semigroupal cat t1 t0 f where
+class (Associative cat t1, Associative cat t0) => Semigroupal cat t1 t0 f where
   combine :: (f x `t0` f x') `cat` f (x `t1` x')
 
 class Unital cat i1 i0 f where

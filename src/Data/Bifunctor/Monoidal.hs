@@ -1,8 +1,8 @@
 module Data.Bifunctor.Monoidal where
 
-import Prelude hiding ((.), id)
 import Control.Applicative
 import Control.Category
+import Control.Category.Cartesian
 import Control.Category.Tensor
 import Data.Biapplicative
 import Data.Bifunctor.Clown
@@ -11,8 +11,9 @@ import Data.Profunctor
 import Data.Semigroupoid
 import Data.These
 import Data.Void
+import Prelude hiding (id, (.))
 
-class (Associative t1 cat, Associative t2 cat, Associative to cat) => Semigroupal cat t1 t2 to f where
+class (Associative cat t1, Associative cat t2, Associative cat to) => Semigroupal cat t1 t2 to f where
   combine :: cat (to (f x y) (f x' y')) (f (t1 x x') (t2 y y'))
 
 instance Profunctor p => Semigroupal (->) (,) Either Either p where
@@ -40,17 +41,17 @@ instance Semigroupal (->) Either Either Either Either where
 instance Semigroupal (->) Either (,) (,) Either where
   combine :: (Either x y, Either x' y') -> Either (Either x x') (y, y')
   combine = \case
-    (Left x, Left _) -> Left $ Left x
-    (Left x, Right _) -> Left $ Left x
-    (Right _, Left x') -> Left $ Right x'
+    (Left x, Left _)    -> Left $ Left x
+    (Left x, Right _)   -> Left $ Left x
+    (Right _, Left x')  -> Left $ Right x'
     (Right y, Right y') -> Right (y, y')
 
 instance Semigroupal (->) These (,) (,) Either where
   combine :: (Either x y, Either x' y') -> Either (These x x') (y, y')
   combine = \case
-    (Left x, Left x') -> Left $ These x x'
-    (Left x, Right _) -> Left $ This x
-    (Right _, Left x') -> Left $ That x'
+    (Left x, Left x')   -> Left $ These x x'
+    (Left x, Right _)   -> Left $ This x
+    (Right _, Left x')  -> Left $ That x'
     (Right y, Right y') -> Right (y, y')
 
 instance Semigroupal (->) (,) (,) (,) (->) where
@@ -92,7 +93,7 @@ instance Functor f => Semigroupal (->) Either Either (,) (Star f) where
 instance Alternative f => Semigroupal (->) Either Either Either (Star f) where
   combine :: Either (Star f x y) (Star f x' y') -> Star f (Either x x') (Either y y')
   combine = \case
-    Left (Star fxy) -> Star $ either (fmap Left . fxy) (const empty)
+    Left (Star fxy)   -> Star $ either (fmap Left . fxy) (const empty)
     Right (Star fxy') -> Star $ either (const empty) (fmap Right . fxy')
 
 instance Alternative f => Semigroupal (->) (,) Either (,) (Star f) where
@@ -110,7 +111,7 @@ instance Semigroupal (->) Either Either (,) (Forget (f r)) where
 instance Alternative f => Semigroupal (->) Either Either Either (Forget (f r)) where
   combine :: Either (Forget (f r) x y) (Forget (f r) x' y') -> Forget (f r) (Either x x') (Either y y')
   combine = \case
-    Left (Forget f) -> Forget $ either f (const empty)
+    Left (Forget f)  -> Forget $ either f (const empty)
     Right (Forget g) -> Forget $ either (const empty) g
 
 instance Alternative f => Semigroupal (->) (,) Either (,) (Forget (f r)) where
@@ -126,15 +127,15 @@ instance (Profunctor p, Category p) => Unital (->) () () () (StrongCategory p) w
 
 instance Unital (->) () () () (,) where
   introduce :: () -> ((), ())
-  introduce = dup
+  introduce = split
 
 instance Unital (->) Void Void Void (,) where
   introduce :: Void -> (Void, Void)
-  introduce = absurd
+  introduce = spawn
 
 instance Unital (->) Void Void Void Either where
   introduce :: Void -> Either Void Void
-  introduce = bwd runit
+  introduce = bwd unitr
 
 instance Unital (->) Void () () Either where
   introduce :: () -> Either Void ()
@@ -180,9 +181,9 @@ instance Alternative f => Unital (->) () Void () (Star f) where
   introduce :: () -> Star f () Void
   introduce () = Star $ const empty
 
-class (Tensor t1 i1 cat
-      , Tensor t2 i2 cat
-      , Tensor to io cat
+class ( Tensor cat t1 i1
+      , Tensor cat t2 i2
+      , Tensor cat to io
       , Semigroupal cat t1 t2 to f
       , Unital cat i1 i2 io f
       ) => Monoidal cat t1 i1 t2 i2 to io f

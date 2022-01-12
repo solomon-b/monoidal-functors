@@ -1,14 +1,14 @@
 module Data.Functor.Invariant where
 
-import Prelude
 import Control.Applicative (ZipList)
 import Control.Category.Tensor
-import Data.Functor.Contravariant
 import Data.Functor.Compose
+import Data.Functor.Contravariant
 import Data.Functor.Identity
-import Data.Functor.Sum
 import Data.Functor.Product
+import Data.Functor.Sum
 import Data.List.NonEmpty (NonEmpty)
+import Prelude
 
 class Invariant f where
   invmap :: (a -> a') -> (a' -> a) -> f a -> f a'
