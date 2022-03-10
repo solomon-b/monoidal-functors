@@ -10,6 +10,9 @@ import Data.Profunctor
 import Data.These
 import Data.Void
 
+--------------------------------------------------------------------------------
+-- Iso
+
 -- | An invertible mapping between 'a' and 'b' in category 'cat'.
 data Iso cat a b = Iso { fwd :: cat a b, bwd :: cat b a }
 
@@ -19,6 +22,9 @@ instance Category cat => Category (Iso cat) where
 
   (.) :: Iso cat b c -> Iso cat a b -> Iso cat a c
   bc . ab = Iso (fwd bc . fwd ab) (bwd ab . bwd bc)
+
+--------------------------------------------------------------------------------
+-- GBifunctor
 
 -- | A Bifunctor 't' is a binary type operator which allows you to map
 -- over both variables. GBifunctor is the same as the ordinary
@@ -52,7 +58,6 @@ instance GBifunctor (->) (->) (->) t => GBifunctor Op Op Op t where
   gbimap :: Op a b -> Op c d -> Op (t a c) (t b d)
   gbimap (Op f) (Op g) = Op $ gbimap f g
 
-
 instance Bifunctor t => GBifunctor (->) (->) (->) t where
   gbimap = bimap
 
@@ -67,6 +72,9 @@ instance GBifunctor (Star Maybe) (Star Maybe) (Star Maybe) These where
 instance GBifunctor cat cat cat t => GBifunctor (Iso cat) (Iso cat) (Iso cat) t where
   gbimap :: Iso cat a b -> Iso cat c d -> Iso cat (t a c) (t b d)
   gbimap iso1 iso2 = Iso (gbimap (fwd iso1) (fwd iso2)) (gbimap (bwd iso1) (bwd iso2))
+
+--------------------------------------------------------------------------------
+-- Associative
 
 -- | An Associative 'Bifunctor' is one whose type operator 't' is
 -- associative.
@@ -95,7 +103,6 @@ instance Associative (->) (,) where
     , bwd = \((a, b), c) -> (a, (b, c))
     }
 
-
 instance Associative (->) Either where
   assoc :: Iso (->) (Either a (Either b c)) (Either (Either a b) c)
   assoc = Iso
@@ -118,6 +125,9 @@ instance (Monad m, Associative (->) t, GBifunctor (Star m) (Star m) (Star m) t) 
     , bwd = (`rmap` id) (bwd assoc)
     }
 
+--------------------------------------------------------------------------------
+-- Tensor
+
 -- | A Tensor is an Associative Bifunctor 't' equipped with an
 -- identity type 'i' and a pair of left and right unit isomorphisms.
 --
@@ -137,7 +147,6 @@ instance (Monad m, Associative (->) t, GBifunctor (Star m) (Star m) (Star m) t) 
 class Associative cat t => Tensor cat t i | t -> i where
   unitl :: Iso cat (i `t` a) a
   unitr :: Iso cat (a `t` i) a
-
 
 instance (Tensor (->) t i) => Tensor Op t i where
   unitl :: Iso Op (i `t` a) a
@@ -206,6 +215,9 @@ instance (Monad m, Tensor (->) t i, Associative (Star m) t) => Tensor (Star m) t
     { fwd = (`rmap` id) (fwd unitr)
     , bwd = (`rmap` id) (bwd unitr)
     }
+
+--------------------------------------------------------------------------------
+-- Symmetric
 
 -- | Symmetric Bifunctor is equipped with an operator to swap its variables.
 --

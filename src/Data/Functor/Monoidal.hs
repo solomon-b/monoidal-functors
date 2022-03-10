@@ -7,6 +7,9 @@ import Data.These
 import Data.Void
 import Prelude
 
+--------------------------------------------------------------------------------
+-- Semigroupal
+
 -- | *TODO*
 --
 -- = Examples
@@ -36,6 +39,9 @@ instance Semialign f => Semigroupal (->) These (,) f where
   combine :: (f x, f x') -> f (These x x')
   combine = uncurry align
 
+--------------------------------------------------------------------------------
+-- Unital
+
 -- | *TODO*
 --
 -- = Examples
@@ -58,6 +64,9 @@ instance Applicative f => Unital (->) () () f where
 instance Alternative f => Unital (->) Void () f where
   introduce :: () -> f Void
   introduce () = empty
+  
+--------------------------------------------------------------------------------
+-- Tensor
 
 -- | A <https://ncatlab.org/nlab/show/monoidal+functor Monoidal Functor> is a Functor between two Monoidal Categories
 -- which preserves the monoidal structure. Eg., a homomorphism of

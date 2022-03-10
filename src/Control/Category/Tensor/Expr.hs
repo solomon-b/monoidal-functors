@@ -13,6 +13,20 @@ import Data.Function
 import Data.Kind
 import Prelude (Eq, Ord, Show)
 
+--------------------------------------------------------------------------------
+-- MConcat
+
+-- | TODO
+--
+-- Examples:
+-- foo :: Tensored (,) () '[Bool, Int]
+-- foo = Tensored (True, (8, ()))
+-- 
+-- bar :: Tensored Either Void '[Bool, Int]
+-- bar = Tensored $ Right $ Left 8
+-- 
+-- baz :: Tensored These Void '[Bool, Int]
+-- baz = Tensored $ These True $ This 8
 type MConcat :: (Type -> Type -> Type) -> Type -> [Type] -> Type
 type family MConcat mappend mempty xs
   where
@@ -25,17 +39,8 @@ deriving newtype instance Show (MConcat t i xs) => Show (Tensored t i xs)
 deriving newtype instance Eq (MConcat t i xs) => Eq (Tensored t i xs)
 deriving newtype instance Ord (MConcat t i xs) => Ord (Tensored t i xs)
 
-{-
-Examples:
-foo :: Tensored (,) () '[Bool, Int]
-foo = Tensored (True, (8, ()))
-
-bar :: Tensored Either Void '[Bool, Int]
-bar = Tensored $ Right $ Left 8
-
-baz :: Tensored These Void '[Bool, Int]
-baz = Tensored $ These True $ This 8
--}
+--------------------------------------------------------------------------------
+-- AppendTensored
 
 type (++) :: [k] -> [k] -> [k]
 type family xs ++ ys

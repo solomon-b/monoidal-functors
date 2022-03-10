@@ -13,9 +13,13 @@ import Data.These
 import Data.Void
 import Prelude hiding (id, (.))
 
+--------------------------------------------------------------------------------
+-- Semigroupal
+    
 -- | *TODO*
 --
 -- = Examples
+--
 -- >>> :t combine @(->) @(,) @(,) @(,) @(,)
 -- combine @(->) @(,) @(,) @(,) @(,) :: ((x, y), (x', y')) -> ((x, x'), (y, y'))
 --
@@ -129,6 +133,9 @@ instance Alternative f => Semigroupal (->) (,) Either (,) (Forget (f r)) where
   combine :: (Forget (f r) x y, Forget (f r) x' y') -> Forget (f r) (x, x') (Either y y')
   combine (Forget f, Forget g) = Forget $ \(x, x') -> f x <|> g x'
 
+--------------------------------------------------------------------------------
+-- Unital
+
 -- | *TODO*
 --
 -- = Examples
@@ -203,6 +210,9 @@ instance Alternative f => Unital (->) Void Void Void (Star f) where
 instance Alternative f => Unital (->) () Void () (Star f) where
   introduce :: () -> Star f () Void
   introduce () = Star $ const empty
+
+--------------------------------------------------------------------------------
+-- Monoidal
 
 -- | *TODO*
 --
