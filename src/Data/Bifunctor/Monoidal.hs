@@ -13,6 +13,21 @@ import Data.These
 import Data.Void
 import Prelude hiding (id, (.))
 
+--------------------------------------------------------------------------------
+-- Semigroupal
+    
+-- | *TODO*
+--
+-- = Examples
+--
+-- >>> :t combine @(->) @(,) @(,) @(,) @(,)
+-- combine @(->) @(,) @(,) @(,) @(,) :: ((x, y), (x', y')) -> ((x, x'), (y, y'))
+--
+-- >>> combine @(->) @(,) @(,) @(,) @(,) ((True, "Hello"), ((), "World"))
+-- ((True,()),("Hello","World"))
+--
+-- >>> combine @(->) @(,) @(,) @(,) @(->) (show, (>10)) (True, 11)
+-- ("True",True)
 class (Associative cat t1, Associative cat t2, Associative cat to) => Semigroupal cat t1 t2 to f where
   combine :: cat (to (f x y) (f x' y')) (f (t1 x x') (t2 y y'))
 
@@ -118,6 +133,21 @@ instance Alternative f => Semigroupal (->) (,) Either (,) (Forget (f r)) where
   combine :: (Forget (f r) x y, Forget (f r) x' y') -> Forget (f r) (x, x') (Either y y')
   combine (Forget f, Forget g) = Forget $ \(x, x') -> f x <|> g x'
 
+--------------------------------------------------------------------------------
+-- Unital
+
+-- | *TODO*
+--
+-- = Examples
+--
+-- >>> introduce @(->) @() @() @() @(,) ()
+-- ((),())
+--
+-- >>> :t introduce @(->) @Void @() @() @Either
+-- introduce @(->) @Void @() @() @Either :: () -> Either Void ()
+-- 
+-- >>> introduce @(->) @Void @() @() @Either ()
+-- Right ()
 class Unital cat i1 i2 io f where
   introduce :: cat io (f i1 i2)
 
@@ -181,6 +211,11 @@ instance Alternative f => Unital (->) () Void () (Star f) where
   introduce :: () -> Star f () Void
   introduce () = Star $ const empty
 
+--------------------------------------------------------------------------------
+-- Monoidal
+
+-- | *TODO*
+--
 class ( Tensor cat t1 i1
       , Tensor cat t2 i2
       , Tensor cat to io
