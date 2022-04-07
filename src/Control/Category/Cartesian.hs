@@ -11,6 +11,16 @@ import Control.Category.Tensor
 --------------------------------------------------------------------------------
 -- Semicartesian
 
+-- | A 'Symmetric' 'Category' @cat@ where each object comes equipped with a
+-- morphism @a `cat` (a `t` a)@.
+--
+-- = Laws
+--
+-- first split . split == fwd assoc . second split . split
+--
+-- = Examples
+-- >>> split @(->) @(,) True
+-- (True,True)
 class Symmetric cat t => Semicartesian cat t where
   split :: cat a (a `t` a)
 
@@ -33,6 +43,15 @@ instance Semicocartesian (->) t => Semicartesian Op t where
 --------------------------------------------------------------------------------
 -- Semicocartesian
 
+-- | A 'Symmetric' 'Category' @cat@ where each object comes equipped
+-- with a morphism @a `cat` (a `t` a)@.
+--
+-- = Laws
+--
+-- 
+-- = Examples
+-- >>> :t merge @(->) @(Either) (Left True)
+-- True
 class Symmetric cat t => Semicocartesian cat t where
   merge :: cat (a `t` a) a
 
@@ -55,9 +74,8 @@ instance Semicartesian (->) t => Semicocartesian Op t where
 --------------------------------------------------------------------------------
 -- Cartesian
 
--- | A 'Symmetric' Bifunctor equipped with a 'Tensor' has an operation
--- 'terminal' mapping from any type 'a' to the unit type 'i' and an
--- operation 'diagnol' from any type 'a' to 'a `t` a'.
+-- | A 'Category' equipped with a 'Tensor' @t@ where every object @a@
+-- is equipped with a morphism to the 'Tensor' unit @i@.
 --
 -- = Examples
 --
@@ -93,6 +111,8 @@ instance Cocartesian (->) t i => Cartesian Op t i where
 --------------------------------------------------------------------------------
 -- Cocartesian
 
+-- | A 'Category' equipped with a 'Tensor' @t@ where every object @a@
+-- is equipped with a morphism from the 'Tensor' unit @i@.
 class (Semicocartesian cat t, Tensor cat t i) => Cocartesian cat t i | i -> t, t -> i where
   spawn :: cat i a
 

@@ -26,10 +26,10 @@ instance Category cat => Category (Iso cat) where
 --------------------------------------------------------------------------------
 -- GBifunctor
 
--- | A Bifunctor 't' is a binary type operator which allows you to map
+-- | A Bifunctor @t@ is a binary type operator which allows you to map
 -- over both variables. GBifunctor is the same as the ordinary
 -- 'Data.Bifunctor.Bifunctor' class but we replace the '(->)'s with three different
--- higher kinded variables 'cat1', 'cat2', and 'cat3'.
+-- higher kinded variables @cat1@, @cat2@, and @cat3@.
 --
 -- = Examples
 --
@@ -76,8 +76,8 @@ instance GBifunctor cat cat cat t => GBifunctor (Iso cat) (Iso cat) (Iso cat) t 
 --------------------------------------------------------------------------------
 -- Associative
 
--- | An Associative 'Bifunctor' is one whose type operator 't' is
--- associative.
+-- | An Associative 'GBifunctor' is one whose type operator @t@ is
+-- associative up to isomorphism.
 --
 -- = Examples
 --
@@ -128,8 +128,8 @@ instance (Monad m, Associative (->) t, GBifunctor (Star m) (Star m) (Star m) t) 
 --------------------------------------------------------------------------------
 -- Tensor
 
--- | A Tensor is an Associative Bifunctor 't' equipped with an
--- identity type 'i' and a pair of left and right unit isomorphisms.
+-- | An Associative Bifunctor @t@ equipped with an identity type @i@
+-- and a pair of left and right unit isomorphisms.
 --
 -- = Examples
 --
@@ -219,7 +219,8 @@ instance (Monad m, Tensor (->) t i, Associative (Star m) t) => Tensor (Star m) t
 --------------------------------------------------------------------------------
 -- Symmetric
 
--- | Symmetric Bifunctor is equipped with an operator to swap its variables.
+-- | An 'Associative' 'GBifunctor' whose type operator @t@ is
+-- commutative up to isomorphism.
 --
 -- = Examples
 --
