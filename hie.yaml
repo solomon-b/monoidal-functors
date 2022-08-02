@@ -1,2 +1,4 @@
 cradle:
   cabal:
+    - path: "src"
+      component: "lib:monoidal-functors"

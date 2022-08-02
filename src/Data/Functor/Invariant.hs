@@ -10,6 +10,12 @@ import Data.Functor.Sum
 import Data.List.NonEmpty (NonEmpty)
 import Prelude
 
+-- | TODO
+--
+-- Instances should satisfy the following laws:
+--
+-- > invmap id id = id
+-- > invmap f2 f2' . invmap f1 f1' = invmap (f2 . f1) (f1' . f2')
 class Invariant f where
   invmap :: (a -> a') -> (a' -> a) -> f a -> f a'
 

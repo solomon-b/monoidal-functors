@@ -2,8 +2,71 @@ module Data.Functor.Monoidal where
 
 import Control.Applicative
 import Control.Category.Tensor
+import Data.Align
+import Data.These
 import Data.Void
 import Prelude
+
+--------------------------------------------------------------------------------
+-- Semigroupal
+
+-- | *TODO*
+--
+-- = Examples
+-- >>> combine @(->) @(,) @(,) @Maybe (Just True, Just "hello")
+-- Just (True,"hello")
+--
+-- >>> combine @(->) @(,) @(,) @Maybe (Just True, Nothing)
+-- Nothing
+--
+-- >>> combine @(->) @Either @(,) @Maybe (Just True, Nothing)
+-- Just (Left True)
+--
+-- >>> combine @(->) @Either @(,) @Maybe (Nothing, Just "hello")
+-- Just (Right "hello")
+class (Associative cat t1, Associative cat t0) => Semigroupal cat t1 t0 f where
+  combine :: (f x `t0` f x') `cat` f (x `t1` x')
+
+instance Applicative f => Semigroupal (->) (,) (,) f where
+  combine :: (f x, f x') -> f (x, x')
+  combine = uncurry (liftA2 (,))
+
+instance Alternative f => Semigroupal (->) Either (,) f where
+  combine :: (f x, f x') -> f (Either x x')
+  combine (fx, fx') = fmap Left fx <|> fmap Right fx'
+
+instance Semialign f => Semigroupal (->) These (,) f where
+  combine :: (f x, f x') -> f (These x x')
+  combine = uncurry align
+
+--------------------------------------------------------------------------------
+-- Unital
+
+-- | *TODO*
+--
+-- = Examples
+--
+-- >>> introduce @(->) @() @() @Maybe ()
+-- Just ()
+--
+-- >>> :t introduce @(->) @Void @() @Maybe 
+-- introduce @(->) @Void @() @Maybe :: () -> Maybe Void
+-- 
+-- >>> introduce @(->) @Void @() @Maybe ()
+-- Nothing
+class Unital cat i1 i0 f where
+  introduce :: cat i0 (f i1)
+
+instance Applicative f => Unital (->) () () f where
+  introduce :: () -> f ()
+  introduce = pure
+
+instance Alternative f => Unital (->) Void () f where
+  introduce :: () -> f Void
+  introduce () = empty
+  
+--------------------------------------------------------------------------------
+-- Tensor
 
 -- | A <https://ncatlab.org/nlab/show/monoidal+functor Monoidal Functor> is a Functor between two Monoidal Categories
 -- which preserves the monoidal structure. Eg., a homomorphism of
@@ -33,31 +96,6 @@ class
   , Unital cat i1 i0 f
   ) => Monoidal cat t1 i1 t0 i0 f
 
-class (Associative cat t1, Associative cat t0) => Semigroupal cat t1 t0 f where
-  combine :: (f x `t0` f x') `cat` f (x `t1` x')
-
-class Unital cat i1 i0 f where
-  introduce :: i0 `cat` f i1
-
--- TODO: Should we create an Apply class?
-instance Applicative f => Semigroupal (->) (,) (,) f where
-  combine :: (f x, f x') -> f (x, x')
-  combine = uncurry (liftA2 (,))
-
-instance Applicative f => Unital (->) () () f where
-  introduce :: () -> f ()
-  introduce = pure
-
 instance Applicative f => Monoidal (->) (,) () (,) () f
-
--- TODO: Should we create an Alt class?
-instance Alternative f => Semigroupal (->) Either (,) f where
-  combine :: (f x, f x') -> f (Either x x')
-  combine (fx, fx') = fmap Left fx <|> fmap Right fx'
-
--- TODO: Should we create a Plus class?
-instance Alternative f => Unital (->) Void () f where
-  introduce :: () -> f Void
-  introduce () = empty
 
 instance Alternative f => Monoidal (->) Either Void (,) () f
