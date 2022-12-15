@@ -1,4 +1,14 @@
-module Data.Functor.Module where
+module Data.Functor.Module
+  ( -- * LeftModule
+    LeftModule (..),
+
+    -- * RightModule
+    RightModule (..),
+
+    -- * Bimodule
+    Bimodule,
+  )
+where
 
 --------------------------------------------------------------------------------
 

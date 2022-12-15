@@ -1,34 +1,56 @@
-module Data.Bifunctor.Monoidal where
+module Data.Bifunctor.Monoidal
+  ( -- * Semigroupal
+    Semigroupal (..),
 
-import Control.Applicative
-import Control.Category
-import Control.Category.Cartesian
-import Control.Category.Tensor
-import Data.Biapplicative
-import Data.Bifunctor.Clown
-import Data.Bifunctor.Joker
-import Data.Profunctor
-import Data.Semigroupoid
-import Data.These
-import Data.Void
-import Prelude hiding (id, (.))
+    -- * Unital
+    Unital (..),
+
+    -- * Monoidal
+    Monoidal,
+  )
+where
 
 --------------------------------------------------------------------------------
--- Semigroupal
-    
--- | *TODO*
+
+import Control.Applicative (Alternative (..), Applicative (..), pure, (<$>))
+import Control.Category (Category (..))
+import Control.Category.Cartesian (Cocartesian (..), Semicartesian (..))
+import Control.Category.Tensor (Associative, Iso (..), Tensor (..))
+import Control.Monad (Functor(..), Monad)
+import Data.Biapplicative (Biapplicative (..), Bifunctor (..))
+import Data.Bifunctor.Clown (Clown)
+import Data.Bifunctor.Joker (Joker (..))
+import Data.Either (Either, either)
+import Data.Function (const, ($))
+import Data.Profunctor (Forget (..), Profunctor (..), Star (..), Strong (..))
+import Data.Semigroupoid (Semigroupoid (..))
+import Data.These (These (..))
+import Data.Tuple (fst, snd, uncurry)
+import Data.Void (Void, absurd)
+import Prelude (Either (..))
+
+--------------------------------------------------------------------------------
+
+-- | TODO
 --
--- = Examples
+-- === Laws
 --
--- >>> :t combine @(->) @(,) @(,) @(,) @(,)
--- combine @(->) @(,) @(,) @(,) @(,) :: ((x, y), (x', y')) -> ((x, x'), (y, y'))
---
--- >>> combine @(->) @(,) @(,) @(,) @(,) ((True, "Hello"), ((), "World"))
--- ((True,()),("Hello","World"))
---
--- >>> combine @(->) @(,) @(,) @(,) @(->) (show, (>10)) (True, 11)
--- ("True",True)
+-- @
+-- TODO
+-- @
 class (Associative cat t1, Associative cat t2, Associative cat to) => Semigroupal cat t1 t2 to f where
+  -- | TODO
+  --
+  -- ==== __Examples__
+  --
+  -- >>> :t combine @(->) @(,) @(,) @(,) @(,)
+  -- combine @(->) @(,) @(,) @(,) @(,) :: ((x, y), (x', y')) -> ((x, x'), (y, y'))
+  --
+  -- >>> combine @(->) @(,) @(,) @(,) @(,) ((True, "Hello"), ((), "World"))
+  -- ((True,()),("Hello","World"))
+  --
+  -- >>> combine @(->) @(,) @(,) @(,) @(->) (show, (>10)) (True, 11)
+  -- ("True",True)
   combine :: cat (to (f x y) (f x' y')) (f (t1 x x') (t2 y y'))
 
 instance Profunctor p => Semigroupal (->) (,) Either Either p where
@@ -71,7 +93,7 @@ instance Semigroupal (->) These (,) (,) Either where
 
 instance Semigroupal (->) (,) (,) (,) (->) where
   combine :: (x -> y, x' -> y') -> (x, x') -> (y, y')
-  combine fs = uncurry bimap fs
+  combine = uncurry bimap
 
 instance Semigroupal (->) Either Either (,) (->) where
   combine :: (x -> y, x' -> y') -> Either x x' -> Either y y'
@@ -134,21 +156,27 @@ instance Alternative f => Semigroupal (->) (,) Either (,) (Forget (f r)) where
   combine (Forget f, Forget g) = Forget $ \(x, x') -> f x <|> g x'
 
 --------------------------------------------------------------------------------
--- Unital
 
--- | *TODO*
+-- | TODO
 --
--- = Examples
+-- === Laws
 --
--- >>> introduce @(->) @() @() @() @(,) ()
--- ((),())
---
--- >>> :t introduce @(->) @Void @() @() @Either
--- introduce @(->) @Void @() @() @Either :: () -> Either Void ()
--- 
--- >>> introduce @(->) @Void @() @() @Either ()
--- Right ()
+-- @
+-- TODO
+-- @
 class Unital cat i1 i2 io f where
+  -- | TODO
+  --
+  -- ==== __Examples__
+  --
+  -- >>> introduce @(->) @() @() @() @(,) ()
+  -- ((),())
+  --
+  -- >>> :t introduce @(->) @Void @() @() @Either
+  -- introduce @(->) @Void @() @() @Either :: () -> Either Void ()
+  -- 
+  -- >>> introduce @(->) @Void @() @() @Either ()
+  -- Right ()
   introduce :: cat io (f i1 i2)
 
 instance (Profunctor p, Category p) => Unital (->) () () () (StrongCategory p) where
@@ -214,8 +242,13 @@ instance Alternative f => Unital (->) () Void () (Star f) where
 --------------------------------------------------------------------------------
 -- Monoidal
 
--- | *TODO*
+-- | TODO
 --
+-- === Laws
+--
+-- @
+-- TODO
+-- @
 class ( Tensor cat t1 i1
       , Tensor cat t2 i2
       , Tensor cat to io

@@ -1,19 +1,45 @@
 {-# LANGUAGE MonoLocalBinds #-}
-module Control.Category.Tensor where
+module Control.Category.Tensor
+  ( -- * Iso
+    Iso (..),
 
-import Prelude hiding ((.), id)
-import Control.Applicative
-import Control.Category
-import Data.Biapplicative
-import Data.Functor.Contravariant
-import Data.Profunctor
-import Data.These
-import Data.Void
+    -- * GBifunctor
+    GBifunctor (..),
+    (#),
+    grmap,
+    glmap,
+    -- * Associative
+    Associative (..),
+
+    -- * Tensor
+    Tensor (..),
+
+    -- * Symmetric
+    Symmetric (..),
+  )
+where
 
 --------------------------------------------------------------------------------
--- Iso
+
+import Control.Applicative (Applicative (..))
+import Control.Category (Category (..))
+import Data.Biapplicative (Biapplicative (..), Bifunctor (..))
+import Data.Functor.Contravariant (Op (..))
+import Data.Profunctor (Profunctor (..), Star (..))
+import Data.These (These (..), these)
+import Data.Void (Void, absurd)
+import Prelude hiding (id, (.))
+
+--------------------------------------------------------------------------------
 
 -- | An invertible mapping between 'a' and 'b' in category 'cat'.
+--
+-- === Laws
+--
+-- @
+-- fwd ∘ bwd ≡ id
+-- bwd ∘ fwd ≡ id
+-- @
 data Iso cat a b = Iso { fwd :: cat a b, bwd :: cat b a }
 
 instance Category cat => Category (Iso cat) where
@@ -24,24 +50,37 @@ instance Category cat => Category (Iso cat) where
   bc . ab = Iso (fwd bc . fwd ab) (bwd ab . bwd bc)
 
 --------------------------------------------------------------------------------
--- GBifunctor
 
 -- | A Bifunctor @t@ is a binary type operator which allows you to map
 -- over both variables. GBifunctor is the same as the ordinary
 -- 'Data.Bifunctor.Bifunctor' class but we replace the '(->)'s with three different
 -- higher kinded variables @cat1@, @cat2@, and @cat3@.
 --
--- = Examples
+-- === Laws
 --
--- >>> gbimap @(->) @(->) @(->) @(,) show not (123, False)
--- ("123",True)
+-- @
+-- gbimap id id ≡ id
+-- grmap id ≡ id
+-- glmap id ≡ id
 --
--- >>> gbimap @(->) @(->) @(->) @Either show not (Right False)
--- Right True
---
--- >>> getOp (gbimap @Op @Op @Op @Either (Op (+ 1)) (Op show)) (Right True)
--- Right "True"
+-- gbimap (f ∘ g) (h ∘ i) ≡ gbimap f h ∘ gbimap g i
+-- grmap (f ∘ g) ≡ grmap f ∘ grmap g
+-- glmap (f ∘ g) ≡ glmap f ∘ glmap g
+-- @
 class (Category cat1, Category cat2, Category cat3) => GBifunctor cat1 cat2 cat3 t | t cat3 -> cat1 cat2 where
+  -- | Map over both arguments at the same time.
+  --
+  -- @'gbimap' f g ≡ 'glmap' f '.' 'grmap' g@
+  --
+  -- ==== __Examples__
+  -- >>> gbimap @(->) @(->) @(->) @(,) show not (123, False)
+  -- ("123",True)
+  --
+  -- >>> gbimap @(->) @(->) @(->) @Either show not (Right False)
+  -- Right True
+  --
+  -- >>> getOp (gbimap @Op @Op @Op @Either (Op (+ 1)) (Op show)) (Right True)
+  -- Right "True"
   gbimap :: cat1 a b -> cat2 c d -> cat3 (a `t` c)  (b `t` d)
 
 infixr 9 #
@@ -74,19 +113,26 @@ instance GBifunctor cat cat cat t => GBifunctor (Iso cat) (Iso cat) (Iso cat) t 
   gbimap iso1 iso2 = Iso (gbimap (fwd iso1) (fwd iso2)) (gbimap (bwd iso1) (bwd iso2))
 
 --------------------------------------------------------------------------------
--- Associative
 
--- | An Associative 'GBifunctor' is one whose type operator @t@ is
--- associative up to isomorphism.
+-- | A binary type operator that is 'Associative' up to ismorphism.
 --
--- = Examples
+-- === Laws
 --
--- >>> :t assoc @(->) @(,) 
--- assoc @(->) @(,) :: Iso (->) (a, (b, c)) ((a, b), c)
---
--- >>> fwd (assoc @(->) @(,)) (1, ("hello", True))
--- ((1,"hello"),True)
+-- @
+-- assoc.fwd ∘ assoc.bwd ≡ id
+-- assoc.bwd ∘ assoc.fwd ≡ id
+-- @
 class (Category cat, GBifunctor cat cat cat t) => Associative cat t where
+  -- | An 'Iso' that instantiates the isomorphism between left and
+  -- right associated nesting of @t@.
+  --
+  -- ==== __Examples__
+  --
+  -- >>> :t assoc @(->) @(,) 
+  -- assoc @(->) @(,) :: Iso (->) (a, (b, c)) ((a, b), c)
+  --
+  -- >>> fwd (assoc @(->) @(,)) (1, ("hello", True))
+  -- ((1,"hello"),True)
   assoc :: Iso cat (a `t` (b `t` c)) ((a `t` b) `t` c)
 
 instance Associative (->) t => Associative Op t where
@@ -110,7 +156,6 @@ instance Associative (->) Either where
     , bwd = either (fmap Left) (Right . Right)
     }
 
-
 instance Associative (->) These where
   assoc :: Iso (->) (These a (These b c)) (These (These a b) c)
   assoc = Iso
@@ -126,26 +171,52 @@ instance (Monad m, Associative (->) t, GBifunctor (Star m) (Star m) (Star m) t) 
     }
 
 --------------------------------------------------------------------------------
--- Tensor
 
--- | An Associative Bifunctor @t@ equipped with an identity type @i@
--- and a pair of left and right unit isomorphisms.
+-- | A 'Associative' type operator @t@ is a 'Tensor' if it has a
+-- corresponding identity type @i@ such the following laws are
+-- respected:
 --
--- = Examples
+-- === Laws
 --
--- >>> fwd (unitl @_ @(,)) ((), True)
--- True
--- 
--- >>> bwd (unitl @_ @(,)) True
--- ((),True)
+-- @
+-- unitr.fwd (a ⊗ i) ≡ a
+-- unitr.bwd a ≡ (a ⊗ i)
 --
--- >>> bwd (unitl @_ @Either) True
--- Right True
---
--- >>> :t bwd (unitl @_ @Either) True
--- bwd (unitl @_ @Either) True :: Either Void Bool
+-- unitl.fwd (i ⊗ a) ≡ a 
+-- unitl.bwd a ≡ (i ⊗ a)
+-- @
 class Associative cat t => Tensor cat t i | t -> i where
+  -- | An 'Iso' that instantiates the isomorphism between @(i \`t\` a)@ and @a@.
+  --
+  -- ==== __Examples__
+  --
+  -- >>> fwd (unitl @_ @(,)) ((), True)
+  -- True
+  -- 
+  -- >>> bwd (unitl @_ @(,)) True
+  -- ((),True)
+  --
+  -- >>> bwd (unitl @_ @Either) True
+  -- Right True
+  --
+  -- >>> :t bwd (unitl @_ @Either) True
+  -- bwd (unitl @_ @Either) True :: Either Void Bool
   unitl :: Iso cat (i `t` a) a
+  -- | An 'Iso' that instantiates the isomorphism between @(a \`t\` i)@ and @a@.
+  --
+  -- ==== __Examples__
+  --
+  -- >>> fwd (unitr @_ @(,)) (True, ())
+  -- True
+  -- 
+  -- >>> bwd (unitr @_ @(,)) True
+  -- (True,())
+  --
+  -- >>> bwd (unitr @_ @Either) True
+  -- Left True
+  --
+  -- >>> :t bwd (unitr @_ @Either) True
+  -- bwd (unitr @_ @Either) True :: Either Bool Void
   unitr :: Iso cat (a `t` i) a
 
 instance (Tensor (->) t i) => Tensor Op t i where
@@ -161,7 +232,6 @@ instance (Tensor (->) t i) => Tensor Op t i where
     , bwd = Op $ fwd unitr
     }
 
-
 instance Tensor (->) (,) () where
   unitl :: Iso (->) ((), a) a
   unitl = Iso
@@ -175,7 +245,6 @@ instance Tensor (->) (,) () where
     , bwd = (`bipure` ())
     }
 
-
 instance Tensor (->) Either Void where
   unitl :: Iso (->) (Either Void a) a
   unitl = Iso
@@ -188,7 +257,6 @@ instance Tensor (->) Either Void where
     { fwd = either id absurd
     , bwd = Left
     }
-
 
 instance Tensor (->) These Void where
   unitl :: Iso (->) (These Void a) a
@@ -217,29 +285,35 @@ instance (Monad m, Tensor (->) t i, Associative (Star m) t) => Tensor (Star m) t
     }
 
 --------------------------------------------------------------------------------
--- Symmetric
 
--- | An 'Associative' 'GBifunctor' whose type operator @t@ is
--- commutative up to isomorphism.
+-- | A 'Associative' type operator @t@ is 'Symmetric' if it is commutative
+-- up to isomorphism.
 --
--- = Examples
+-- === Laws
 --
--- >>> :t swap @(->) @(,)
--- swap @(->) @(,) :: (a, b) -> (b, a)
---
--- >>> swap @(->) @(,) (True, "hello")
--- ("hello",True)
---
--- >>> :t swap @(->) @Either (Left True)
--- swap @(->) @Either (Left True) :: Either b Bool
---
--- >>> swap @(->) @Either (Left True)
--- Right True
+-- @
+-- swap ∘ swap ≡ id
+-- @
 class Associative cat t => Symmetric cat t where
+  -- | @swap@ is a symmetry isomorphism for @t@
+  --
+  -- ==== __Examples__
+  --
+  -- >>> :t swap @(->) @(,)
+  -- swap @(->) @(,) :: (a, b) -> (b, a)
+  --
+  -- >>> swap @(->) @(,) (True, "hello")
+  -- ("hello",True)
+  --
+  -- >>> :t swap @(->) @Either (Left True)
+  -- swap @(->) @Either (Left True) :: Either b Bool
+  --
+  -- >>> swap @(->) @Either (Left True)
+  -- Right True
   swap :: cat (a `t` b) (b `t` a)
 
 
-instance (Symmetric (->) t) => Symmetric Op t where
+instance Symmetric (->) t => Symmetric Op t where
   swap :: Op (a `t` b) (b `t` a)
   swap = Op swap
 

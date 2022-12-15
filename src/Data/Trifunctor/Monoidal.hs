@@ -1,27 +1,65 @@
-module Data.Trifunctor.Monoidal where
+module Data.Trifunctor.Monoidal
+  ( -- * Semigroupal
+    Semigroupal (..),
 
-import Control.Category.Tensor
+    -- * Unital
+    Unital (..),
+
+    -- * Monoidal
+    Monoidal,
+  )
+where
 
 --------------------------------------------------------------------------------
--- Semigroupal
 
+import Control.Category.Tensor (Associative, Tensor)
+
+--------------------------------------------------------------------------------
+
+-- | TODO
+--
+-- === Laws
+--
+-- @
+-- TODO
+-- @
 class
   ( Associative cat t1
   , Associative cat t2
   , Associative cat t3
   , Associative cat to
   ) => Semigroupal cat t1 t2 t3 to f where
+  -- | TODO
+  --
+  -- ==== __Examples__
+  --
   combine :: to (f x y z) (f x' y' z') `cat` f (t1 x x') (t2 y y') (t3 z z')
 
 --------------------------------------------------------------------------------
--- Unital
 
+-- | TODO
+--
+-- === Laws
+--
+-- @
+-- TODO
+-- @
 class Unital cat i1 i2 i3 o f where
+  -- | TODO
+  --
+  -- ==== __Examples__
+  --
   introduce :: o `cat` f i1 i2 i3
 
 --------------------------------------------------------------------------------
--- Monoidal
 
+-- | TODO
+--
+-- === Laws
+--
+-- @
+-- TODO
+-- @
 class
   ( Tensor cat t1 i1
   , Tensor cat t2 i2

@@ -1,22 +1,37 @@
-module Data.Functor.Invariant where
+module Data.Functor.Invariant
+  ( -- * Invariant
+    Invariant (..),
+    invIso,
+  )
+where
+
+--------------------------------------------------------------------------------
 
 import Control.Applicative (ZipList)
-import Control.Category.Tensor
-import Data.Functor.Compose
-import Data.Functor.Contravariant
-import Data.Functor.Identity
-import Data.Functor.Product
-import Data.Functor.Sum
+import Control.Category.Tensor (Iso (Iso))
+import Data.Functor.Compose (Compose (..))
+import Data.Functor.Contravariant (Contravariant (..))
+import Data.Functor.Identity (Identity (Identity))
+import Data.Functor.Product (Product)
+import Data.Functor.Sum (Sum)
 import Data.List.NonEmpty (NonEmpty)
 import Prelude
 
+--------------------------------------------------------------------------------
+
 -- | TODO
 --
--- Instances should satisfy the following laws:
+-- === Laws
 --
--- > invmap id id = id
--- > invmap f2 f2' . invmap f1 f1' = invmap (f2 . f1) (f1' . f2')
+-- @
+-- invmap id id ≡ id
+-- invmap f2 f2' ∘ invmap f1 f1' ≡ invmap (f2 ∘ f1) (f1' ∘ f2')
+-- @
 class Invariant f where
+  -- | TODO
+  --
+  -- ==== __Examples__
+  --
   invmap :: (a -> a') -> (a' -> a) -> f a -> f a'
 
 invIso :: Invariant f => Iso (->) a a' -> Iso (->) (f a) (f a')

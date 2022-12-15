@@ -1,4 +1,23 @@
-module Data.Bifunctor.Module where
+module Data.Bifunctor.Module
+  ( -- * LeftModule
+    LeftModule (..),
+
+    -- * RightModule
+    RightModule (..),
+
+    -- * Bimodule
+    Bimodule,
+
+    -- * LeftCoModule
+    LeftCoModule (..),
+
+    -- * RightCoModule
+    RightCoModule (..),
+
+    -- * CoBimodule
+    CoBimodule,
+  )
+where
 
 --------------------------------------------------------------------------------
 
@@ -48,7 +67,19 @@ newtype FromBifunctor p a b = FromBifunctor { runBi :: p a b }
 
 -----------------------------------------------------------------------
 
+-- | TODO
+--
+-- === Laws
+--
+-- @
+-- TODO
+-- @
 class LeftModule cat t1 t2 f where
+  -- | TODO
+  --
+  -- ==== __Examples__
+  --
+  -- TODO
   lstrength :: cat (f a b) (f (t1 a c) (t2 b c))
 
 instance Strong p => LeftModule (->) (,) (,) (FromProfunctor p) where
@@ -155,6 +186,11 @@ deriving via (FromBifunctor ((,,,,,,) x1 x2 x3 x4 x5)) instance LeftModule Op (,
 
 -- | TODO
 --
+-- === Laws
+--
+-- @
+-- TODO
+-- @
 -- >>> :t rstrength @(->) @Either @Either @(->)
 -- rstrength @(->) @Either @Either @(->) :: (a -> b) -> Either x a -> Either x b
 --
@@ -164,6 +200,11 @@ deriving via (FromBifunctor ((,,,,,,) x1 x2 x3 x4 x5)) instance LeftModule Op (,
 -- >>> :t rstrength @(->) @(,) @(,) @(Kleisli P.IO)
 -- rstrength @(->) @(,) @(,) @(Kleisli P.IO) :: Kleisli IO a b -> Kleisli IO (x, a) (x, b)
 class RightModule cat t1 t2 f where
+  -- | TODO
+  --
+  -- ==== __Examples__
+  --
+  -- TODO
   rstrength :: cat (f a b) (f (x `t1` a) (x `t2` b))
 
 instance Strong p => RightModule (->) (,) (,) (FromProfunctor p) where
@@ -268,6 +309,13 @@ deriving via (FromBifunctor ((,,,,,,) x1 x2 x3 x4 x5)) instance RightModule Op (
 
 --------------------------------------------------------------------------------
 
+-- | TODO
+--
+-- === Laws
+--
+-- @
+-- TODO
+-- @
 class (LeftModule cat t1 t2 f, RightModule cat t1 t2 f) => Bimodule cat t1 t2 f
 
 instance Strong p => Bimodule (->) (,) (,) (FromProfunctor p)
@@ -358,7 +406,19 @@ deriving via (FromBifunctor ((,,,,,,) x1 x2 x3 x4 x5)) instance Bimodule Op (,) 
 
 --------------------------------------------------------------------------------
 
+-- | TODO
+--
+-- === Laws
+--
+-- @
+-- TODO
+-- @
 class LeftCoModule cat t1 t2 f where
+  -- | TODO
+  --
+  -- ==== __Examples__
+  --
+  -- TODO
   lcostrength :: cat (f (t1 a c) (t2 b c)) (f a b)
 
 instance Costrong p => LeftCoModule (->) (,) (,) (FromProfunctor p) where
@@ -443,7 +503,19 @@ deriving via (FromBifunctor ((,,,,,,) x1 x2 x3 x4 x5)) instance LeftCoModule Op 
 
 --------------------------------------------------------------------------------
 
+-- | TODO
+--
+-- === Laws
+--
+-- @
+-- TODO
+-- @
 class RightCoModule cat t1 t2 f where
+  -- | TODO
+  --
+  -- ==== __Examples__
+  --
+  -- TODO
   rcostrength :: cat (f (c `t1` a) (c `t2` b)) (f a b)
 
 instance Costrong p => RightCoModule (->) (,) (,) (FromProfunctor p) where
@@ -532,6 +604,13 @@ deriving via (FromBifunctor ((,,,,,,) x1 x2 x3 x4 x5)) instance RightCoModule Op
 
 --------------------------------------------------------------------------------
 
+-- | TODO
+--
+-- === Laws
+--
+-- @
+-- TODO
+-- @
 class (LeftCoModule cat t1 t2 f, RightCoModule cat t1 t2 f) => CoBimodule cat t1 t2 f
 
 instance Costrong p => CoBimodule (->) (,) (,) (FromProfunctor p)

@@ -36,6 +36,7 @@
       in
       rec {
         devShell = pkgs.mkShell {
+          withHoogle = true;
           buildInputs = with pkgs; [
             cabal2nix
             cabal-install

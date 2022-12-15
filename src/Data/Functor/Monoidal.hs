@@ -1,4 +1,14 @@
-module Data.Functor.Monoidal where
+module Data.Functor.Monoidal
+  ( -- * Semigroupal
+    Semigroupal (..),
+
+    -- * Unital
+    Unital (..),
+
+    -- * Monoidal
+    Monoidal (..),
+  )
+where
 
 import Control.Applicative
 import Control.Category.Tensor
@@ -8,23 +18,30 @@ import Data.Void
 import Prelude
 
 --------------------------------------------------------------------------------
--- Semigroupal
 
--- | *TODO*
+-- | TODO
 --
--- = Examples
--- >>> combine @(->) @(,) @(,) @Maybe (Just True, Just "hello")
--- Just (True,"hello")
+-- === Laws
 --
--- >>> combine @(->) @(,) @(,) @Maybe (Just True, Nothing)
--- Nothing
---
--- >>> combine @(->) @Either @(,) @Maybe (Just True, Nothing)
--- Just (Left True)
---
--- >>> combine @(->) @Either @(,) @Maybe (Nothing, Just "hello")
--- Just (Right "hello")
+-- @
+-- TODO
+-- @
 class (Associative cat t1, Associative cat t0) => Semigroupal cat t1 t0 f where
+  -- | TODO
+  --
+  -- ==== __Examples__
+  --
+  -- >>> combine @(->) @(,) @(,) @Maybe (Just True, Just "hello")
+  -- Just (True,"hello")
+  --
+  -- >>> combine @(->) @(,) @(,) @Maybe (Just True, Nothing)
+  -- Nothing
+  --
+  -- >>> combine @(->) @Either @(,) @Maybe (Just True, Nothing)
+  -- Just (Left True)
+  --
+  -- >>> combine @(->) @Either @(,) @Maybe (Nothing, Just "hello")
+  -- Just (Right "hello")
   combine :: (f x `t0` f x') `cat` f (x `t1` x')
 
 instance Applicative f => Semigroupal (->) (,) (,) f where
@@ -40,21 +57,27 @@ instance Semialign f => Semigroupal (->) These (,) f where
   combine = uncurry align
 
 --------------------------------------------------------------------------------
--- Unital
 
--- | *TODO*
+-- | TODO
 --
--- = Examples
+-- __Laws:__
 --
--- >>> introduce @(->) @() @() @Maybe ()
--- Just ()
---
--- >>> :t introduce @(->) @Void @() @Maybe 
--- introduce @(->) @Void @() @Maybe :: () -> Maybe Void
--- 
--- >>> introduce @(->) @Void @() @Maybe ()
--- Nothing
+-- @
+-- TODO
+-- @
 class Unital cat i1 i0 f where
+  -- | TODO
+  --
+  -- ==== __Examples__
+  --
+  -- >>> introduce @(->) @() @() @Maybe ()
+  -- Just ()
+  --
+  -- >>> :t introduce @(->) @Void @() @Maybe 
+  -- introduce @(->) @Void @() @Maybe :: () -> Maybe Void
+  -- 
+  -- >>> introduce @(->) @Void @() @Maybe ()
+  -- Nothing
   introduce :: cat i0 (f i1)
 
 instance Applicative f => Unital (->) () () f where
@@ -72,7 +95,9 @@ instance Alternative f => Unital (->) Void () f where
 -- which preserves the monoidal structure. Eg., a homomorphism of
 -- monoidal categories.
 --
--- = Laws
+-- === Laws
+--
+-- @
 -- Associativity:
 --   combine (combine fx fy) fz ⟶ combine fx (combine fy fz)
 --              ↓                         ↓
@@ -89,6 +114,7 @@ instance Alternative f => Unital (->) Void () f where
 --   f x `t1` empty     ⟶  f x `t1` f empty
 --         ↓                        ↓
 --        f x           ←  f (x `t0` empty)
+-- @
 class
   ( Tensor cat t1 i1
   , Tensor cat t0 i0
