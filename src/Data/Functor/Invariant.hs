@@ -1,3 +1,4 @@
+{-# LANGUAGE DefaultSignatures #-}
 module Data.Functor.Invariant
   ( -- * Invariant
     Invariant (..),
@@ -19,25 +20,38 @@ import Prelude
 
 --------------------------------------------------------------------------------
 
--- | TODO
+-- | A functor is 'Invariant' if it is parametric in its type
+-- parameter @a@.
 --
 -- === Laws
 --
 -- @
--- invmap id id ≡ id
--- invmap f2 f2' ∘ invmap f1 f1' ≡ invmap (f2 ∘ f1) (f1' ∘ f2')
+-- 'invmap' 'id' 'id' ≡ 'id'
+-- 'invmap' @f2@ @f2'@ 'Control.Category..' 'invmap' @f1@ @f1'@ ≡ 'invmap' (@f2@ 'Control.Category..' @f1@) (@f1'@ 'Control.Category..' @f2'@)
 -- @
 class Invariant f where
-  -- | TODO
+  -- | Given two isomorphic functions @f@ and @g@, map over the
+  -- invariant parameter @a@.
   --
   -- ==== __Examples__
   --
+  -- >>> :t invmap @Identity (read @Bool) show
+  -- invmap @Identity (read @Bool) show :: Identity String -> Identity Bool
+  --
+  -- >>> invmap @Identity (read @Bool) show (Identity "True")
+  -- Identity True
   invmap :: (a -> a') -> (a' -> a) -> f a -> f a'
+  default invmap :: Functor f => (a -> a') -> (a' -> a) -> f a -> f a'
+  invmap = invmapFunctor
 
 invIso :: Invariant f => Iso (->) a a' -> Iso (->) (f a) (f a')
 invIso (Iso f g)  = Iso (invmap f g) (invmap g f)
 
 newtype FromFunctor f a = FromFunctor { runBi :: f a }
+
+-- | Every 'Functor' is also an 'Invariant' functor.
+invmapFunctor :: Functor f => (a -> b) -> (b -> a) -> f a -> f b
+invmapFunctor = flip $ const fmap
 
 instance Functor f => Invariant (FromFunctor f) where
   invmap :: (a -> a') -> (a' -> a) -> FromFunctor f a -> FromFunctor f a'

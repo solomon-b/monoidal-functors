@@ -44,20 +44,33 @@ import Prelude
 
 --------------------------------------------------------------------------------
 
--- | An invariant functor on two parameters.
+-- | A bifunctor is 'BiInvariant' if it is parametric in both its type
+-- parameters.
 --
 -- === Laws
 --
 -- @
--- biinvmap id id id id ≡ id
--- biinvmap g2 g2' f2 f2' ∘ invmap g1 g1' f1 f1' ≡ invmap (g2 ∘ g1) (g1' ∘ g2') (f2 ∘ f1) (f1' ∘ f2')
+-- 'biinvmap' 'id' 'id' 'id' 'id' ≡ 'id'
+-- 'biinvmap' @g2@ @g2'@ @f2@ @f2'@ 'Control.Category..' 'Data.Functor.Invariant.invmap' @g1@ @g1'@ @f1@ @f1'@ ≡ 'Data.Functor.Invariant.invmap' (@g2@ 'Control.Category..' @g1@) (@g1'@ 'Control.Category..' @g2'@) (@f2@ 'Control.Category..' @f1@) (@f1'@ 'Control.Category..' @f2'@)
 -- @
 class BiInvariant p where
-  -- | TODO
+  -- | Used to apply a pair of isomorphic functions to @p a b@.
+  -- 'Biinvmap' picks out the appropriate half of the iso depending if
+  -- @p@ is covariant or contravariant on each parameter.
   --
   -- ==== __Examples__
   --
-  -- TODO
+  -- >>> :t biinvmap @(,) (read @Int) show (read @Bool) show
+  -- biinvmap @(,) (read @Int) show (read @Bool) show :: (Int, Bool) -> (String, String)
+  --
+  -- >>> biinvmap @(,) (read @Int) show (read @Bool) show (10, True)
+  -- ("10","True")
+  --
+  -- >>> :t biinvmap @(->) (read @Int) show (read @Bool) show
+  -- biinvmap @(->) (read @Int) show (read @Bool) show :: (Int -> Bool) -> String -> String
+  --
+  -- >>> biinvmap @(->) (read @Int) show (read @Bool) show (\i -> i > 10) "12"
+  -- "True"
   biinvmap :: (a' -> a) -> (a -> a') -> (b' -> b) -> (b -> b') -> p a b -> p a' b'
 
 -- | BiInvariant witnesses an Isomorphism
