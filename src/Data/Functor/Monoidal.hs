@@ -6,7 +6,7 @@ module Data.Functor.Monoidal
     Unital (..),
 
     -- * Monoidal
-    Monoidal (..),
+    Monoidal,
   )
 where
 
@@ -19,15 +19,30 @@ import Prelude
 
 --------------------------------------------------------------------------------
 
--- | TODO
+-- | Given monoidal categories \((\mathcal{C}, \otimes, I_{\mathcal{C}})\) and \((\mathcal{D}, \bullet, I_{\mathcal{D}})\).
+-- A functor \(F : \mathcal{C} \to \mathcal{D}\) is 'Semigroupal' if it supports a natural transformation
+-- \(\phi_{A,B} : F\ A \bullet F\ B \to F\ (A \otimes B)\), which we call 'combine'.
 --
 -- === Laws
 --
+-- __Associativity:__
+--
+-- \[ 
+-- \require{AMScd}
+-- \begin{CD}
+-- (F A \bullet F B) \bullet F C @>>{\alpha_{\mathcal{D}}}>     F A \bullet (F B \bullet F C) \\
+-- @VV{\phi_{A,B} \bullet 1}V                                   @VV{1 \bullet \phi_{B,C}}V \\
+-- F (A \otimes B) \bullet F C   @.                             F A \bullet (F (B \otimes C)) \\
+-- @VV{\phi_{A \otimes B,C}}V                                   @VV{\phi_{A,B \otimes C}}V \\
+-- F ((A \otimes B) \otimes C)   @>>{F \alpha_{\mathcal{C}}}>   F (A \otimes (B \otimes C)) \\
+-- \end{CD}
+-- \]
+--
 -- @
--- TODO
+-- 'combine' 'Control.Category..' 'grmap' 'combine' 'Control.Category..' 'bwd' 'assoc' ≡ 'fmap' ('bwd' 'assoc') 'Control.Category..' 'combine' 'Control.Category..' 'glmap' 'combine'
 -- @
 class (Associative cat t1, Associative cat t0) => Semigroupal cat t1 t0 f where
-  -- | TODO
+  -- | @combine@ is a natural transformation from functors \(\mathcal{C} × \mathcal{C}\) to \(\mathcal{D}\).
   --
   -- ==== __Examples__
   --
@@ -58,15 +73,12 @@ instance Semialign f => Semigroupal (->) These (,) f where
 
 --------------------------------------------------------------------------------
 
--- | TODO
---
--- __Laws:__
---
--- @
--- TODO
--- @
+-- | Given monoidal categories \((\mathcal{C}, \otimes, I_{\mathcal{C}})\) and \((\mathcal{D}, \bullet, I_{\mathcal{D}})\).
+-- A functor \(F : \mathcal{C} \to \mathcal{D}\) is 'Unital' if it supports a morphism \(\phi : I_{\mathcal{D}} \to F\ I_{\mathcal{C}}\),
+-- which we call 'introduce'.
 class Unital cat i1 i0 f where
-  -- | TODO
+  -- | @introduce@ maps from the identity in \(\mathcal{C}\) to the
+  -- identity in \(\mathcal{D}\).
   --
   -- ==== __Examples__
   --
@@ -87,33 +99,44 @@ instance Applicative f => Unital (->) () () f where
 instance Alternative f => Unital (->) Void () f where
   introduce :: () -> f Void
   introduce () = empty
-  
---------------------------------------------------------------------------------
--- Tensor
 
--- | A <https://ncatlab.org/nlab/show/monoidal+functor Monoidal Functor> is a Functor between two Monoidal Categories
--- which preserves the monoidal structure. Eg., a homomorphism of
--- monoidal categories.
+--------------------------------------------------------------------------------
+
+-- | Given monoidal categories \((\mathcal{C}, \otimes, I_{\mathcal{C}})\) and \((\mathcal{D}, \bullet, I_{\mathcal{D}})\).
+-- A functor \(F : \mathcal{C} \to \mathcal{D}\) is 'Monoidal' if it maps between \(\mathcal{C}\) and \(\mathcal{D}\) while
+-- preserving their monoidal structure. Eg., a homomorphism of monoidal categories.
+--
+-- See <https://ncatlab.org/nlab/show/monoidal+functor NCatlab> for more details.
 --
 -- === Laws
 --
+-- __Right Unitality__:
+--
+-- \[ 
+-- \require{AMScd}
+-- \begin{CD}
+-- F A \bullet I_{\mathcal{D}}   @>{1 \bullet \phi}>>         F A \bullet F I_{\mathcal{C}};\\
+-- @VV{\rho_{\mathcal{D}}}V                                   @VV{\phi A,I_{\mathcal{C}}}V \\
+-- F A                           @<<{F \rho_{\mathcal{C}}}<   F (A \otimes I_{\mathcal{C}});
+-- \end{CD}
+-- \]
+--
 -- @
--- Associativity:
---   combine (combine fx fy) fz ⟶ combine fx (combine fy fz)
---              ↓                         ↓
---   f (x `t1` y) `t1` fz         combine fx (f (y `t1` z))
---              ↓                         ↓
---   f ((x `t1` y) `t1` z)      ⟶ (f x `t1` (y `t1` z))
+--   'combine' 'Control.Category..' 'grmap' 'introduce' ≡ 'bwd' 'unitr' 'Control.Category..' 'fwd' 'unitr'
+-- @
 --
--- Left Unitality:
---   empty `t1` f x     ⟶  f empty `t1` f x
---         ↓                        ↓
---        f x           ←  f (empty `t0` x)
+-- __ Left Unitality__:
 --
--- Right Unitality:
---   f x `t1` empty     ⟶  f x `t1` f empty
---         ↓                        ↓
---        f x           ←  f (x `t0` empty)
+-- \[ 
+-- \begin{CD}
+-- I_{\mathcal{D}} \bullet F B   @>{\phi \bullet 1}>>            F I_{\mathcal{C}} \bullet F B;\\
+-- @VV{\lambda_{\mathcal{D}}}V                                   @VV{\phi I_{\mathcal{C}},B}V \\
+-- F A                           @<<{F \lambda_{\mathcal{C}}}<   F (A \otimes I_{\mathcal{C}} \otimes B);
+-- \end{CD}
+-- \]
+--
+-- @
+--   'combine' 'Control.Category..' 'glmap' 'introduce' ≡ 'fmap' ('bwd' 'unitl') 'Control.Category..' 'fwd' 'unitl'
 -- @
 class
   ( Tensor cat t1 i1
@@ -125,3 +148,5 @@ class
 instance Applicative f => Monoidal (->) (,) () (,) () f
 
 instance Alternative f => Monoidal (->) Either Void (,) () f
+
+instance (Alternative f, Semialign f) => Monoidal (->) These Void (,) () f

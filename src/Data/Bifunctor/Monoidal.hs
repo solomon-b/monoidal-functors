@@ -31,15 +31,30 @@ import Prelude (Either (..))
 
 --------------------------------------------------------------------------------
 
--- | TODO
+-- | Given monoidal categories \((\mathcal{C}, \otimes, I_{\mathcal{C}})\) and \((\mathcal{D}, \bullet, I_{\mathcal{D}})\).
+-- A bifunctor \(F : \mathcal{C_1} \times \mathcal{C_2} \to \mathcal{D}\) is 'Semigroupal' if it supports a
+-- natural transformation \(\phi_{AB,CD} : F\ A\ B \bullet F\ C\ D \to F\ (A \otimes C)\ (B \otimes D)\), which we call 'combine'.
 --
 -- === Laws
 --
+-- __Associativity:__
+--
+-- \[ 
+-- \require{AMScd}
+-- \begin{CD}
+-- (F A B \bullet F C D) \bullet F X Y                      @>>{\alpha_{\mathcal{D}}}>                              F A B \bullet (F C D \bullet F X Y) \\
+-- @VV{\phi_{AB,CD} \bullet 1}V                                                                                     @VV{1 \bullet \phi_{CD,FY}}V \\
+-- F (A \otimes C) (B \otimes D) \bullet F X Y              @.                                                      F A B \bullet (F (C \otimes X) (D \otimes Y) \\
+-- @VV{\phi_{(A \otimes C)(B \otimes D),XY}}V                                                                       @VV{\phi_{AB,(C \otimes X)(D \otimes Y)}}V \\
+-- F ((A \otimes C) \otimes X)  ((B \otimes D) \otimes Y)   @>>{F \alpha_{\mathcal{C_1}}} \alpha_{\mathcal{C_2}}>   F (A \otimes (C \otimes X)) (B \otimes (D \otimes Y)) \\
+-- \end{CD}
+-- \]
+--
 -- @
--- TODO
+-- 'combine' 'Control.Category..' 'Control.Category.Tensor.grmap' 'combine' 'Control.Category..' 'bwd' 'Control.Category.Tensor.assoc' ≡ 'fmap' ('bwd' 'Control.Category.Tensor.assoc') 'Control.Category..' 'combine' 'Control.Category..' 'Control.Category.Tensor.glmap' 'combine'
 -- @
 class (Associative cat t1, Associative cat t2, Associative cat to) => Semigroupal cat t1 t2 to f where
-  -- | TODO
+  -- | A natural transformation \(\phi_{AB,CD} : F\ A\ B \bullet F\ C\ D \to F\ (A \otimes C)\ (B \otimes D)\). 
   --
   -- ==== __Examples__
   --
@@ -157,15 +172,12 @@ instance Alternative f => Semigroupal (->) (,) Either (,) (Forget (f r)) where
 
 --------------------------------------------------------------------------------
 
--- | TODO
---
--- === Laws
---
--- @
--- TODO
--- @
+-- | Given monoidal categories \((\mathcal{C}, \otimes, I_{\mathcal{C}})\) and \((\mathcal{D}, \bullet, I_{\mathcal{D}})\).
+-- A bifunctor \(F : \mathcal{C_1} \times \mathcal{C_2} \to \mathcal{D}\) is 'Unital' if it supports a morphism
+-- \(\phi : I_{\mathcal{D}} \to F\ I_{\mathcal{C_1}}\ I_{\mathcal{C_2}}\), which we call 'introduce'.
 class Unital cat i1 i2 io f where
-  -- | TODO
+  -- | @introduce@ maps from the identity in \(\mathcal{C_1} \times \mathcal{C_2}\) to the
+  -- identity in \(\mathcal{D}\).
   --
   -- ==== __Examples__
   --
@@ -242,12 +254,41 @@ instance Alternative f => Unital (->) () Void () (Star f) where
 --------------------------------------------------------------------------------
 -- Monoidal
 
--- | TODO
+-- | Given monoidal categories \((\mathcal{C}, \otimes, I_{\mathcal{C}})\) and \((\mathcal{D}, \bullet, I_{\mathcal{D}})\).
+-- A bifunctor \(F : \mathcal{C_1} \times \mathcal{C_2} \to \mathcal{D}\) is 'Monoidal' if it maps between \(\mathcal{C_1} \times \mathcal{C_2}\)
+-- and \(\mathcal{D}\) while preserving their monoidal structure. Eg., a homomorphism of monoidal categories.
+--
+-- See <https://ncatlab.org/nlab/show/monoidal+functor NCatlab> for more details.
 --
 -- === Laws
 --
+-- __Right Unitality:__
+--
+-- \[ 
+-- \require{AMScd}
+-- \begin{CD}
+-- F A B \bullet I_{\mathcal{D}}   @>{1 \bullet \phi}>>                                     F A B \bullet F I_{\mathcal{C_{1}}} I_{\mathcal{C_{2}}}\\
+-- @VV{\rho_{\mathcal{D}}}V                                                                 @VV{\phi AB,I_{\mathcal{C_{1}}}I_{\mathcal{C_{2}}}}V \\
+-- F A B                           @<<{F \rho_{\mathcal{C_{1}}} \rho_{\mathcal{C_{2}}}}<    F (A \otimes I_{\mathcal{C_{1}}}) (B \otimes I_{\mathcal{C_{2}}})
+-- \end{CD}
+-- \]
+--
 -- @
--- TODO
+-- 'combine' 'Control.Category..' 'Control.Category.Tensor.grmap' 'introduce' ≡ 'bwd' 'unitr' 'Control.Category..' 'fwd' 'unitr'
+-- @
+--
+-- __ Left Unitality__:
+--
+-- \[ 
+-- \begin{CD}
+-- I_{\mathcal{D}} \bullet F A B   @>{\phi \bullet 1}>>                                          F I_{\mathcal{C_{1}}} I_{\mathcal{C_{2}}} \bullet F A B\\
+-- @VV{\lambda_{\mathcal{D}}}V                                                                   @VV{I_{\mathcal{C_{1}}}I_{\mathcal{C_{2}}},\phi AB}V \\
+-- F A B                           @<<{F \lambda_{\mathcal{C_{1}}} \lambda_{\mathcal{C_{2}}}}<   F (I_{\mathcal{C_{1}}} \otimes A) (I_{\mathcal{C_{2}}} \otimes B)
+-- \end{CD}
+-- \]
+--
+-- @
+-- 'combine' 'Control.Category..' 'Control.Category.Tensor.glmap' 'introduce' ≡ 'fmap' ('bwd' 'unitl') 'Control.Category..' 'fwd' 'unitl'
 -- @
 class ( Tensor cat t1 i1
       , Tensor cat t2 i2
