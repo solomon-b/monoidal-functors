@@ -107,7 +107,7 @@ terminal :: forall p a. Profunctor p => Unital (->) () () () p => p a ()
 terminal = lmap (const ()) $ introduce ()
 
 ppure :: forall p a. Profunctor p => Unital (->) () () () p => Strong p => p a a
-ppure = dimap ((),) snd $ first' (introduce () :: p () ())
+ppure = dimap ((),) projr $ first' (introduce () :: p () ())
 
 initial :: forall p a. Profunctor p => Unital (->) Void Void () p => p Void a
 initial = rmap absurd $ introduce ()
