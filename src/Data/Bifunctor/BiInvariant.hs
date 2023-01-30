@@ -1,48 +1,76 @@
-module Data.Bifunctor.BiInvariant where
+module Data.Bifunctor.BiInvariant
+  ( -- * BiInvariant
+    BiInvariant (..),
+    biinvIso,
+    type Coercible1,
+    type Coercible2,
+  )
+where
 
-import Control.Arrow
-import Control.Category.Tensor
-import Control.Comonad
-import Data.Bifunctor
-import Data.Bifunctor.Biap
-import Data.Bifunctor.Biff
-import Data.Bifunctor.Clown
-import Data.Bifunctor.Flip
-import Data.Bifunctor.Joker
-import Data.Bifunctor.Product
-import Data.Bifunctor.Sum
-import Data.Bifunctor.Tannen
-import Data.Bifunctor.Wrapped
-import Data.Coerce
-import Data.Functor.Const
-import Data.Functor.Contravariant
-import Data.Kind
-import Data.Profunctor
-import Data.Profunctor.Cayley
-import Data.Profunctor.Choice
-import Data.Profunctor.Closed
-import Data.Profunctor.Composition
-import Data.Profunctor.Mapping
-import Data.Profunctor.Ran
-import Data.Profunctor.Strong
-import Data.Profunctor.Traversing
-import Data.Profunctor.Yoneda
+--------------------------------------------------------------------------------
+
+import Control.Arrow (Arrow, Kleisli (Kleisli))
+import Control.Category.Tensor (Iso (Iso))
+import Control.Comonad (Cokleisli (Cokleisli))
+import Data.Bifunctor (Bifunctor (bimap))
+import Data.Bifunctor.Biap (Biap (Biap))
+import Data.Bifunctor.Biff (Biff (Biff))
+import Data.Bifunctor.Clown (Clown (Clown))
+import Data.Bifunctor.Flip (Flip (Flip))
+import Data.Bifunctor.Joker (Joker (Joker))
+import Data.Bifunctor.Product (Product)
+import Data.Bifunctor.Sum (Sum)
+import Data.Bifunctor.Tannen (Tannen (Tannen))
+import Data.Bifunctor.Wrapped (WrappedBifunctor (WrapBifunctor))
+import Data.Coerce (Coercible)
+import Data.Functor.Const (Const (Const))
+import Data.Functor.Contravariant (Contravariant (contramap))
+import Data.Kind (Constraint)
+import Data.Profunctor (Costar (Costar), Forget (Forget), Profunctor (dimap), Star (Star), WrappedArrow (WrapArrow))
+import Data.Profunctor.Cayley (Cayley (Cayley))
+import Data.Profunctor.Choice (CopastroSum (CopastroSum), CotambaraSum, PastroSum, TambaraSum (TambaraSum))
+import Data.Profunctor.Closed (Closure (Closure), Environment)
+import Data.Profunctor.Composition (Procompose, Rift (Rift))
+import Data.Profunctor.Mapping (CofreeMapping (CofreeMapping), FreeMapping)
+import Data.Profunctor.Ran (Codensity (Codensity), Ran (Ran))
+import Data.Profunctor.Strong (Copastro (Copastro), Cotambara, Pastro, Tambara (Tambara))
+import Data.Profunctor.Traversing (CofreeTraversing (CofreeTraversing), FreeTraversing)
+import Data.Profunctor.Yoneda (Coyoneda, Yoneda (Yoneda))
 import Data.Semigroup (Arg)
-import Data.Tagged
-import Data.These
+import Data.Tagged (Tagged (Tagged))
+import Data.These (These)
 import GHC.Generics (K1)
 import Prelude
 
 --------------------------------------------------------------------------------
--- BiInvariant
 
--- | An invariant functor on two parameters.
+-- | A bifunctor is 'BiInvariant' if it is parametric in both its type
+-- parameters.
 --
--- Instances should satisfy the following laws:
+-- === Laws
 --
--- > biinvmap id id id id = id
--- > biinvmap g2 g2' f2 f2' . invmap g1 g1' f1 f1' = invmap (g2 . g1) (g1' . g2') (f2 . f1) (f1' . f2')
+-- @
+-- 'biinvmap' 'id' 'id' 'id' 'id' ≡ 'id'
+-- 'biinvmap' @g2@ @g2'@ @f2@ @f2'@ 'Control.Category..' 'Data.Functor.Invariant.invmap' @g1@ @g1'@ @f1@ @f1'@ ≡ 'Data.Functor.Invariant.invmap' (@g2@ 'Control.Category..' @g1@) (@g1'@ 'Control.Category..' @g2'@) (@f2@ 'Control.Category..' @f1@) (@f1'@ 'Control.Category..' @f2'@)
+-- @
 class BiInvariant p where
+  -- | Used to apply a pair of isomorphic functions to @p a b@.
+  -- 'Biinvmap' picks out the appropriate half of the iso depending if
+  -- @p@ is covariant or contravariant on each parameter.
+  --
+  -- ==== __Examples__
+  --
+  -- >>> :t biinvmap @(,) (read @Int) show (read @Bool) show
+  -- biinvmap @(,) (read @Int) show (read @Bool) show :: (Int, Bool) -> (String, String)
+  --
+  -- >>> biinvmap @(,) (read @Int) show (read @Bool) show (10, True)
+  -- ("10","True")
+  --
+  -- >>> :t biinvmap @(->) (read @Int) show (read @Bool) show
+  -- biinvmap @(->) (read @Int) show (read @Bool) show :: (Int -> Bool) -> String -> String
+  --
+  -- >>> biinvmap @(->) (read @Int) show (read @Bool) show (\i -> i > 10) "12"
+  -- "True"
   biinvmap :: (a' -> a) -> (a -> a') -> (b' -> b) -> (b -> b') -> p a b -> p a' b'
 
 -- | BiInvariant witnesses an Isomorphism
@@ -67,9 +95,10 @@ instance Bifunctor p => BiInvariant (FromBifunctor p) where
 newtype FromContra f a = FromContra { runContra :: f a }
 
 instance Contravariant f => Contravariant (FromContra f) where
+  contramap :: Contravariant f => (a' -> a) -> FromContra f a -> FromContra f a'
   contramap f = FromContra . contramap f . runContra
 
-newtype FromFunctor f a = FromFunctor { runFunctor :: f a }
+newtype FromFunctor f a = FromFunctor (f a)
   deriving Functor
 
 type Coercible1 f = ((forall a b. Coercible a b => Coercible (f a) (f b)) :: Constraint)

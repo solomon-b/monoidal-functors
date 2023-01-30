@@ -1,4 +1,14 @@
-module Data.Functor.Module where
+module Data.Functor.Module
+  ( -- * LeftModule
+    LeftModule (..),
+
+    -- * RightModule
+    RightModule (..),
+
+    -- * Bimodule
+    Bimodule,
+  )
+where
 
 --------------------------------------------------------------------------------
 
@@ -31,6 +41,16 @@ newtype FromFunctor f a = FromFunctor (f a)
 --------------------------------------------------------------------------------
 
 class LeftModule cat t1 f where
+  -- | ==== __Examples__
+  --
+  -- >>> :t lstrength @(->) @(,) @Predicate (Predicate @Int (> 10))
+  -- lstrength @(->) @(,) @Predicate (Predicate @Int (> 10)) :: Predicate (Int, x)
+  --
+  -- >>> :t lstrength @(->) @Either @[] 
+  -- lstrength @(->) @Either @[] :: a -> [Either a x]
+  --
+  -- >>> lstrength @(->) @Either @[] [True, False]
+  -- [Left True,Left False]
   lstrength :: cat (f a) (f (t1 a x))
 
 instance Contravariant f => LeftModule (->) (,) (FromContra f) where
@@ -136,6 +156,15 @@ deriving via (FromFunctor ((,,,) x1 x2 x3)) instance LeftModule Op (,) ((,,,) x1
 --------------------------------------------------------------------------------
 
 class RightModule cat t1 f where
+  -- | ==== __Examples__
+  --
+  -- >>> :t rstrength @(->) @(,) @Predicate (Predicate @Int (> 10))
+  -- rstrength @(->) @(,) @Predicate (Predicate @Int (> 10)) :: Predicate (x, Int)
+  --
+  -- >>> :t rstrength @(->) @Either @[] 
+  -- rstrength @(->) @Either @[] :: [a] -> [Either x a]
+  -- >>> rstrength @(->) @Either @[] [True, False]
+  -- [Right True,Right False]
   rstrength :: cat (f a) (f (t1 x a))
 
 instance Contravariant f => RightModule (->) (,) (FromContra f) where
