@@ -2,6 +2,9 @@
 
 ## Upcoming
 
+* Rewrite `Semigroupal`, `Unital`, and `Monoidal` `Functor` instances
+  to use deriving via
+
 ## 0.2.0.0 -- 2023-01-29
 
 * Adds Tensored Type
