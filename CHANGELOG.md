@@ -2,6 +2,8 @@
 
 ## Upcoming
 
+## 0.2.1.0 -- 2023-01-29
+
 * Rewrite `Semigroupal`, `Unital`, and `Monoidal` `Functor` instances
   to use deriving via
 
