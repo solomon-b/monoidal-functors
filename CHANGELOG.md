@@ -2,13 +2,17 @@
 
 ## Upcoming
 
-* Adds Tensored Type
-* Adds Module instances
+## 0.2.0.0 -- 2023-01-29
 
-## 0.1.1 -- 2021-12-13
+* Adds Tensored Type
+* Rewrites haddocks
+* Adds `Control.Category.Cartesian` module
+* Adds a number of specialized combinators to `Data.Bifunctor.Monoidal.Specialized`
+
+## 0.1.1.0 -- 2021-12-13
 
 * Removes redundant `Iso` types.
-* Some intitial attempts at documentation.
+* Some initial attempts at documentation.
 
 ## 0.1.0.0 -- 2021-04-19
 
