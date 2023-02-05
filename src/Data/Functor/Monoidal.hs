@@ -1,6 +1,13 @@
 module Data.Functor.Monoidal
   ( -- * Semigroupal
     Semigroupal (..),
+    (|?|),
+    (|*|),
+    type (|*|),
+    (|+|),
+    type (|+|),
+    (|&|),
+    type (|&|),
 
     -- * Unital
     Unital (..),
@@ -227,6 +234,26 @@ deriving via FromDecidable (ComposeFC f g)         instance (Decidable g, Applic
 --deriving via FromDecidable (Compose f g)           instance (Applicative f, Decidable g) => Semigroupal (->) Either (,) (Compose f g)
 deriving via FromDecidable (RWST r w s m)          instance (Decidable m) => Semigroupal (->) Either (,) (RWST r w s m)
 deriving via FromDecidable (Lazy.RWST r w s m)     instance (Decidable m) => Semigroupal (->) Either (,) (Lazy.RWST r w s m)
+
+infixr |?|
+(|?|) :: Semigroupal (->) t1 (,) f => f a -> f b -> f (a `t1` b)
+(|?|) = curry combine
+
+infixr 4 |*|
+(|*|) :: Semigroupal (->) (,) (,) f => f a -> f b -> f (a, b)
+(|*|) = curry combine
+
+infixr 3 |+|
+(|+|) :: Semigroupal (->) Either (,) f => f a -> f b -> f (Either a b)
+(|+|) = curry combine
+
+infixr 3 |&|
+(|&|) :: Semigroupal (->) These (,) f => f a -> f b -> f (These a b)
+(|&|) = curry combine
+
+type (|*|) = (,)
+type (|+|) = Either
+type (|&|) = These
 
 --------------------------------------------------------------------------------
 
