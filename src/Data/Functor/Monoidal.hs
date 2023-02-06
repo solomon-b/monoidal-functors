@@ -13,13 +13,29 @@ where
 --------------------------------------------------------------------------------
 
 import Control.Applicative
+import Control.Applicative.Backwards (Backwards)
 import Control.Arrow (ArrowMonad, ArrowPlus, ArrowZero, Kleisli)
 import Control.Category.Tensor
+import Control.Comonad.Identity (IdentityT)
 import Control.Monad (MonadPlus)
+import Control.Monad.Trans.Except (ExceptT)
+import Control.Monad.Trans.Maybe
+import Control.Monad.Trans.RWS.Lazy qualified as Lazy
+import Control.Monad.Trans.RWS.Strict (RWST)
+import Control.Monad.Trans.Reader (ReaderT)
+import Control.Monad.Trans.State.Lazy qualified as Lazy
+import Control.Monad.Trans.State.Strict (StateT)
+import Control.Monad.Trans.Writer.Lazy qualified as Lazy
+import Control.Monad.Trans.Writer.Strict (WriterT)
 import Data.Align
 import Data.Functor.Compose (Compose)
+import Data.Functor.Constant (Constant)
+import Data.Functor.Contravariant (Comparison, Contravariant, Equivalence, Op, Predicate)
+import Data.Functor.Contravariant.Compose (ComposeCF, ComposeFC)
+import Data.Functor.Contravariant.Divisible (Decidable, Divisible, chosen, divided)
 import Data.Functor.Identity
 import Data.Functor.Product (Product)
+import Data.Functor.Reverse (Reverse)
 import Data.Kind (Type)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Monoid (Alt, Ap)
@@ -32,23 +48,6 @@ import GHC.Generics (M1, Rec1, U1, type (:*:), type (:.:))
 import Text.ParserCombinators.ReadP (ReadP)
 import Text.ParserCombinators.ReadPrec (ReadPrec)
 import Prelude
-import Data.Functor.Contravariant
-import Data.Functor.Contravariant.Divisible (divided, Divisible)
-import Control.Monad.Trans.Maybe
-import Data.Functor.Reverse (Reverse)
-import Data.Functor.Constant
-import Control.Monad.Trans.Writer.Strict (WriterT)
-import qualified Control.Monad.Trans.Writer.Lazy as Lazy
-import Control.Monad.Trans.State.Strict (StateT)
-import qualified Control.Monad.Trans.State.Lazy as Lazy
-import Control.Monad.Trans.Reader (ReaderT)
-import Control.Comonad.Identity (IdentityT)
-import Control.Monad.Trans.Except (ExceptT)
-import Control.Monad.Trans.Error (ErrorT)
-import Control.Applicative.Backwards (Backwards)
-import Data.Functor.Contravariant.Compose (ComposeCF, ComposeFC)
-import Control.Monad.Trans.RWS.Strict (RWST)
-import qualified Control.Monad.Trans.RWS.Lazy as Lazy
 
 --------------------------------------------------------------------------------
 
@@ -99,18 +98,19 @@ instance Applicative f => Semigroupal (->) (,) (,) (FromApplicative f) where
   combine :: (FromApplicative f x, FromApplicative f x') -> FromApplicative f (x, x')
   combine = uncurry (liftA2 (,))
 
-deriving via FromApplicative Identity           instance Semigroupal (->) (,) (,) Identity
-deriving via FromApplicative (Compose f g)      instance (Applicative f, Applicative g) => Semigroupal (->) (,) (,) (Compose f g)
-deriving via FromApplicative []                 instance Semigroupal (->) (,) (,) []
-deriving via FromApplicative ZipList            instance Semigroupal (->) (,) (,) ZipList
-deriving via FromApplicative NonEmpty           instance Semigroupal (->) (,) (,) NonEmpty
-deriving via FromApplicative Maybe              instance Semigroupal (->) (,) (,) Maybe
-deriving via FromApplicative (Either e)         instance Semigroupal (->) (,) (,) (Either e)
-deriving via FromApplicative IO                 instance Semigroupal (->) (,) (,) IO
-deriving via FromApplicative (Product f g)      instance (Applicative f, Applicative g) => Semigroupal (->) (,) (,) (Product f g)
-deriving via (FromApplicative ((,) x1))         instance (Monoid x1) => Semigroupal (->) (,) (,) ((,) x1)
-deriving via (FromApplicative ((,,) x1 x2))     instance (Monoid x1, Monoid x2) => Semigroupal (->) (,) (,) ((,,) x1 x2)
-deriving via (FromApplicative ((,,,) x1 x2 x3)) instance (Monoid x1, Monoid x2, Monoid x3) => Semigroupal (->) (,) (,) ((,,,) x1 x2 x3)
+deriving via FromApplicative Identity                instance Semigroupal (->) (,) (,) Identity
+deriving via FromApplicative (Compose f g)           instance (Applicative f, Applicative g) => Semigroupal (->) (,) (,) (Compose f g)
+deriving via FromApplicative []                      instance Semigroupal (->) (,) (,) []
+deriving via FromApplicative ZipList                 instance Semigroupal (->) (,) (,) ZipList
+deriving via FromApplicative NonEmpty                instance Semigroupal (->) (,) (,) NonEmpty
+deriving via FromApplicative Maybe                   instance Semigroupal (->) (,) (,) Maybe
+deriving via FromApplicative (Either e)              instance Semigroupal (->) (,) (,) (Either e)
+deriving via FromApplicative IO                      instance Semigroupal (->) (,) (,) IO
+deriving via FromApplicative (Product f g)           instance (Applicative f, Applicative g) => Semigroupal (->) (,) (,) (Product f g)
+deriving via (FromApplicative ((,) x1))              instance (Monoid x1) => Semigroupal (->) (,) (,) ((,) x1)
+deriving via (FromApplicative ((,,) x1 x2))          instance (Monoid x1, Monoid x2) => Semigroupal (->) (,) (,) ((,,) x1 x2)
+deriving via (FromApplicative ((,,,) x1 x2 x3))      instance (Monoid x1, Monoid x2, Monoid x3) => Semigroupal (->) (,) (,) ((,,,) x1 x2 x3)
+deriving via FromApplicative (Proxy :: Type -> Type) instance Semigroupal (->) (,) (,) (Proxy :: Type -> Type)
 
 newtype FromAlternative f a = FromAlternative (f a)
   deriving newtype (Functor, Applicative, Alternative)
@@ -170,7 +170,7 @@ deriving via FromDivisible Comparison              instance Semigroupal (->) (,)
 deriving via FromDivisible Equivalence             instance Semigroupal (->) (,) (,) Equivalence
 deriving via FromDivisible (U1 :: Type -> Type)    instance Semigroupal (->) (,) (,) (U1 :: Type -> Type)
 deriving via FromDivisible (Op r)                  instance Monoid r => Semigroupal (->) (,) (,) (Op r)
-deriving via FromDivisible (Proxy :: Type -> Type) instance Semigroupal (->) (,) (,) (Proxy :: Type -> Type)
+--deriving via FromDivisible (Proxy :: Type -> Type) instance Semigroupal (->) (,) (,) (Proxy :: Type -> Type)
 deriving via FromDivisible (MaybeT m)              instance Divisible m => Semigroupal (->) (,) (,) (MaybeT m)
 deriving via FromDivisible (Rec1 m)                instance Divisible m => Semigroupal (->) (,) (,) (Rec1 m)
 deriving via FromDivisible (Const m)               instance Monoid m => Semigroupal (->) (,) (,) (Const m :: Type -> Type)
@@ -188,12 +188,45 @@ deriving via FromDivisible (Backwards f)           instance Divisible f => Semig
 deriving via FromDivisible (ComposeCF f g)         instance (Divisible f, Applicative g) => Semigroupal (->) (,) (,) (ComposeCF f g)
 deriving via FromDivisible (ComposeFC f g)         instance (Divisible g, Applicative f) => Semigroupal (->) (,) (,) (ComposeFC f g)
 deriving via FromDivisible (f :*: g)               instance (Divisible f, Divisible g) => Semigroupal (->) (,) (,) (f :*: g)
-deriving via FromDivisible (Product f g)           instance (Divisible f, Divisible g) => Semigroupal (->) (,) (,) (Product f g)
-deriving via FromDivisible (M1 i c f)              instance Semigroupal (->) (,) (,) (M1 i c f)
-deriving via FromDivisible (f :.: g)               instance (Divisible f, Divisible g) => Semigroupal (->) (,) (,) (f :.: g)
-deriving via FromDivisible (Compose f g)           instance (Divisible f, Divisible g) => Semigroupal (->) (,) (,) (Compose f g)
+--deriving via FromDivisible (Product f g)           instance (Divisible f, Divisible g) => Semigroupal (->) (,) (,) (Product f g)
+deriving via FromDivisible (M1 i c f)              instance Divisible f => Semigroupal (->) (,) (,) (M1 i c f)
+deriving via FromDivisible (f :.: g)               instance (Applicative f, Divisible g) => Semigroupal (->) (,) (,) (f :.: g)
+--deriving via FromDivisible (Compose f g)           instance (Applicative f, Divisible g) => Semigroupal (->) (,) (,) (Compose f g)
 deriving via FromDivisible (RWST r w s m)          instance (Divisible m) => Semigroupal (->) (,) (,) (RWST r w s m)
 deriving via FromDivisible (Lazy.RWST r w s m)     instance (Divisible m) => Semigroupal (->) (,) (,) (Lazy.RWST r w s m)
+
+newtype FromDecidable f a = FromDecidable (f a)
+  deriving newtype (Contravariant, Divisible, Decidable)
+
+instance Decidable f => Semigroupal (->) Either (,) (FromDecidable f) where
+  combine :: (FromDecidable f x, FromDecidable f x') -> FromDecidable f (Either x x')
+  combine = uncurry chosen
+
+deriving via FromDecidable Predicate               instance Semigroupal (->) Either (,) Predicate
+deriving via FromDecidable Comparison              instance Semigroupal (->) Either (,) Comparison
+deriving via FromDecidable Equivalence             instance Semigroupal (->) Either (,) Equivalence
+--deriving via FromDecidable (U1 :: Type -> Type)    instance Semigroupal (->) Either (,) (U1 :: Type -> Type)
+deriving via FromDecidable (Op r)                  instance Monoid r => Semigroupal (->) Either (,) (Op r)
+--deriving via FromDecidable (Proxy :: Type -> Type) instance Semigroupal (->) Either (,) (Proxy :: Type -> Type)
+deriving via FromDecidable (MaybeT m)              instance Decidable m => Semigroupal (->) Either (,) (MaybeT m)
+--deriving via FromDecidable (Rec1 m)                instance Decidable m => Semigroupal (->) Either (,) (Rec1 m)
+--deriving via FromDecidable (Alt f)                 instance Decidable f => Semigroupal (->) Either (,) (Alt f)
+deriving via FromDecidable (Reverse f)             instance Decidable f => Semigroupal (->) Either (,) (Reverse f)
+deriving via FromDecidable (WriterT w m)           instance Decidable m => Semigroupal (->) Either (,) (WriterT w m)
+deriving via FromDecidable (Lazy.WriterT w m)      instance Decidable m => Semigroupal (->) Either (,) (Lazy.WriterT w m)
+deriving via FromDecidable (StateT w m)            instance Decidable m => Semigroupal (->) Either (,) (StateT w m)
+deriving via FromDecidable (Lazy.StateT w m)       instance Decidable m => Semigroupal (->) Either (,) (Lazy.StateT w m)
+deriving via FromDecidable (ReaderT r m)           instance Decidable m => Semigroupal (->) Either (,) (ReaderT r m)
+deriving via FromDecidable (IdentityT m)           instance Decidable m => Semigroupal (->) Either (,) (IdentityT m)
+deriving via FromDecidable (Backwards f)           instance Decidable f => Semigroupal (->) Either (,) (Backwards f)
+deriving via FromDecidable (ComposeFC f g)         instance (Decidable g, Applicative f) => Semigroupal (->) Either (,) (ComposeFC f g)
+--deriving via FromDecidable (f :*: g)               instance (Decidable f, Decidable g) => Semigroupal (->) Either (,) (f :*: g)
+--deriving via FromDecidable (Product f g)           instance (Decidable f, Decidable g) => Semigroupal (->) Either (,) (Product f g)
+--deriving via FromDecidable (M1 i c f)              instance Decidable f => Semigroupal (->) Either (,) (M1 i c f)
+--deriving via FromDecidable (f :.: g)               instance (Applicative f, Decidable g) => Semigroupal (->) Either (,) (f :.: g)
+--deriving via FromDecidable (Compose f g)           instance (Applicative f, Decidable g) => Semigroupal (->) Either (,) (Compose f g)
+deriving via FromDecidable (RWST r w s m)          instance (Decidable m) => Semigroupal (->) Either (,) (RWST r w s m)
+deriving via FromDecidable (Lazy.RWST r w s m)     instance (Decidable m) => Semigroupal (->) Either (,) (Lazy.RWST r w s m)
 
 --------------------------------------------------------------------------------
 
