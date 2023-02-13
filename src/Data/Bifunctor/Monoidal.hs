@@ -24,7 +24,7 @@ import Data.Either (Either, either)
 import Data.Function (const, ($))
 import Data.Profunctor (Forget (..), Profunctor (..), Star (..), Strong (..))
 import Data.Semigroupoid (Semigroupoid (..))
-import Data.These (These (..))
+import Data.These (These (..), these)
 import Data.Tuple (fst, snd, uncurry)
 import Data.Void (Void, absurd)
 import Prelude (Either (..))
@@ -141,6 +141,10 @@ instance Applicative f => Semigroupal (->) (,) (,) (,) (Star f) where
 instance Functor f => Semigroupal (->) Either Either (,) (Star f) where
   combine :: (Star f x y, Star f x' y') -> Star f (Either x x') (Either y y')
   combine (Star fxy, Star fxy') = Star $ either (fmap Left . fxy) (fmap Right . fxy')
+
+instance Applicative f => Semigroupal (->) These These (,) (Star f) where
+  combine :: Applicative f => (Star f x y, Star f x' y') -> Star f (These x x') (These y y')
+  combine (Star fxy, Star fxy') = Star $ these (fmap This . fxy) (fmap That . fxy') (\x x' -> liftA2 These (fxy x) (fxy' x'))
 
 instance Alternative f => Semigroupal (->) Either Either Either (Star f) where
   combine :: Either (Star f x y) (Star f x' y') -> Star f (Either x x') (Either y y')
@@ -310,6 +314,7 @@ instance Alternative f => Monoidal (->) Either Void Either Void (,) () (Joker f)
 instance Functor f => Monoidal (->) Either Void Either Void Either Void (Joker f)
 instance Applicative f => Monoidal (->) (,) () (,) () (,) () (Star f)
 instance Functor f => Monoidal (->) Either Void Either Void (,) () (Star f)
+instance Applicative f => Monoidal (->) These Void These Void (,) () (Star f)
 instance Alternative f => Monoidal (->) Either Void Either Void Either Void (Star f)
 instance Alternative f => Monoidal (->) (,) () Either Void (,) () (Star f)
 
