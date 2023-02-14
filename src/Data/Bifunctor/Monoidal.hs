@@ -13,10 +13,11 @@ where
 --------------------------------------------------------------------------------
 
 import Control.Applicative (Alternative (..), Applicative (..), pure, (<$>))
+import Control.Arrow (Kleisli (..))
 import Control.Category (Category (..))
 import Control.Category.Cartesian (Cocartesian (..), Semicartesian (..))
 import Control.Category.Tensor (Associative, Iso (..), Tensor (..))
-import Control.Monad (Functor(..), Monad)
+import Control.Monad (Functor (..), Monad)
 import Data.Biapplicative (Biapplicative (..), Bifunctor (..))
 import Data.Bifunctor.Clown (Clown)
 import Data.Bifunctor.Joker (Joker (..))
@@ -28,7 +29,6 @@ import Data.These (These (..), these)
 import Data.Tuple (fst, snd, uncurry)
 import Data.Void (Void, absurd)
 import Prelude (Either (..))
-import Control.Arrow (Kleisli(..))
 
 --------------------------------------------------------------------------------
 
@@ -40,7 +40,7 @@ import Control.Arrow (Kleisli(..))
 --
 -- __Associativity:__
 --
--- \[ 
+-- \[
 -- \require{AMScd}
 -- \begin{CD}
 -- (F A B \bullet F C D) \bullet F X Y                      @>>{\alpha_{\mathcal{D}}}>                              F A B \bullet (F C D \bullet F X Y) \\
@@ -55,7 +55,7 @@ import Control.Arrow (Kleisli(..))
 -- 'combine' 'Control.Category..' 'Control.Category.Tensor.grmap' 'combine' 'Control.Category..' 'bwd' 'Control.Category.Tensor.assoc' ≡ 'fmap' ('bwd' 'Control.Category.Tensor.assoc') 'Control.Category..' 'combine' 'Control.Category..' 'Control.Category.Tensor.glmap' 'combine'
 -- @
 class (Associative cat t1, Associative cat t2, Associative cat to) => Semigroupal cat t1 t2 to f where
-  -- | A natural transformation \(\phi_{AB,CD} : F\ A\ B \bullet F\ C\ D \to F\ (A \otimes C)\ (B \otimes D)\). 
+  -- | A natural transformation \(\phi_{AB,CD} : F\ A\ B \bullet F\ C\ D \to F\ (A \otimes C)\ (B \otimes D)\).
   --
   -- ==== __Examples__
   --
@@ -76,12 +76,13 @@ instance Profunctor p => Semigroupal (->) (,) Either Either p where
 instance Semigroupal (->) (,) (,) (,) (,) where
   combine :: ((x, y), (x', y')) -> ((x, x'), (y, y'))
   combine ((x, y), (x', y')) = ((x, x'), (y, y'))
-  -- NOTE: This version could be used for a more general abstraction
-  -- of products in a category:
-  -- combine =
-  --   let fwd' = fwd assoc
-  --       bwd' = bwd assoc
-  --   in second swap . swap . fwd' . swap . first (bwd' . first swap) . fwd'
+
+-- NOTE: This version could be used for a more general abstraction
+-- of products in a category:
+-- combine =
+--   let fwd' = fwd assoc
+--       bwd' = bwd assoc
+--   in second swap . swap . fwd' . swap . first (bwd' . first swap) . fwd'
 
 instance Semigroupal (->) Either Either Either (,) where
   combine :: Either (x, y) (x', y') -> (Either x x', Either y y')
@@ -94,17 +95,17 @@ instance Semigroupal (->) Either Either Either Either where
 instance Semigroupal (->) Either (,) (,) Either where
   combine :: (Either x y, Either x' y') -> Either (Either x x') (y, y')
   combine = \case
-    (Left x, Left _)    -> Left $ Left x
-    (Left x, Right _)   -> Left $ Left x
-    (Right _, Left x')  -> Left $ Right x'
+    (Left x, Left _) -> Left $ Left x
+    (Left x, Right _) -> Left $ Left x
+    (Right _, Left x') -> Left $ Right x'
     (Right y, Right y') -> Right (y, y')
 
 instance Semigroupal (->) These (,) (,) Either where
   combine :: (Either x y, Either x' y') -> Either (These x x') (y, y')
   combine = \case
-    (Left x, Left x')   -> Left $ These x x'
-    (Left x, Right _)   -> Left $ This x
-    (Right _, Left x')  -> Left $ That x'
+    (Left x, Left x') -> Left $ These x x'
+    (Left x, Right _) -> Left $ This x
+    (Right _, Left x') -> Left $ That x'
     (Right y, Right y') -> Right (y, y')
 
 instance Semigroupal (->) (,) (,) (,) (->) where
@@ -121,11 +122,11 @@ instance Applicative f => Semigroupal (->) (,) (,) (,) (Joker f) where
 
 instance Alternative f => Semigroupal (->) Either Either (,) (Joker f) where
   combine :: (Joker f x y, Joker f x' y') -> Joker f (Either x x') (Either y y')
-  combine  = uncurry $ biliftA2 (\_ x' -> Right x') (\_ y' -> Right y')
+  combine = uncurry $ biliftA2 (\_ x' -> Right x') (\_ y' -> Right y')
 
 instance Functor f => Semigroupal (->) Either Either Either (Joker f) where
   combine :: Either (Joker f x y) (Joker f x' y') -> Joker f (Either x x') (Either y y')
-  combine = either (Joker . fmap Left . runJoker ) (Joker . fmap Right . runJoker)
+  combine = either (Joker . fmap Left . runJoker) (Joker . fmap Right . runJoker)
 
 instance Applicative f => Semigroupal (->) (,) (,) (,) (Clown f) where
   combine :: (Clown f x y, Clown f x' y') -> Clown f (x, x') (y, y')
@@ -157,7 +158,7 @@ instance Alternative f => Semigroupal (->) These These These (Star f) where
 instance Alternative f => Semigroupal (->) Either Either Either (Star f) where
   combine :: Either (Star f x y) (Star f x' y') -> Star f (Either x x') (Either y y')
   combine = \case
-    Left (Star fxy)   -> Star $ either (fmap Left . fxy) (const empty)
+    Left (Star fxy) -> Star $ either (fmap Left . fxy) (const empty)
     Right (Star fxy') -> Star $ either (const empty) (fmap Right . fxy')
 
 instance Alternative f => Semigroupal (->) (,) Either (,) (Star f) where
@@ -186,7 +187,7 @@ instance Alternative f => Semigroupal (->) These These These (Kleisli f) where
 instance Alternative f => Semigroupal (->) Either Either Either (Kleisli f) where
   combine :: Either (Kleisli f x y) (Kleisli f x' y') -> Kleisli f (Either x x') (Either y y')
   combine = \case
-    Left (Kleisli fxy)   -> Kleisli $ either (fmap Left . fxy) (const empty)
+    Left (Kleisli fxy) -> Kleisli $ either (fmap Left . fxy) (const empty)
     Right (Kleisli fxy') -> Kleisli $ either (const empty) (fmap Right . fxy')
 
 instance Alternative f => Semigroupal (->) (,) Either (,) (Kleisli f) where
@@ -204,7 +205,7 @@ instance Semigroupal (->) Either Either (,) (Forget (f r)) where
 instance Alternative f => Semigroupal (->) Either Either Either (Forget (f r)) where
   combine :: Either (Forget (f r) x y) (Forget (f r) x' y') -> Forget (f r) (Either x x') (Either y y')
   combine = \case
-    Left (Forget f)  -> Forget $ either f (const empty)
+    Left (Forget f) -> Forget $ either f (const empty)
     Right (Forget g) -> Forget $ either (const empty) g
 
 instance Alternative f => Semigroupal (->) (,) Either (,) (Forget (f r)) where
@@ -227,7 +228,7 @@ class Unital cat i1 i2 io f where
   --
   -- >>> :t introduce @(->) @Void @() @() @Either
   -- introduce @(->) @Void @() @() @Either :: () -> Either Void ()
-  -- 
+  --
   -- >>> introduce @(->) @Void @() @() @Either ()
   -- Right ()
   introduce :: cat io (f i1 i2)
@@ -321,7 +322,7 @@ instance Alternative f => Unital (->) () Void () (Kleisli f) where
 --
 -- __Right Unitality:__
 --
--- \[ 
+-- \[
 -- \require{AMScd}
 -- \begin{CD}
 -- F A B \bullet I_{\mathcal{D}}   @>{1 \bullet \phi}>>                                     F A B \bullet F I_{\mathcal{C_{1}}} I_{\mathcal{C_{2}}}\\
@@ -336,7 +337,7 @@ instance Alternative f => Unital (->) () Void () (Kleisli f) where
 --
 -- __ Left Unitality__:
 --
--- \[ 
+-- \[
 -- \begin{CD}
 -- I_{\mathcal{D}} \bullet F A B   @>{\phi \bullet 1}>>                                          F I_{\mathcal{C_{1}}} I_{\mathcal{C_{2}}} \bullet F A B\\
 -- @VV{\lambda_{\mathcal{D}}}V                                                                   @VV{I_{\mathcal{C_{1}}}I_{\mathcal{C_{2}}},\phi AB}V \\
@@ -347,35 +348,59 @@ instance Alternative f => Unital (->) () Void () (Kleisli f) where
 -- @
 -- 'combine' 'Control.Category..' 'Control.Category.Tensor.glmap' 'introduce' ≡ 'fmap' ('bwd' 'unitl') 'Control.Category..' 'fwd' 'unitl'
 -- @
-class ( Tensor cat t1 i1
-      , Tensor cat t2 i2
-      , Tensor cat to io
-      , Semigroupal cat t1 t2 to f
-      , Unital cat i1 i2 io f
-      ) => Monoidal cat t1 i1 t2 i2 to io f
+class
+  ( Tensor cat t1 i1,
+    Tensor cat t2 i2,
+    Tensor cat to io,
+    Semigroupal cat t1 t2 to f,
+    Unital cat i1 i2 io f
+  ) =>
+  Monoidal cat t1 i1 t2 i2 to io f
 
 instance (Strong p, Semigroupoid p, Category p) => Monoidal (->) (,) () (,) () (,) () (StrongCategory p)
+
 instance Monoidal (->) (,) () (,) () (,) () (,)
+
 instance Monoidal (->) Either Void Either Void Either Void (,)
+
 instance Monoidal (->) Either Void Either Void Either Void Either
+
 instance Monoidal (->) Either Void (,) () (,) () Either
+
 instance Monoidal (->) These Void (,) () (,) () Either
+
 instance Monoidal (->) (,) () (,) () (,) () (->)
+
 instance Monoidal (->) Either Void Either Void (,) () (->)
+
 instance Applicative f => Monoidal (->) (,) () (,) () (,) () (Joker f)
+
 instance Alternative f => Monoidal (->) Either Void Either Void (,) () (Joker f)
+
 instance Functor f => Monoidal (->) Either Void Either Void Either Void (Joker f)
+
 instance Applicative f => Monoidal (->) (,) () (,) () (,) () (Star f)
+
 instance Functor f => Monoidal (->) Either Void Either Void (,) () (Star f)
+
 instance Applicative f => Monoidal (->) These Void These Void (,) () (Star f)
+
 instance Alternative f => Monoidal (->) Either Void Either Void Either Void (Star f)
+
 instance Alternative f => Monoidal (->) These Void These Void These Void (Star f)
+
 instance Alternative f => Monoidal (->) (,) () Either Void (,) () (Star f)
+
 instance Applicative f => Monoidal (->) (,) () (,) () (,) () (Kleisli f)
+
 instance Functor f => Monoidal (->) Either Void Either Void (,) () (Kleisli f)
+
 instance Applicative f => Monoidal (->) These Void These Void (,) () (Kleisli f)
+
 instance Alternative f => Monoidal (->) Either Void Either Void Either Void (Kleisli f)
+
 instance Alternative f => Monoidal (->) These Void These Void These Void (Kleisli f)
+
 instance Alternative f => Monoidal (->) (,) () Either Void (,) () (Kleisli f)
 
 newtype StrongCategory p a b = StrongCategory (p a b)

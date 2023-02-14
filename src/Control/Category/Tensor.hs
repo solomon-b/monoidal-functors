@@ -1,4 +1,5 @@
 {-# LANGUAGE MonoLocalBinds #-}
+
 module Control.Category.Tensor
   ( -- * Iso
     Iso (..),
@@ -8,6 +9,7 @@ module Control.Category.Tensor
     (#),
     grmap,
     glmap,
+
     -- * Associative
     Associative (..),
 
@@ -22,6 +24,7 @@ where
 --------------------------------------------------------------------------------
 
 import Control.Applicative (Applicative (..))
+import Control.Arrow (Kleisli (..))
 import Control.Category (Category (..))
 import Data.Biapplicative (Biapplicative (..), Bifunctor (..))
 import Data.Functor.Contravariant (Op (..))
@@ -29,7 +32,6 @@ import Data.Profunctor (Profunctor (..), Star (..))
 import Data.These (These (..), these)
 import Data.Void (Void, absurd)
 import Prelude hiding (id, (.))
-import Control.Arrow (Kleisli(..))
 
 --------------------------------------------------------------------------------
 
@@ -41,7 +43,7 @@ import Control.Arrow (Kleisli(..))
 -- 'fwd' '.' 'bwd' ≡ 'id'
 -- 'bwd' '.' 'fwd' ≡ 'id'
 -- @
-data Iso cat a b = Iso { fwd :: cat a b, bwd :: cat b a }
+data Iso cat a b = Iso {fwd :: cat a b, bwd :: cat b a}
 
 instance Category cat => Category (Iso cat) where
   id :: Iso cat a a
@@ -83,11 +85,12 @@ class (Category cat1, Category cat2, Category cat3) => GBifunctor cat1 cat2 cat3
   --
   -- >>> getOp (gbimap @Op @Op @Op @Either (Op (+ 1)) (Op show)) (Right True)
   -- Right "True"
-  gbimap :: cat1 a b -> cat2 c d -> cat3 (a `t` c)  (b `t` d)
+  gbimap :: cat1 a b -> cat2 c d -> cat3 (a `t` c) (b `t` d)
 
 -- | Infix operator for 'gbimap'.
 infixr 9 #
-(#) :: GBifunctor cat1 cat2 cat3 t => cat1 a b -> cat2 c d -> cat3 (a `t` c)  (b `t` d)
+
+(#) :: GBifunctor cat1 cat2 cat3 t => cat1 a b -> cat2 c d -> cat3 (a `t` c) (b `t` d)
 (#) = gbimap
 
 -- | Covariantally map over the right variable.
@@ -109,16 +112,16 @@ instance GBifunctor (Star Maybe) (Star Maybe) (Star Maybe) These where
   gbimap :: Star Maybe a b -> Star Maybe c d -> Star Maybe (These a c) (These b d)
   gbimap (Star f) (Star g) =
     Star $ \case
-      This a    -> This <$> f a
-      That c    -> That <$> g c
+      This a -> This <$> f a
+      That c -> That <$> g c
       These a c -> liftA2 These (f a) (g c)
 
 instance GBifunctor (Kleisli Maybe) (Kleisli Maybe) (Kleisli Maybe) These where
   gbimap :: Kleisli Maybe a b -> Kleisli Maybe c d -> Kleisli Maybe (These a c) (These b d)
   gbimap (Kleisli f) (Kleisli g) =
     Kleisli $ \case
-      This a    -> This <$> f a
-      That c    -> That <$> g c
+      This a -> This <$> f a
+      That c -> That <$> g c
       These a c -> liftA2 These (f a) (g c)
 
 instance GBifunctor cat cat cat t => GBifunctor (Iso cat) (Iso cat) (Iso cat) t where
@@ -145,7 +148,7 @@ class (Category cat, GBifunctor cat cat cat t) => Associative cat t where
   --
   -- ==== __Examples__
   --
-  -- >>> :t assoc @(->) @(,) 
+  -- >>> :t assoc @(->) @(,)
   -- assoc @(->) @(,) :: Iso (->) (a, (b, c)) ((a, b), c)
   --
   -- >>> fwd (assoc @(->) @(,)) (1, ("hello", True))
@@ -154,45 +157,51 @@ class (Category cat, GBifunctor cat cat cat t) => Associative cat t where
 
 instance Associative (->) t => Associative Op t where
   assoc :: Iso Op (a `t` (b `t` c)) ((a `t` b) `t` c)
-  assoc = Iso
-    { fwd = Op $ bwd assoc
-    , bwd = Op $ fwd assoc
-    }
+  assoc =
+    Iso
+      { fwd = Op $ bwd assoc,
+        bwd = Op $ fwd assoc
+      }
 
 instance Associative (->) (,) where
   assoc :: Iso (->) (a, (b, c)) ((a, b), c)
-  assoc = Iso
-    { fwd = \(a, (b, c)) -> ((a, b), c)
-    , bwd = \((a, b), c) -> (a, (b, c))
-    }
+  assoc =
+    Iso
+      { fwd = \(a, (b, c)) -> ((a, b), c),
+        bwd = \((a, b), c) -> (a, (b, c))
+      }
 
 instance Associative (->) Either where
   assoc :: Iso (->) (Either a (Either b c)) (Either (Either a b) c)
-  assoc = Iso
-    { fwd = either (Left . Left) (either (Left . Right) Right)
-    , bwd = either (fmap Left) (Right . Right)
-    }
+  assoc =
+    Iso
+      { fwd = either (Left . Left) (either (Left . Right) Right),
+        bwd = either (fmap Left) (Right . Right)
+      }
 
 instance Associative (->) These where
   assoc :: Iso (->) (These a (These b c)) (These (These a b) c)
-  assoc = Iso
-    { fwd = these (This . This) (glmap That) (glmap . These)
-    , bwd = these (grmap This) (That . That) (flip $ grmap . flip These)
-    }
+  assoc =
+    Iso
+      { fwd = these (This . This) (glmap That) (glmap . These),
+        bwd = these (grmap This) (That . That) (flip $ grmap . flip These)
+      }
 
 instance (Monad m, Associative (->) t, GBifunctor (Star m) (Star m) (Star m) t) => Associative (Star m) t where
   assoc :: Iso (Star m) (a `t` (b `t` c)) ((a `t` b) `t` c)
-  assoc = Iso
-    { fwd = (`rmap` id) (fwd assoc)
-    , bwd = (`rmap` id) (bwd assoc)
-    }
+  assoc =
+    Iso
+      { fwd = (`rmap` id) (fwd assoc),
+        bwd = (`rmap` id) (bwd assoc)
+      }
 
 instance (Monad m, Associative (->) t, GBifunctor (Kleisli m) (Kleisli m) (Kleisli m) t) => Associative (Kleisli m) t where
   assoc :: Iso (Kleisli m) (a `t` (b `t` c)) ((a `t` b) `t` c)
-  assoc = Iso
-    { fwd = (`rmap` id) (fwd assoc)
-    , bwd = (`rmap` id) (bwd assoc)
-    }
+  assoc =
+    Iso
+      { fwd = (`rmap` id) (fwd assoc),
+        bwd = (`rmap` id) (bwd assoc)
+      }
 
 --------------------------------------------------------------------------------
 
@@ -210,7 +219,7 @@ instance (Monad m, Associative (->) t, GBifunctor (Kleisli m) (Kleisli m) (Kleis
 -- 'fwd' 'unitr' (a ⊗ i) ≡ a
 -- 'bwd' 'unitr' a ≡ (a ⊗ i)
 --
--- 'fwd' 'unitl' (i ⊗ a) ≡ a 
+-- 'fwd' 'unitl' (i ⊗ a) ≡ a
 -- 'bwd' 'unitl' a ≡ (i ⊗ a)
 -- @
 class Associative cat t => Tensor cat t i | t -> i where
@@ -220,7 +229,7 @@ class Associative cat t => Tensor cat t i | t -> i where
   --
   -- >>> fwd (unitl @_ @(,)) ((), True)
   -- True
-  -- 
+  --
   -- >>> bwd (unitl @_ @(,)) True
   -- ((),True)
   --
@@ -230,13 +239,14 @@ class Associative cat t => Tensor cat t i | t -> i where
   -- >>> :t bwd (unitl @_ @Either) True
   -- bwd (unitl @_ @Either) True :: Either Void Bool
   unitl :: Iso cat (i `t` a) a
+
   -- | The <https://ncatlab.org/nlab/show/natural+isomorphism natural isomorphism> between @(a \`t\` i)@ and @a@.
   --
   -- ==== __Examples__
   --
   -- >>> fwd (unitr @_ @(,)) (True, ())
   -- True
-  -- 
+  --
   -- >>> bwd (unitr @_ @(,)) True
   -- (True,())
   --
@@ -249,81 +259,93 @@ class Associative cat t => Tensor cat t i | t -> i where
 
 instance (Tensor (->) t i) => Tensor Op t i where
   unitl :: Iso Op (i `t` a) a
-  unitl = Iso
-    { fwd = Op $ bwd unitl
-    , bwd = Op $ fwd unitl
-    }
+  unitl =
+    Iso
+      { fwd = Op $ bwd unitl,
+        bwd = Op $ fwd unitl
+      }
 
   unitr :: Iso Op (a `t` i) a
-  unitr = Iso
-    { fwd = Op $ bwd unitr
-    , bwd = Op $ fwd unitr
-    }
+  unitr =
+    Iso
+      { fwd = Op $ bwd unitr,
+        bwd = Op $ fwd unitr
+      }
 
 instance Tensor (->) (,) () where
   unitl :: Iso (->) ((), a) a
-  unitl = Iso
-    { fwd = snd
-    , bwd = bipure ()
-    }
+  unitl =
+    Iso
+      { fwd = snd,
+        bwd = bipure ()
+      }
 
   unitr :: Iso (->) (a, ()) a
-  unitr = Iso
-    { fwd = fst
-    , bwd = (`bipure` ())
-    }
+  unitr =
+    Iso
+      { fwd = fst,
+        bwd = (`bipure` ())
+      }
 
 instance Tensor (->) Either Void where
   unitl :: Iso (->) (Either Void a) a
-  unitl = Iso
-     { fwd = either absurd id
-     , bwd = pure
-     }
+  unitl =
+    Iso
+      { fwd = either absurd id,
+        bwd = pure
+      }
 
   unitr :: Iso (->) (Either a Void) a
-  unitr = Iso
-    { fwd = either id absurd
-    , bwd = Left
-    }
+  unitr =
+    Iso
+      { fwd = either id absurd,
+        bwd = Left
+      }
 
 instance Tensor (->) These Void where
   unitl :: Iso (->) (These Void a) a
-  unitl = Iso
-    { fwd = these absurd id (\ _ x -> x)
-    , bwd = That
-    }
+  unitl =
+    Iso
+      { fwd = these absurd id (\_ x -> x),
+        bwd = That
+      }
 
   unitr :: Iso (->) (These a Void) a
-  unitr = Iso
-    { fwd = these id absurd const
-    , bwd = This
-    }
+  unitr =
+    Iso
+      { fwd = these id absurd const,
+        bwd = This
+      }
 
 instance (Monad m, Tensor (->) t i, Associative (Star m) t) => Tensor (Star m) t i where
   unitl :: Iso (Star m) (i `t` a) a
-  unitl = Iso
-    { fwd = (`rmap` id) (fwd unitl)
-    , bwd = (`rmap` id) (bwd unitl)
-    }
+  unitl =
+    Iso
+      { fwd = (`rmap` id) (fwd unitl),
+        bwd = (`rmap` id) (bwd unitl)
+      }
 
   unitr :: Iso (Star m) (a `t` i) a
-  unitr = Iso
-    { fwd = (`rmap` id) (fwd unitr)
-    , bwd = (`rmap` id) (bwd unitr)
-    }
+  unitr =
+    Iso
+      { fwd = (`rmap` id) (fwd unitr),
+        bwd = (`rmap` id) (bwd unitr)
+      }
 
 instance (Monad m, Tensor (->) t i, Associative (Kleisli m) t) => Tensor (Kleisli m) t i where
   unitl :: Iso (Kleisli m) (i `t` a) a
-  unitl = Iso
-    { fwd = (`rmap` id) (fwd unitl)
-    , bwd = (`rmap` id) (bwd unitl)
-    }
+  unitl =
+    Iso
+      { fwd = (`rmap` id) (fwd unitl),
+        bwd = (`rmap` id) (bwd unitl)
+      }
 
   unitr :: Iso (Kleisli m) (a `t` i) a
-  unitr = Iso
-    { fwd = (`rmap` id) (fwd unitr)
-    , bwd = (`rmap` id) (bwd unitr)
-    }
+  unitr =
+    Iso
+      { fwd = (`rmap` id) (fwd unitr),
+        bwd = (`rmap` id) (bwd unitr)
+      }
 
 --------------------------------------------------------------------------------
 

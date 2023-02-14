@@ -43,6 +43,7 @@
             ghcid
             haskell.compiler.${compiler}
             haskell.packages.${compiler}.haskell-language-server
+            nixpkgs-fmt
             ormolu
           ];
         };
