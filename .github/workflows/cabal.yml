@@ -53,8 +53,11 @@ jobs:
       - name: Build
         run: cabal build
 
+      - name: Test
+        run: cabal test all $CONFIG
+
       - name: Haddock
-        run: cabal haddock
+        run: cabal haddock all $CONFIG
 
       - name: SDist
-        run: cabal sdist
+        run: cabal sdist all $CONFIG
