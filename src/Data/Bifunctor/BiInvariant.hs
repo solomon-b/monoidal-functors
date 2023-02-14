@@ -132,6 +132,7 @@ deriving via (FromProfunctor (Product p q))          instance (Profunctor p, Pro
 deriving via (FromProfunctor (Ran p q))              instance (Profunctor p, Profunctor q) => BiInvariant (Ran p q)
 deriving via (FromProfunctor (Rift p q))             instance (Profunctor p, Profunctor q) => BiInvariant (Rift p q)
 deriving via (FromProfunctor (Star f))               instance Functor f => BiInvariant (Star (FromFunctor f))
+deriving via (FromProfunctor (Star f))               instance Functor f => BiInvariant (Star (FromContra f))
 deriving via (FromProfunctor (Sum p q))              instance (Profunctor p, Profunctor q) => BiInvariant (Sum (FromProfunctor p) (FromProfunctor q))
 deriving via (FromProfunctor (Tagged :: * -> * -> *)) instance BiInvariant (Tagged :: * -> * -> *)
 deriving via (FromProfunctor (Tambara p))            instance Profunctor p => BiInvariant (Tambara p)
