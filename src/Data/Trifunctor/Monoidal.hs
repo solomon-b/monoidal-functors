@@ -24,7 +24,7 @@ import Control.Category.Tensor (Associative, Tensor)
 --
 -- __Associativity:__
 --
--- \[ 
+-- \[
 -- \require{AMScd}
 -- \begin{CD}
 -- (F A B C \bullet F X Y Z) \bullet F P Q R                                              @>>{\alpha_{\mathcal{D}}}>     F A B C \bullet (F X Y Z \bullet F P Q R) \\
@@ -39,12 +39,14 @@ import Control.Category.Tensor (Associative, Tensor)
 -- 'combine' 'Control.Category..' 'Control.Category.Tensor.grmap' 'Control.Category.Tensor.combine' 'Control.Category..' 'Control.Category.Tensor.bwd' 'Control.Category.Tensor.assoc' ≡ 'Data.Functor.fmap' ('Control.Category.Tensor.bwd' 'Control.Category.Tensor.assoc') 'Control.Category..' 'combine' 'Control.Category..' 'Control.Category.Tensor.glmap' 'combine'
 -- @
 class
-  ( Associative cat t1
-  , Associative cat t2
-  , Associative cat t3
-  , Associative cat to
-  ) => Semigroupal cat t1 t2 t3 to f where
-  -- | A natural transformation \(\phi_{ABC,XYZ} : F\ A\ B\ C \bullet F\ X\ Y\ Z \to F\ (A \otimes X)\ (B \otimes Y) (C \otimes Z)\). 
+  ( Associative cat t1,
+    Associative cat t2,
+    Associative cat t3,
+    Associative cat to
+  ) =>
+  Semigroupal cat t1 t2 t3 to f
+  where
+  -- | A natural transformation \(\phi_{ABC,XYZ} : F\ A\ B\ C \bullet F\ X\ Y\ Z \to F\ (A \otimes X)\ (B \otimes Y) (C \otimes Z)\).
   combine :: to (f x y z) (f x' y' z') `cat` f (t1 x x') (t2 y y') (t3 z z')
 
 --------------------------------------------------------------------------------
@@ -70,7 +72,7 @@ class Unital cat i1 i2 i3 o f where
 --
 -- __Right Unitality:__
 --
--- \[ 
+-- \[
 -- \require{AMScd}
 -- \begin{CD}
 -- F A B C \bullet I_{\mathcal{D}}   @>{1 \bullet \phi}>>                                                            F A B \bullet F I_{\mathcal{C_{1}}} I_{\mathcal{C_{2}}} I_{\mathcal{C_{3}}}\\
@@ -85,7 +87,7 @@ class Unital cat i1 i2 i3 o f where
 --
 -- __ Left Unitality__:
 --
--- \[ 
+-- \[
 -- \begin{CD}
 -- I_{\mathcal{D}} \bullet F A B C   @>{\phi \bullet 1}>>                                                                    F I_{\mathcal{C_{1}}} I_{\mathcal{C_{2}}} \bullet F A B C\\
 -- @VV{\lambda_{\mathcal{D}}}V                                                                                               @VV{I_{\mathcal{C_{1}}}I_{\mathcal{C_{2}}}I_{\mathcal{C_{3}}},\phi ABC}V \\
@@ -97,10 +99,11 @@ class Unital cat i1 i2 i3 o f where
 -- 'combine' 'Control.Category..' 'Control.Category.Tensor.glmap' 'introduce' ≡ 'Data.Functor.fmap' ('Control.Category.Tensor.bwd' 'Control.Category.Tensor.unitl') 'Control.Category..' 'Control.Category.Tensor.fwd' 'Control.Category.Tensor.unitl'
 -- @
 class
-  ( Tensor cat t1 i1
-  , Tensor cat t2 i2
-  , Tensor cat t3 i3
-  , Tensor cat to io
-  , Semigroupal cat t1 t2 t3 to f
-  , Unital cat i1 i2 i3 io f
-  ) => Monoidal cat t1 i1 t2 i2 t3 i3 to io f
+  ( Tensor cat t1 i1,
+    Tensor cat t2 i2,
+    Tensor cat t3 i3,
+    Tensor cat to io,
+    Semigroupal cat t1 t2 t3 to f,
+    Unital cat i1 i2 i3 io f
+  ) =>
+  Monoidal cat t1 i1 t2 i2 t3 i3 to io f
