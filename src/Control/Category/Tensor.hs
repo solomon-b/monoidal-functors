@@ -29,6 +29,7 @@ import Data.Profunctor (Profunctor (..), Star (..))
 import Data.These (These (..), these)
 import Data.Void (Void, absurd)
 import Prelude hiding (id, (.))
+import Control.Arrow (Kleisli(..))
 
 --------------------------------------------------------------------------------
 
@@ -112,6 +113,14 @@ instance GBifunctor (Star Maybe) (Star Maybe) (Star Maybe) These where
       That c    -> That <$> g c
       These a c -> liftA2 These (f a) (g c)
 
+instance GBifunctor (Kleisli Maybe) (Kleisli Maybe) (Kleisli Maybe) These where
+  gbimap :: Kleisli Maybe a b -> Kleisli Maybe c d -> Kleisli Maybe (These a c) (These b d)
+  gbimap (Kleisli f) (Kleisli g) =
+    Kleisli $ \case
+      This a    -> This <$> f a
+      That c    -> That <$> g c
+      These a c -> liftA2 These (f a) (g c)
+
 instance GBifunctor cat cat cat t => GBifunctor (Iso cat) (Iso cat) (Iso cat) t where
   gbimap :: Iso cat a b -> Iso cat c d -> Iso cat (t a c) (t b d)
   gbimap iso1 iso2 = Iso (gbimap (fwd iso1) (fwd iso2)) (gbimap (bwd iso1) (bwd iso2))
@@ -173,6 +182,13 @@ instance Associative (->) These where
 
 instance (Monad m, Associative (->) t, GBifunctor (Star m) (Star m) (Star m) t) => Associative (Star m) t where
   assoc :: Iso (Star m) (a `t` (b `t` c)) ((a `t` b) `t` c)
+  assoc = Iso
+    { fwd = (`rmap` id) (fwd assoc)
+    , bwd = (`rmap` id) (bwd assoc)
+    }
+
+instance (Monad m, Associative (->) t, GBifunctor (Kleisli m) (Kleisli m) (Kleisli m) t) => Associative (Kleisli m) t where
+  assoc :: Iso (Kleisli m) (a `t` (b `t` c)) ((a `t` b) `t` c)
   assoc = Iso
     { fwd = (`rmap` id) (fwd assoc)
     , bwd = (`rmap` id) (bwd assoc)
@@ -296,6 +312,19 @@ instance (Monad m, Tensor (->) t i, Associative (Star m) t) => Tensor (Star m) t
     , bwd = (`rmap` id) (bwd unitr)
     }
 
+instance (Monad m, Tensor (->) t i, Associative (Kleisli m) t) => Tensor (Kleisli m) t i where
+  unitl :: Iso (Kleisli m) (i `t` a) a
+  unitl = Iso
+    { fwd = (`rmap` id) (fwd unitl)
+    , bwd = (`rmap` id) (bwd unitl)
+    }
+
+  unitr :: Iso (Kleisli m) (a `t` i) a
+  unitr = Iso
+    { fwd = (`rmap` id) (fwd unitr)
+    , bwd = (`rmap` id) (bwd unitr)
+    }
+
 --------------------------------------------------------------------------------
 
 -- | A bifunctor \(\_ \otimes\_ \ : \mathcal{C} \times \mathcal{C} \to \mathcal{C}\)
@@ -344,3 +373,7 @@ instance Symmetric (->) These where
 instance (Monad m, Symmetric (->) t, Associative (Star m) t) => Symmetric (Star m) t where
   swap :: Star m (a `t` b) (b `t` a)
   swap = Star $ pure . swap
+
+instance (Monad m, Symmetric (->) t, Associative (Kleisli m) t) => Symmetric (Kleisli m) t where
+  swap :: Kleisli m (a `t` b) (b `t` a)
+  swap = Kleisli $ pure . swap

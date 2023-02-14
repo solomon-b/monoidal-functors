@@ -28,6 +28,7 @@ import Data.These (These (..), these)
 import Data.Tuple (fst, snd, uncurry)
 import Data.Void (Void, absurd)
 import Prelude (Either (..))
+import Control.Arrow (Kleisli(..))
 
 --------------------------------------------------------------------------------
 
@@ -163,6 +164,35 @@ instance Alternative f => Semigroupal (->) (,) Either (,) (Star f) where
   combine :: (Star f x y, Star f x' y') -> Star f (x, x') (Either y y')
   combine (Star f, Star g) = Star $ \(x, x') -> (Left <$> f x) <|> (Right <$> g x')
 
+instance Applicative f => Semigroupal (->) (,) (,) (,) (Kleisli f) where
+  combine :: (Kleisli f x y, Kleisli f x' y') -> Kleisli f (x, x') (y, y')
+  combine (Kleisli fxy, Kleisli fxy') = Kleisli $ \(x, x') -> liftA2 (,) (fxy x) (fxy' x')
+
+instance Functor f => Semigroupal (->) Either Either (,) (Kleisli f) where
+  combine :: (Kleisli f x y, Kleisli f x' y') -> Kleisli f (Either x x') (Either y y')
+  combine (Kleisli fxy, Kleisli fxy') = Kleisli $ either (fmap Left . fxy) (fmap Right . fxy')
+
+instance Applicative f => Semigroupal (->) These These (,) (Kleisli f) where
+  combine :: (Kleisli f x y, Kleisli f x' y') -> Kleisli f (These x x') (These y y')
+  combine (Kleisli fxy, Kleisli fxy') = Kleisli $ these (fmap This . fxy) (fmap That . fxy') (\x x' -> liftA2 These (fxy x) (fxy' x'))
+
+instance Alternative f => Semigroupal (->) These These These (Kleisli f) where
+  combine :: Applicative f => These (Kleisli f x y) (Kleisli f x' y') -> Kleisli f (These x x') (These y y')
+  combine = \case
+    This (Kleisli fxy) -> Kleisli $ these (fmap This . fxy) (const empty) (\x _ -> This <$> fxy x)
+    That (Kleisli fxy') -> Kleisli $ these (const empty) (fmap That . fxy') (\_ x' -> That <$> fxy' x')
+    These (Kleisli fxy) (Kleisli fxy') -> Kleisli $ these (fmap This . fxy) (fmap That . fxy') (\x x' -> liftA2 These (fxy x) (fxy' x'))
+
+instance Alternative f => Semigroupal (->) Either Either Either (Kleisli f) where
+  combine :: Either (Kleisli f x y) (Kleisli f x' y') -> Kleisli f (Either x x') (Either y y')
+  combine = \case
+    Left (Kleisli fxy)   -> Kleisli $ either (fmap Left . fxy) (const empty)
+    Right (Kleisli fxy') -> Kleisli $ either (const empty) (fmap Right . fxy')
+
+instance Alternative f => Semigroupal (->) (,) Either (,) (Kleisli f) where
+  combine :: (Kleisli f x y, Kleisli f x' y') -> Kleisli f (x, x') (Either y y')
+  combine (Kleisli f, Kleisli g) = Kleisli $ \(x, x') -> (Left <$> f x) <|> (Right <$> g x')
+
 instance Alternative f => Semigroupal (->) (,) (,) (,) (Forget (f r)) where
   combine :: (Forget (f r) x y, Forget (f r) x' y') -> Forget (f r) (x, x') (y, y')
   combine (Forget f, Forget g) = Forget $ \(x, x') -> f x <|> g x'
@@ -262,6 +292,22 @@ instance Alternative f => Unital (->) () Void () (Star f) where
   introduce :: () -> Star f () Void
   introduce () = Star $ const empty
 
+instance Applicative f => Unital (->) () () () (Kleisli f) where
+  introduce :: () -> Kleisli f () ()
+  introduce () = Kleisli pure
+
+instance Unital (->) Void Void () (Kleisli f) where
+  introduce :: () -> Kleisli f Void Void
+  introduce () = Kleisli absurd
+
+instance Alternative f => Unital (->) Void Void Void (Kleisli f) where
+  introduce :: Void -> Kleisli f Void Void
+  introduce = absurd
+
+instance Alternative f => Unital (->) () Void () (Kleisli f) where
+  introduce :: () -> Kleisli f () Void
+  introduce () = Kleisli $ const empty
+
 --------------------------------------------------------------------------------
 -- Monoidal
 
@@ -325,6 +371,12 @@ instance Applicative f => Monoidal (->) These Void These Void (,) () (Star f)
 instance Alternative f => Monoidal (->) Either Void Either Void Either Void (Star f)
 instance Alternative f => Monoidal (->) These Void These Void These Void (Star f)
 instance Alternative f => Monoidal (->) (,) () Either Void (,) () (Star f)
+instance Applicative f => Monoidal (->) (,) () (,) () (,) () (Kleisli f)
+instance Functor f => Monoidal (->) Either Void Either Void (,) () (Kleisli f)
+instance Applicative f => Monoidal (->) These Void These Void (,) () (Kleisli f)
+instance Alternative f => Monoidal (->) Either Void Either Void Either Void (Kleisli f)
+instance Alternative f => Monoidal (->) These Void These Void These Void (Kleisli f)
+instance Alternative f => Monoidal (->) (,) () Either Void (,) () (Kleisli f)
 
 newtype StrongCategory p a b = StrongCategory (p a b)
   deriving (Functor, Applicative, Monad, Profunctor, Category)
