@@ -1,16 +1,17 @@
 {-# LANGUAGE TupleSections #-}
-module Data.Bifunctor.Monoidal.Specialized where
 
-import Prelude hiding ((&&), (||))
+module Data.Bifunctor.Monoidal.Specialized where
 
 import Control.Category.Cartesian
 import Control.Category.Tensor ()
 import Data.Bifunctor.Monoidal
 import Data.Functor.Contravariant
 import Data.Profunctor
+import Data.These
 import Data.Void
+import Prelude hiding ((&&), (||))
 
--- | Split the input between the two argument arrows and multiply their outputs.
+-- | Split the input between the two arguments and multiply their outputs.
 mux :: Semigroupal (->) (,) (,) (,) p => p a b -> p c d -> p (a, c) (b, d)
 mux = curry combine
 
@@ -20,7 +21,7 @@ infixr 3 ***
 (***) :: Semigroupal (->) (,) (,) (,) p => p a b -> p c d -> p (a, c) (b, d)
 (***) = mux
 
--- | Split the input between the two argument arrows and sum their outputs.
+-- | Split the input between the two arguments and sum their outputs.
 demux :: Semigroupal (->) Either Either (,) p => p a b -> p c d -> p (Either a c) (Either b d)
 demux = curry combine
 
@@ -30,7 +31,7 @@ infixr 2 +++
 (+++) :: Semigroupal (->) Either Either (,) p => p a b -> p c d -> p (Either a c) (Either b d)
 (+++) = demux
 
--- | Send the whole input to the two argument arrows and multiply their outputs.
+-- | Send the whole input to the two arguments and multiply their outputs.
 fanout :: (Profunctor p, Semigroupal (->) (,) (,) (,) p) => p x a -> p x b -> p x (a, b)
 fanout pxa pxb = lmap split' $ pxa *** pxb
 
@@ -40,7 +41,7 @@ infixr 3 &&&
 (&&&) :: (Profunctor p, Semigroupal (->) (,) (,) (,) p) => p x a -> p x b -> p x (a, b)
 (&&&) = fanout
 
--- | Split the input between the two argument arrows and merge their outputs.
+-- | Split the input between the two arguments and merge their outputs.
 fanin :: (Profunctor p, Semigroupal (->) Either Either (,) p) => p a x -> p b x -> p (Either a b) x
 fanin pax pbx = rmap merge' $ pax +++ pbx
 
@@ -49,8 +50,8 @@ infixr 2 |||
 -- | Infix operator for 'fanin'.
 (|||) :: (Profunctor p, Semigroupal (->) Either Either (,) p) => p a x -> p b x -> p (Either a b) x
 (|||) = fanin
-    
--- | Split the input between the two argument arrows and and sum their outputs.
+
+-- | Split the input between the two arguments and and sum their outputs.
 switch :: Semigroupal (->) (,) Either (,) p => p a b -> p c d -> p (a, c) (Either b d)
 switch = curry combine
 
@@ -60,15 +61,15 @@ infixr 5 &|
 (&|) :: Semigroupal (->) (,) Either (,) p => p a b -> p c d -> p (a, c) (Either b d)
 (&|) = switch
 
--- | Send the whole input to the two argument arrows and sum their outputs.
+-- | Send the whole input to the two arguments and sum their outputs.
 union :: Profunctor p => Semigroupal (->) (,) Either (,) p => p x a -> p x b -> p x (Either a b)
 union pxa pxb = lmap split' $ pxa &| pxb
 
--- | Split the input between the two argument arrows then merge their outputs.
+-- | Split the input between the two arguments then merge their outputs.
 divide :: (Profunctor p, Semigroupal (->) (,) Either (,) p) => p a x -> p b x -> p (a, b) x
 divide pxa pxb = rmap merge' $ pxa &| pxb
 
--- | Split the input between the two argument arrows then multiply their outputs.
+-- | Split the input between the two arguments then multiply their outputs.
 splice :: Semigroupal (->) Either (,) (,) p => p a b -> p c d -> p (Either a c) (b, d)
 splice = curry combine
 
