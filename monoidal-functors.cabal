@@ -76,6 +76,7 @@ library
     Data.Functor.Invariant
     Data.Functor.Module
     Data.Functor.Monoidal
+    Data.Functor.Monoidal.Specialized
     Data.Trifunctor.Module
     Data.Trifunctor.Monoidal
 
