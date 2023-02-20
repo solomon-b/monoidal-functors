@@ -2,6 +2,8 @@
 
 ## Upcoming
 * Adds common infix operators for Semigroupal.
+* Adds `Data.Functor.Monoidal.Specialized` combinators module.
+* Adds `Biapplicative` operations to `Data.Bifunctor.Monoidal.Specialized`.
 
 ## 0.2.3.0 -- 2023-08-03
 * Add support for GHC 9.6
@@ -17,14 +19,14 @@
 ## 0.2.1.0 -- 2023-01-29
 
 * Rewrite `Semigroupal`, `Unital`, and `Monoidal` `Functor` instances
-  to use deriving via
+  to use deriving via.
 
 ## 0.2.0.0 -- 2023-01-29
 
-* Adds Tensored Type
-* Rewrites haddocks
-* Adds `Control.Category.Cartesian` module
-* Adds a number of specialized combinators to `Data.Bifunctor.Monoidal.Specialized`
+* Adds Tensored Type.
+* Rewrites haddocks.
+* Adds `Control.Category.Cartesian` module.
+* Adds a number of specialized combinators to `Data.Bifunctor.Monoidal.Specialized`.
 
 ## 0.1.1.0 -- 2021-12-13
 
