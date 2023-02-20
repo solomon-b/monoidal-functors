@@ -2,6 +2,11 @@
 
 ## Upcoming
 
+* Adds `co-log` example.
+* Switch to Ormolu formatting and a `Makefile` to manage local development.
+* Adds missing `Star` and `Kleisli` instances.
+* Adds `Divisible` and `Decidable` `Semigroupal` instances.
+
 ## 0.2.1.0 -- 2023-01-29
 
 * Rewrite `Semigroupal`, `Unital`, and `Monoidal` `Functor` instances
