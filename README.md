@@ -8,3 +8,19 @@ preserves the monoidal structure.
 
 This library encodes monoidal functors and related structures in
 Haskell.
+
+## Testing
+
+Using Doctest to find all Haskell sources:
+
+```sh
+cabal exec -- cabal test
+```
+
+or individual files:
+
+```sh
+cabal exec -- doctest -isrc -XLambdaCase -XUndecidableInstances -XFunctionalDependencies src/Control/Category/Cartesian.hs
+```
+
+TODO: Find out how to enable extensions automatically.
