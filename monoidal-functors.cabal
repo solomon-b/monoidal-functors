@@ -87,7 +87,7 @@ library
   hs-source-dirs: src
 
   default-language: Haskell2010
-  
+
 --------------------------------------------------------------------------------
 
 executable co-log
@@ -101,3 +101,12 @@ executable co-log
                    , monoidal-functors
                    , mtl
   default-language: Haskell2010
+
+--------------------------------------------------------------------------------
+
+test-suite monoidal-functors-test
+  import:            common-extensions
+  type:              exitcode-stdio-1.0
+  main-is:           Main.hs
+  hs-source-dirs:    src, test
+  build-depends:     doctest
