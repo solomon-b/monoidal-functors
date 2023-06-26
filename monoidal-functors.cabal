@@ -1,4 +1,4 @@
-cabal-version:       2.4
+cabal-version:       3.4
 name:                monoidal-functors
 category:            Control, Categories
 version:             0.2.1.0
@@ -47,7 +47,7 @@ common common-extensions
 library
   import: common-extensions
   build-depends:
-    base                          >= 4.16.3 && < 4.17,
+    base                          >= 4.12 && < 4.17,
     bifunctors                    >= 5.6.1 && < 5.7,
     tagged                        >= 0.8.7 && < 0.9,
     transformers                  >= 0.5.6 && <= 0.6.1.0,
