@@ -47,7 +47,7 @@ common common-extensions
 library
   import: common-extensions
   build-depends:
-    base                          >= 4.12 && < 4.17,
+    base                          >= 4.12 && < 4.18,
     bifunctors                    >= 5.6.1 && < 5.7,
     tagged                        >= 0.8.7 && < 0.9,
     transformers                  >= 0.5.6 && <= 0.6.1.0,
