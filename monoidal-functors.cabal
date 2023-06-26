@@ -1,7 +1,7 @@
 cabal-version:       3.4
 name:                monoidal-functors
 category:            Control, Categories
-version:             0.2.1.0
+version:             0.2.2.0
 license:             MIT
 license-file:        LICENSE
 author:              Solomon Bothwell & Asad Saeeduddin
