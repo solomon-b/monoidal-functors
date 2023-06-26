@@ -2,10 +2,13 @@
 
 ## Upcoming
 
+## 0.2.2.0 -- 2023-06-26
+
 * Adds `co-log` example.
 * Switch to Ormolu formatting and a `Makefile` to manage local development.
+* Remove Arrow terminology from haddocks.
 * Adds missing `Star` and `Kleisli` instances.
-* Adds `Divisible` and `Decidable` `Monoidal` instances.
+* Adds `Unital` and `Monoidal` instances for `Divisible` and `Decidable`.
 
 ## 0.2.1.0 -- 2023-01-29
 
