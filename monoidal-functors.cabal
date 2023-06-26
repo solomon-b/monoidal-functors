@@ -100,3 +100,4 @@ executable co-log
                    , distributive
                    , monoidal-functors
                    , mtl
+  default-language: Haskell2010
