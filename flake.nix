@@ -8,7 +8,7 @@
 
   outputs = { self, nixpkgs, flake-utils }:
     let
-      ghcVersion = "945";
+      ghcVersion = "962";
       compiler = "ghc${ghcVersion}";
       # default systems compatible with pre-commit-hooks.nix
       # https://github.com/cachix/pre-commit-hooks.nix/pull/122
