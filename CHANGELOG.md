@@ -1,6 +1,7 @@
 # Revision history for monoidal-functors
 
 ## Upcoming
+* Add support for GHC 9.6
 
 ## 0.2.2.0 -- 2023-06-26
 
