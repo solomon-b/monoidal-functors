@@ -1,0 +1,7 @@
+packages: .
+          
+source-repository-package
+  type: git
+  location: https://github.com/MercuryTechnologies/ghc-specter.git
+  tag: main
+  subdir: plugin
