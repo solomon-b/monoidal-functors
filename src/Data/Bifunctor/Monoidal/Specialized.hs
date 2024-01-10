@@ -2,14 +2,18 @@
 
 module Data.Bifunctor.Monoidal.Specialized where
 
+--------------------------------------------------------------------------------
+
 import Control.Category.Cartesian
 import Control.Category.Tensor ()
+import Data.Bifunctor
 import Data.Bifunctor.Monoidal
 import Data.Functor.Contravariant
 import Data.Profunctor
-import Data.These
 import Data.Void
 import Prelude hiding ((&&), (||))
+
+--------------------------------------------------------------------------------
 
 -- | Split the input between the two arguments and multiply their outputs.
 mux :: Semigroupal (->) (,) (,) (,) p => p a b -> p c d -> p (a, c) (b, d)
@@ -147,3 +151,27 @@ split' = split @(->) @(,)
 
 merge' :: Either a a -> a
 merge' = merge @(->) @Either
+
+bipure :: (Bifunctor p, Unital (->) () () () p) => a -> b -> p a b 
+bipure a b = bimap (const a) (const b) $ introduce @_ @() @() ()
+
+biliftA2 :: (Bifunctor m, Semigroupal (->) (,) (,) (,) m) => (a -> b -> c) -> (d -> e -> f) -> m a d -> m b e -> m c f
+biliftA2 f g m1 m2 = bimap (uncurry f) (uncurry g) $ combine (m1, m2)
+
+biapply :: (Bifunctor p, Semigroupal (->) (,) (,) (,) p) => p (a -> b) (c -> d) -> p a c -> p b d
+biapply = fmap (bimap (uncurry ($)) (uncurry ($))) . mux
+
+infixl 4 <<*>>
+
+(<<*>>) :: (Bifunctor p, Semigroupal (->) (,) (,) (,) p) => p (a -> b) (c -> d) -> p a c -> p b d 
+(<<*>>) = biapply
+
+infixl 4 *>>
+
+(*>>) :: (Bifunctor p, Semigroupal (->) (,) (,) (,) p) => p a b -> p c d -> p c d
+(*>>) = biliftA2 (const id) (const id)
+
+infixl 4 <<*
+
+(<<*) :: (Bifunctor p, Semigroupal (->) (,) (,) (,) p) => p a b -> p c d -> p a b
+(<<*) = biliftA2 const const
