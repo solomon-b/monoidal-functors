@@ -1,6 +1,7 @@
 # Revision history for monoidal-functors
 
 ## Upcoming
+* Adds common infix operators for Semigroupal.
 
 ## 0.2.3.0 -- 2023-08-03
 * Add support for GHC 9.6

@@ -3,11 +3,8 @@ module Data.Functor.Monoidal
     Semigroupal (..),
     (|?|),
     (|*|),
-    type (|*|),
     (|+|),
-    type (|+|),
     (|&|),
-    type (|&|),
 
     -- * Unital
     Unital (..),
@@ -340,12 +337,6 @@ infixr 3 |&|
 
 (|&|) :: Semigroupal (->) These (,) f => f a -> f b -> f (These a b)
 (|&|) = curry combine
-
-type (|*|) = (,)
-
-type (|+|) = Either
-
-type (|&|) = These
 
 --------------------------------------------------------------------------------
 

@@ -1,6 +1,11 @@
 module Data.Bifunctor.Monoidal
   ( -- * Semigroupal
     Semigroupal (..),
+    (|??|),
+    (|**|),
+    (|++|),
+    (|&&|),
+    (|+*|),
 
     -- * Unital
     Unital (..),
@@ -28,7 +33,7 @@ import Data.Semigroupoid (Semigroupoid (..))
 import Data.These (These (..), these)
 import Data.Tuple (fst, snd, uncurry)
 import Data.Void (Void, absurd)
-import Prelude (Either (..))
+import Prelude (Either (..), curry)
 
 --------------------------------------------------------------------------------
 
@@ -211,6 +216,31 @@ instance Alternative f => Semigroupal (->) Either Either Either (Forget (f r)) w
 instance Alternative f => Semigroupal (->) (,) Either (,) (Forget (f r)) where
   combine :: (Forget (f r) x y, Forget (f r) x' y') -> Forget (f r) (x, x') (Either y y')
   combine (Forget f, Forget g) = Forget $ \(x, x') -> f x <|> g x'
+
+infixr 9 |??|
+
+(|??|) :: Semigroupal (->) t1 t2 (,) p => p a b -> p a' b' -> p (a `t1` a') (b `t2` b')
+(|??|) = curry combine
+
+infixr 9 |**|
+
+(|**|) :: (Semigroupal (->) (,) (,) (,) p) => p a b -> p a' b' -> p (a, a') (b, b')
+(|**|) = curry combine
+
+infixr 9 |++|
+
+(|++|) :: (Semigroupal (->) Either Either (,) p) => p a b -> p a' b' -> p (Either a a') (Either b b')
+(|++|) = curry combine
+
+infixr 9 |&&|
+
+(|&&|) :: (Semigroupal (->) These These (,) p) => p a b -> p a' b' -> p (These a a') (These b b')
+(|&&|) = curry combine
+
+infixr 9 |+*|
+
+(|+*|) :: (Semigroupal (->) Either (,) (,) p) => p a b -> p a' b' -> p (Either a a') (b, b')
+(|+*|) = curry combine
 
 --------------------------------------------------------------------------------
 
