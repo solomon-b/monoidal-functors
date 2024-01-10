@@ -4,6 +4,7 @@
 * Adds common infix operators for Semigroupal.
 * Adds `Data.Functor.Monoidal.Specialized` combinators module.
 * Adds `Biapplicative` operations to `Data.Bifunctor.Monoidal.Specialized`.
+* Adds `Unalign` `Semigroupal` instances.
 
 ## 0.2.3.0 -- 2023-08-03
 * Add support for GHC 9.6

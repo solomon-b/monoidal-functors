@@ -318,6 +318,19 @@ deriving via FromDecidable (RWST r w s m) instance (Decidable m) => Semigroupal 
 
 deriving via FromDecidable (Lazy.RWST r w s m) instance (Decidable m) => Semigroupal (->) Either (,) (Lazy.RWST r w s m)
 
+newtype FromUnalign f a = FromUnalign (f a)
+  deriving (Functor, Semialign, Unalign)
+
+instance Unalign f => Semigroupal Op These (,) (FromUnalign f) where
+  combine :: Op (FromUnalign f x, FromUnalign f x') (FromUnalign f (These x x'))
+  combine = Op unalign
+
+deriving via FromUnalign Maybe instance Semigroupal Op These (,) Maybe
+
+deriving via FromUnalign (Proxy :: Type -> Type) instance Semigroupal Op These (,) (Proxy :: Type -> Type)
+
+deriving via FromUnalign (Product f g) instance (Unalign f, Unalign g) => Semigroupal Op These (,) (Product f g)
+
 infixr 9 |?|
 
 (|?|) :: Semigroupal (->) t1 (,) f => f a -> f b -> f (a `t1` b)
@@ -432,6 +445,25 @@ deriving via FromAlternative (f `Compose` g) instance (Alternative f, Applicativ
 deriving via FromAlternative (f :.: g) instance (Alternative f, Applicative g) => Unital (->) Void () (f :.: g)
 
 deriving via FromAlternative (M1 i c f) instance (Alternative f) => Unital (->) Void () (M1 i c f)
+
+newtype FromAlign f a = FromAlign (f a)
+  deriving (Functor, Semialign, Align)
+
+instance Align f => Unital (->) Void () (FromAlign f) where
+  introduce :: Align f => () -> FromAlign f Void
+  introduce () = FromAlign nil
+
+--deriving via FromAlign [] instance Unital (->) Void () [] 
+
+--deriving via FromAlign Maybe instance Unital (->) Void () Maybe 
+
+--deriving via FromAlign (Proxy :: Type -> Type) instance Unital (->) Void () (Proxy :: Type -> Type)
+
+--deriving via FromAlign ZipList instance Unital (->) Void () ZipList 
+
+--deriving via FromAlign (Product f g) instance (Align f, Align g) => Unital (->) Void () (Product (FromAlign f) (FromAlign g))
+
+--deriving via FromAlign (Compose f g) instance (Align f, Semialign g) => Unital (->) Void () (Compose f g)
 
 instance Divisible f => Unital (->) () () (FromDivisible f) where
   introduce :: () -> FromDivisible f ()
