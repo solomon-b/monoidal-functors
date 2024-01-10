@@ -1,6 +1,10 @@
 module Data.Trifunctor.Monoidal
   ( -- * Semigroupal
     Semigroupal (..),
+    (|***|),
+    (|*+*|),
+    (|+++|),
+    (|&&&|),
 
     -- * Unital
     Unital (..),
@@ -13,6 +17,8 @@ where
 --------------------------------------------------------------------------------
 
 import Control.Category.Tensor (Associative, Tensor)
+import Prelude (curry, Either)
+import Data.These (These)
 
 --------------------------------------------------------------------------------
 
@@ -48,6 +54,26 @@ class
   where
   -- | A natural transformation \(\phi_{ABC,XYZ} : F\ A\ B\ C \bullet F\ X\ Y\ Z \to F\ (A \otimes X)\ (B \otimes Y) (C \otimes Z)\).
   combine :: to (f x y z) (f x' y' z') `cat` f (t1 x x') (t2 y y') (t3 z z')
+
+infixr 9 |*+*|
+
+(|*+*|) :: (Semigroupal (->) (,) Either (,) (,) p) => p a b c -> p a' b c' -> p (a, a') (Either b b) (c, c')
+(|*+*|) = curry combine
+
+infixr 9 |***|
+
+(|***|) :: (Semigroupal (->) (,) (,) (,) (,) p) => p a b c -> p a' b' c' -> p (a, a') (b, b') (c, c')
+(|***|) = curry combine
+
+infixr 9 |+++|
+
+(|+++|) :: (Semigroupal (->) Either Either Either (,) p) => p a b c -> p a' b' c' -> p (Either a a') (Either b b') (Either c c')
+(|+++|) = curry combine
+
+infixr 9 |&&&|
+
+(|&&&|) :: (Semigroupal (->) These These These (,) p) => p a b c -> p a' b' c' -> p (These a a') (These b b') (These c c')
+(|&&&|) = curry combine
 
 --------------------------------------------------------------------------------
 
