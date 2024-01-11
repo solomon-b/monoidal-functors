@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+
 module Data.Functor.Monoidal.Specialized
   ( -- * Applicative
     pure,

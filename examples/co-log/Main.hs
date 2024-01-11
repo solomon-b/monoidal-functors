@@ -45,12 +45,12 @@ carL :: LogAction IO Car
 carL =
   carToTuple
     >$< (constL "Logging make..." *< showL >* constL "Finished logging make...")
-      >*< (constL "Logging model.." *< showL >* constL "Finished logging model...")
-      >*< ( engineToEither
-              >$< constL "Logging pistons..."
-              *< intL
-              >|< constL "Logging rocket..."
-          )
+    >*< (constL "Logging model.." *< showL >* constL "Finished logging model...")
+    >*< ( engineToEither
+            >$< constL "Logging pistons..."
+            *< intL
+            >|< constL "Logging rocket..."
+        )
 
 runCarExample :: IO ()
 runCarExample = usingLoggerT carL $ logMsg $ Car "Toyota" "Corolla" (Pistons 4)
@@ -63,24 +63,24 @@ instance Contravariant (LogAction m) where
   contramap :: (a -> b) -> LogAction m b -> LogAction m a
   contramap f (LogAction act) = LogAction $ \a -> act (f a)
 
-instance Applicative m => Semigroupal (->) (,) (,) (LogAction m) where
+instance (Applicative m) => Semigroupal (->) (,) (,) (LogAction m) where
   combine :: (LogAction m a, LogAction m b) -> LogAction m (a, b)
   combine (act1, act2) = LogAction $ \(a, b) ->
     unLogAction act1 a
       *> unLogAction act2 b
       *> pure ()
 
-instance Applicative m => Unital (->) () () (LogAction m) where
+instance (Applicative m) => Unital (->) () () (LogAction m) where
   introduce :: () -> LogAction m ()
   introduce () = LogAction $ \_ -> pure ()
 
-instance Applicative m => Semigroupal (->) Either (,) (LogAction m) where
+instance (Applicative m) => Semigroupal (->) Either (,) (LogAction m) where
   combine :: (LogAction m a, LogAction m b) -> LogAction m (Either a b)
   combine (act1, act2) = LogAction $ \case
     Left a -> coerce act1 a
     Right b -> coerce act2 b
 
-instance Applicative m => Unital (->) Void () (LogAction m) where
+instance (Applicative m) => Unital (->) Void () (LogAction m) where
   introduce :: () -> LogAction m Void
   introduce () = LogAction $ \_ -> pure ()
 
@@ -118,12 +118,12 @@ infixr 3 >$<
 
 infixr 4 >*<
 
-(>*<) :: Semigroupal (->) (,) (,) f => f a -> f b -> f (a, b)
+(>*<) :: (Semigroupal (->) (,) (,) f) => f a -> f b -> f (a, b)
 (>*<) = (|?|)
 
 infixr 3 >|<
 
-(>|<) :: Semigroupal (->) Either (,) f => f a -> f b -> f (Either a b)
+(>|<) :: (Semigroupal (->) Either (,) f) => f a -> f b -> f (Either a b)
 (>|<) = (|?|)
 
 infixr 4 >*
@@ -149,7 +149,7 @@ logStringStdout :: LogAction IO String
 logStringStdout = LogAction putStrLn
 
 -- Combinator that allows to log any showable value
-showL :: Show a => LogAction IO a
+showL :: (Show a) => LogAction IO a
 showL = contramap show logStringStdout
 
 -- Returns a log action that logs a given string ignoring its input.
@@ -177,12 +177,12 @@ logMsg msg = do
   LogAction logger <- asks getLogAction
   logger msg
 
-usingLoggerT :: Monad m => LogAction m msg -> LoggerT msg m a -> m a
+usingLoggerT :: (Monad m) => LogAction m msg -> LoggerT msg m a -> m a
 usingLoggerT action = flip runReaderT (liftLogAction action) . runLoggerT
 
 newtype LoggerT msg m a = LoggerT {runLoggerT :: ReaderT (LogAction (LoggerT msg m) msg) m a}
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadReader (LogAction (LoggerT msg m) msg))
 
 instance MonadTrans (LoggerT msg) where
-  lift :: Monad m => m a -> LoggerT msg m a
+  lift :: (Monad m) => m a -> LoggerT msg m a
   lift = LoggerT . lift
