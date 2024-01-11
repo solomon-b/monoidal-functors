@@ -53,22 +53,22 @@ class LeftModule cat t1 f where
   -- [Left True,Left False]
   lstrength :: cat (f a) (f (t1 a x))
 
-instance Contravariant f => LeftModule (->) (,) (FromContra f) where
+instance (Contravariant f) => LeftModule (->) (,) (FromContra f) where
   lstrength :: FromContra f a -> FromContra f (a, x)
   lstrength = contramap fst
 
-instance Contravariant f => LeftModule Op Either (FromContra f) where
+instance (Contravariant f) => LeftModule Op Either (FromContra f) where
   lstrength = Op (contramap Left)
 
-instance Functor f => LeftModule (->) Either (FromFunctor f) where
+instance (Functor f) => LeftModule (->) Either (FromFunctor f) where
   lstrength :: FromFunctor f a -> FromFunctor f (Either a x)
   lstrength = fmap Left
 
-instance Functor f => LeftModule (->) These (FromFunctor f) where
+instance (Functor f) => LeftModule (->) These (FromFunctor f) where
   lstrength :: FromFunctor f a -> FromFunctor f (These a x)
   lstrength = fmap This
 
-instance Functor f => LeftModule Op (,) (FromFunctor f) where
+instance (Functor f) => LeftModule Op (,) (FromFunctor f) where
   lstrength = Op (fmap fst)
 
 deriving via (FromContra Comparison) instance LeftModule (->) (,) Comparison
@@ -87,9 +87,9 @@ deriving via (FromContra V1) instance LeftModule (->) (,) V1
 
 deriving via (FromContra (Const a)) instance LeftModule (->) (,) (Const a)
 
-deriving via (FromContra (Alt f)) instance Contravariant f => LeftModule (->) (,) (Alt f)
+deriving via (FromContra (Alt f)) instance (Contravariant f) => LeftModule (->) (,) (Alt f)
 
-deriving via (FromContra (Rec1 f)) instance Contravariant f => LeftModule (->) (,) (Rec1 f)
+deriving via (FromContra (Rec1 f)) instance (Contravariant f) => LeftModule (->) (,) (Rec1 f)
 
 deriving via (FromContra (Product f g)) instance (Contravariant f, Contravariant g) => LeftModule (->) (,) (Product f g)
 
@@ -105,7 +105,7 @@ deriving via (FromContra (Compose f g)) instance (Functor f, Contravariant g) =>
 
 deriving via (FromContra (f :.: g)) instance (Functor f, Contravariant g) => LeftModule (->) (,) (f :.: g)
 
-deriving via (FromContra (M1 i c f)) instance Contravariant f => LeftModule (->) (,) (M1 i c f)
+deriving via (FromContra (M1 i c f)) instance (Contravariant f) => LeftModule (->) (,) (M1 i c f)
 
 deriving via (FromContra Comparison) instance LeftModule Op Either Comparison
 
@@ -123,9 +123,9 @@ deriving via (FromContra V1) instance LeftModule Op Either V1
 
 deriving via (FromContra (Const a)) instance LeftModule Op Either (Const a)
 
-deriving via (FromContra (Alt f)) instance Contravariant f => LeftModule Op Either (Alt f)
+deriving via (FromContra (Alt f)) instance (Contravariant f) => LeftModule Op Either (Alt f)
 
-deriving via (FromContra (Rec1 f)) instance Contravariant f => LeftModule Op Either (Rec1 f)
+deriving via (FromContra (Rec1 f)) instance (Contravariant f) => LeftModule Op Either (Rec1 f)
 
 deriving via (FromContra (Product f g)) instance (Contravariant f, Contravariant g) => LeftModule Op Either (Product f g)
 
@@ -141,7 +141,7 @@ deriving via (FromContra (Compose f g)) instance (Functor f, Contravariant g) =>
 
 deriving via (FromContra (f :.: g)) instance (Functor f, Contravariant g) => LeftModule Op Either (f :.: g)
 
-deriving via (FromContra (M1 i c f)) instance Contravariant f => LeftModule Op Either (M1 i c f)
+deriving via (FromContra (M1 i c f)) instance (Contravariant f) => LeftModule Op Either (M1 i c f)
 
 deriving via FromFunctor Identity instance LeftModule (->) Either Identity
 
@@ -239,23 +239,23 @@ class RightModule cat t1 f where
   -- [Right True,Right False]
   rstrength :: cat (f a) (f (t1 x a))
 
-instance Contravariant f => RightModule (->) (,) (FromContra f) where
+instance (Contravariant f) => RightModule (->) (,) (FromContra f) where
   rstrength :: FromContra f a -> FromContra f (x, a)
   rstrength = contramap snd
 
-instance Contravariant f => RightModule Op Either (FromContra f) where
+instance (Contravariant f) => RightModule Op Either (FromContra f) where
   rstrength :: Op (FromContra f a) (FromContra f (Either x a))
   rstrength = Op (contramap Right)
 
-instance Functor f => RightModule (->) Either (FromFunctor f) where
+instance (Functor f) => RightModule (->) Either (FromFunctor f) where
   rstrength :: FromFunctor f a -> FromFunctor f (Either x a)
   rstrength = fmap Right
 
-instance Functor f => RightModule (->) These (FromFunctor f) where
+instance (Functor f) => RightModule (->) These (FromFunctor f) where
   rstrength :: FromFunctor f a -> FromFunctor f (These x a)
   rstrength = fmap That
 
-instance Functor f => RightModule Op (,) (FromFunctor f) where
+instance (Functor f) => RightModule Op (,) (FromFunctor f) where
   rstrength :: Op (FromFunctor f a) (FromFunctor f (x, a))
   rstrength = Op (fmap snd)
 
@@ -275,9 +275,9 @@ deriving via (FromContra V1) instance RightModule (->) (,) V1
 
 deriving via (FromContra (Const a)) instance RightModule (->) (,) (Const a)
 
-deriving via (FromContra (Alt f)) instance Contravariant f => RightModule (->) (,) (Alt f)
+deriving via (FromContra (Alt f)) instance (Contravariant f) => RightModule (->) (,) (Alt f)
 
-deriving via (FromContra (Rec1 f)) instance Contravariant f => RightModule (->) (,) (Rec1 f)
+deriving via (FromContra (Rec1 f)) instance (Contravariant f) => RightModule (->) (,) (Rec1 f)
 
 deriving via (FromContra (Product f g)) instance (Contravariant f, Contravariant g) => RightModule (->) (,) (Product f g)
 
@@ -293,7 +293,7 @@ deriving via (FromContra (Compose f g)) instance (Functor f, Contravariant g) =>
 
 deriving via (FromContra (f :.: g)) instance (Functor f, Contravariant g) => RightModule (->) (,) (f :.: g)
 
-deriving via (FromContra (M1 i c f)) instance Contravariant f => RightModule (->) (,) (M1 i c f)
+deriving via (FromContra (M1 i c f)) instance (Contravariant f) => RightModule (->) (,) (M1 i c f)
 
 deriving via (FromContra Comparison) instance RightModule Op Either Comparison
 
@@ -311,9 +311,9 @@ deriving via (FromContra V1) instance RightModule Op Either V1
 
 deriving via (FromContra (Const a)) instance RightModule Op Either (Const a)
 
-deriving via (FromContra (Alt f)) instance Contravariant f => RightModule Op Either (Alt f)
+deriving via (FromContra (Alt f)) instance (Contravariant f) => RightModule Op Either (Alt f)
 
-deriving via (FromContra (Rec1 f)) instance Contravariant f => RightModule Op Either (Rec1 f)
+deriving via (FromContra (Rec1 f)) instance (Contravariant f) => RightModule Op Either (Rec1 f)
 
 deriving via (FromContra (Product f g)) instance (Contravariant f, Contravariant g) => RightModule Op Either (Product f g)
 
@@ -329,7 +329,7 @@ deriving via (FromContra (Compose f g)) instance (Functor f, Contravariant g) =>
 
 deriving via (FromContra (f :.: g)) instance (Functor f, Contravariant g) => RightModule Op Either (f :.: g)
 
-deriving via (FromContra (M1 i c f)) instance Contravariant f => RightModule Op Either (M1 i c f)
+deriving via (FromContra (M1 i c f)) instance (Contravariant f) => RightModule Op Either (M1 i c f)
 
 deriving via FromFunctor Identity instance RightModule (->) Either Identity
 
@@ -417,15 +417,15 @@ deriving via (FromFunctor ((,,,) x1 x2 x3)) instance RightModule Op (,) ((,,,) x
 
 class (LeftModule cat t1 f, RightModule cat t1 f) => Bimodule cat t1 f
 
-instance Contravariant f => Bimodule (->) (,) (FromContra f)
+instance (Contravariant f) => Bimodule (->) (,) (FromContra f)
 
-instance Contravariant f => Bimodule Op Either (FromContra f)
+instance (Contravariant f) => Bimodule Op Either (FromContra f)
 
-instance Functor f => Bimodule (->) Either (FromFunctor f)
+instance (Functor f) => Bimodule (->) Either (FromFunctor f)
 
-instance Functor f => Bimodule (->) These (FromFunctor f)
+instance (Functor f) => Bimodule (->) These (FromFunctor f)
 
-instance Functor f => Bimodule Op (,) (FromFunctor f)
+instance (Functor f) => Bimodule Op (,) (FromFunctor f)
 
 deriving via (FromContra Comparison) instance Bimodule (->) (,) Comparison
 
@@ -443,9 +443,9 @@ deriving via (FromContra V1) instance Bimodule (->) (,) V1
 
 deriving via (FromContra (Const a)) instance Bimodule (->) (,) (Const a)
 
-deriving via (FromContra (Alt f)) instance Contravariant f => Bimodule (->) (,) (Alt f)
+deriving via (FromContra (Alt f)) instance (Contravariant f) => Bimodule (->) (,) (Alt f)
 
-deriving via (FromContra (Rec1 f)) instance Contravariant f => Bimodule (->) (,) (Rec1 f)
+deriving via (FromContra (Rec1 f)) instance (Contravariant f) => Bimodule (->) (,) (Rec1 f)
 
 deriving via (FromContra (Product f g)) instance (Contravariant f, Contravariant g) => Bimodule (->) (,) (Product f g)
 
@@ -461,7 +461,7 @@ deriving via (FromContra (Compose f g)) instance (Functor f, Contravariant g) =>
 
 deriving via (FromContra (f :.: g)) instance (Functor f, Contravariant g) => Bimodule (->) (,) (f :.: g)
 
-deriving via (FromContra (M1 i c f)) instance Contravariant f => Bimodule (->) (,) (M1 i c f)
+deriving via (FromContra (M1 i c f)) instance (Contravariant f) => Bimodule (->) (,) (M1 i c f)
 
 deriving via (FromContra Comparison) instance Bimodule Op Either Comparison
 
@@ -479,9 +479,9 @@ deriving via (FromContra V1) instance Bimodule Op Either V1
 
 deriving via (FromContra (Const a)) instance Bimodule Op Either (Const a)
 
-deriving via (FromContra (Alt f)) instance Contravariant f => Bimodule Op Either (Alt f)
+deriving via (FromContra (Alt f)) instance (Contravariant f) => Bimodule Op Either (Alt f)
 
-deriving via (FromContra (Rec1 f)) instance Contravariant f => Bimodule Op Either (Rec1 f)
+deriving via (FromContra (Rec1 f)) instance (Contravariant f) => Bimodule Op Either (Rec1 f)
 
 deriving via (FromContra (Product f g)) instance (Contravariant f, Contravariant g) => Bimodule Op Either (Product f g)
 
@@ -497,7 +497,7 @@ deriving via (FromContra (Compose f g)) instance (Functor f, Contravariant g) =>
 
 deriving via (FromContra (f :.: g)) instance (Functor f, Contravariant g) => Bimodule Op Either (f :.: g)
 
-deriving via (FromContra (M1 i c f)) instance Contravariant f => Bimodule Op Either (M1 i c f)
+deriving via (FromContra (M1 i c f)) instance (Contravariant f) => Bimodule Op Either (M1 i c f)
 
 deriving via FromFunctor Identity instance Bimodule (->) Either Identity
 

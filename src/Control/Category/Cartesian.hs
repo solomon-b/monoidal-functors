@@ -36,7 +36,7 @@ import Prelude hiding (fst, id, snd)
 -- 'Control.Category.Tensor.grmap' 'split' '.' 'split' ≡ 'bwd' 'Control.Category.Tensor.assoc' '.' 'Control.Category.Tensor.glmap' 'split' '.' 'split'
 -- 'Control.Category.Tensor.glmap' 'split' '.' 'split' ≡ 'fwd' 'Control.Category.Tensor.assoc' '.' 'Control.Category.Tensor.grmap' 'split' '.' 'split'
 -- @
-class Symmetric cat t => Semicartesian cat t where
+class (Symmetric cat t) => Semicartesian cat t where
   -- | The <https://ncatlab.org/nlab/show/diagonal+morphism diagonal morphism> of @a@ in @cat@. We can think of 'split'
   -- as duplicating data.
   --
@@ -64,15 +64,15 @@ class Symmetric cat t => Semicartesian cat t where
 -- | Infix version of 'fork'.
 infixr 9 /\
 
-(/\) :: Semicartesian cat t => cat a x -> cat a y -> cat a (x `t` y)
+(/\) :: (Semicartesian cat t) => cat a x -> cat a y -> cat a (x `t` y)
 (/\) = fork
 
 instance Semicartesian (->) (,) where
   split :: a -> (a, a)
   split a = (a, a)
 
-instance Semicocartesian (->) t => Semicartesian Op t where
-  split :: Semicocartesian (->) t => Op a (t a a)
+instance (Semicocartesian (->) t) => Semicartesian Op t where
+  split :: (Semicocartesian (->) t) => Op a (t a a)
   split = Op merge
 
 --------------------------------------------------------------------------------
@@ -87,7 +87,7 @@ instance Semicocartesian (->) t => Semicartesian Op t where
 -- 'merge' '.' 'Control.Category.Tensor.grmap' 'merge' ≡ 'merge' . 'Control.Category.Tensor.glmap' 'merge' '.' 'fwd' 'Control.Category.Tensor.assoc'
 -- 'merge' '.' 'Control.Category.Tensor.glmap' 'merge' ≡ 'merge' . 'Control.Category.Tensor.grmap' 'merge' '.' 'bwd' 'Control.Category.Tensor.assoc'
 -- @
-class Symmetric cat t => Semicocartesian cat t where
+class (Symmetric cat t) => Semicocartesian cat t where
   -- | The <https://ncatlab.org/nlab/show/codiagonal co-diagonal morphism> of @a@ in @cat@.
   --
   -- ==== __Examples__
@@ -111,15 +111,15 @@ class Symmetric cat t => Semicocartesian cat t where
 -- | Infix version of 'fuse'.
 infixr 9 \/
 
-(\/) :: Semicocartesian cat t => cat x a -> cat y a -> cat (x `t` y) a
+(\/) :: (Semicocartesian cat t) => cat x a -> cat y a -> cat (x `t` y) a
 (\/) = fuse
 
 instance Semicocartesian (->) Either where
   merge :: Either a a -> a
   merge = either id id
 
-instance Semicartesian (->) t => Semicocartesian Op t where
-  merge :: Semicartesian (->) t => Op (t a a) a
+instance (Semicartesian (->) t) => Semicocartesian Op t where
+  merge :: (Semicartesian (->) t) => Op (t a a) a
   merge = Op split
 
 --------------------------------------------------------------------------------
@@ -173,8 +173,8 @@ instance Cartesian (->) (,) () where
   kill :: a -> ()
   kill = const ()
 
-instance Cocartesian (->) t i => Cartesian Op t i where
-  kill :: Cocartesian (->) t i => Op a i
+instance (Cocartesian (->) t i) => Cartesian Op t i where
+  kill :: (Cocartesian (->) t i) => Op a i
   kill = Op spawn
 
 --------------------------------------------------------------------------------
@@ -214,8 +214,8 @@ class (Semicocartesian cat t, Tensor cat t i) => Cocartesian cat t i | i -> t, t
 
   {-# MINIMAL spawn #-}
 
-instance Cartesian (->) t i => Cocartesian Op t i where
-  spawn :: Cartesian (->) t i => Op i a
+instance (Cartesian (->) t i) => Cocartesian Op t i where
+  spawn :: (Cartesian (->) t i) => Op i a
   spawn = Op kill
 
 instance Cocartesian (->) Either Void where

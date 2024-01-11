@@ -45,7 +45,7 @@ import Prelude hiding (id, (.))
 -- @
 data Iso cat a b = Iso {fwd :: cat a b, bwd :: cat b a}
 
-instance Category cat => Category (Iso cat) where
+instance (Category cat) => Category (Iso cat) where
   id :: Iso cat a a
   id = Iso id id
 
@@ -90,22 +90,22 @@ class (Category cat1, Category cat2, Category cat3) => GBifunctor cat1 cat2 cat3
 -- | Infix operator for 'gbimap'.
 infixr 9 #
 
-(#) :: GBifunctor cat1 cat2 cat3 t => cat1 a b -> cat2 c d -> cat3 (a `t` c) (b `t` d)
+(#) :: (GBifunctor cat1 cat2 cat3 t) => cat1 a b -> cat2 c d -> cat3 (a `t` c) (b `t` d)
 (#) = gbimap
 
 -- | Covariantally map over the right variable.
-grmap :: GBifunctor cat1 cat2 cat3 t => cat2 c d -> cat3 (a `t` c) (a `t` d)
+grmap :: (GBifunctor cat1 cat2 cat3 t) => cat2 c d -> cat3 (a `t` c) (a `t` d)
 grmap = (#) id
 
 -- | Covariantally map over the left variable.
-glmap :: GBifunctor cat1 cat2 cat3 t => cat1 a b -> cat3 (a `t` c) (b `t` c)
+glmap :: (GBifunctor cat1 cat2 cat3 t) => cat1 a b -> cat3 (a `t` c) (b `t` c)
 glmap = flip (#) id
 
-instance GBifunctor (->) (->) (->) t => GBifunctor Op Op Op t where
+instance (GBifunctor (->) (->) (->) t) => GBifunctor Op Op Op t where
   gbimap :: Op a b -> Op c d -> Op (t a c) (t b d)
   gbimap (Op f) (Op g) = Op $ gbimap f g
 
-instance Bifunctor t => GBifunctor (->) (->) (->) t where
+instance (Bifunctor t) => GBifunctor (->) (->) (->) t where
   gbimap = bimap
 
 instance GBifunctor (Star Maybe) (Star Maybe) (Star Maybe) These where
@@ -124,7 +124,7 @@ instance GBifunctor (Kleisli Maybe) (Kleisli Maybe) (Kleisli Maybe) These where
       That c -> That <$> g c
       These a c -> liftA2 These (f a) (g c)
 
-instance GBifunctor cat cat cat t => GBifunctor (Iso cat) (Iso cat) (Iso cat) t where
+instance (GBifunctor cat cat cat t) => GBifunctor (Iso cat) (Iso cat) (Iso cat) t where
   gbimap :: Iso cat a b -> Iso cat c d -> Iso cat (t a c) (t b d)
   gbimap iso1 iso2 = Iso (gbimap (fwd iso1) (fwd iso2)) (gbimap (bwd iso1) (bwd iso2))
 
@@ -155,7 +155,7 @@ class (Category cat, GBifunctor cat cat cat t) => Associative cat t where
   -- ((1,"hello"),True)
   assoc :: Iso cat (a `t` (b `t` c)) ((a `t` b) `t` c)
 
-instance Associative (->) t => Associative Op t where
+instance (Associative (->) t) => Associative Op t where
   assoc :: Iso Op (a `t` (b `t` c)) ((a `t` b) `t` c)
   assoc =
     Iso
@@ -222,7 +222,7 @@ instance (Monad m, Associative (->) t, GBifunctor (Kleisli m) (Kleisli m) (Kleis
 -- 'fwd' 'unitl' (i ⊗ a) ≡ a
 -- 'bwd' 'unitl' a ≡ (i ⊗ a)
 -- @
-class Associative cat t => Tensor cat t i | t -> i where
+class (Associative cat t) => Tensor cat t i | t -> i where
   -- | The <https://ncatlab.org/nlab/show/natural+isomorphism natural isomorphism> between @(i \`t\` a)@ and @a@.
   --
   -- ==== __Examples__
@@ -358,7 +358,7 @@ instance (Monad m, Tensor (->) t i, Associative (Kleisli m) t) => Tensor (Kleisl
 -- @
 -- 'swap' '.' 'swap' ≡ 'id'
 -- @
-class Associative cat t => Symmetric cat t where
+class (Associative cat t) => Symmetric cat t where
   -- | @swap@ is a symmetry isomorphism for @t@
   --
   -- ==== __Examples__
@@ -376,7 +376,7 @@ class Associative cat t => Symmetric cat t where
   -- Right True
   swap :: cat (a `t` b) (b `t` a)
 
-instance Symmetric (->) t => Symmetric Op t where
+instance (Symmetric (->) t) => Symmetric Op t where
   swap :: Op (a `t` b) (b `t` a)
   swap = Op swap
 

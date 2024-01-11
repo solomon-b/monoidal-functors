@@ -42,25 +42,25 @@ class Invariant f where
   -- >>> invmap @Identity (read @Bool) show (Identity "True")
   -- Identity True
   invmap :: (a -> a') -> (a' -> a) -> f a -> f a'
-  default invmap :: Functor f => (a -> a') -> (a' -> a) -> f a -> f a'
+  default invmap :: (Functor f) => (a -> a') -> (a' -> a) -> f a -> f a'
   invmap = invmapFunctor
 
-invIso :: Invariant f => Iso (->) a a' -> Iso (->) (f a) (f a')
+invIso :: (Invariant f) => Iso (->) a a' -> Iso (->) (f a) (f a')
 invIso (Iso f g) = Iso (invmap f g) (invmap g f)
 
 newtype FromFunctor f a = FromFunctor {runBi :: f a}
 
 -- | Every 'Functor' is also an 'Invariant' functor.
-invmapFunctor :: Functor f => (a -> b) -> (b -> a) -> f a -> f b
+invmapFunctor :: (Functor f) => (a -> b) -> (b -> a) -> f a -> f b
 invmapFunctor = flip $ const fmap
 
-instance Functor f => Invariant (FromFunctor f) where
+instance (Functor f) => Invariant (FromFunctor f) where
   invmap :: (a -> a') -> (a' -> a) -> FromFunctor f a -> FromFunctor f a'
   invmap f _ = FromFunctor . fmap f . runBi
 
 newtype FromContra f a = FromContra {runContra :: f a}
 
-instance Contravariant f => Invariant (FromContra f) where
+instance (Contravariant f) => Invariant (FromContra f) where
   invmap :: (a -> a') -> (a' -> a) -> FromContra f a -> FromContra f a'
   invmap _ g = FromContra . contramap g . runContra
 

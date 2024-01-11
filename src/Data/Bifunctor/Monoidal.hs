@@ -74,7 +74,7 @@ class (Associative cat t1, Associative cat t2, Associative cat to) => Semigroupa
   -- ("True",True)
   combine :: cat (to (f x y) (f x' y')) (f (t1 x x') (t2 y y'))
 
-instance Profunctor p => Semigroupal (->) (,) Either Either p where
+instance (Profunctor p) => Semigroupal (->) (,) Either Either p where
   combine :: Either (p x y) (p x' y') -> p (x, x') (Either y y')
   combine = either (dimap fst Left) (dimap snd Right)
 
@@ -121,85 +121,85 @@ instance Semigroupal (->) Either Either (,) (->) where
   combine :: (x -> y, x' -> y') -> Either x x' -> Either y y'
   combine fs = either (Left . fst fs) (Right . snd fs)
 
-instance Applicative f => Semigroupal (->) (,) (,) (,) (Joker f) where
+instance (Applicative f) => Semigroupal (->) (,) (,) (,) (Joker f) where
   combine :: (Joker f x y, Joker f x' y') -> Joker f (x, x') (y, y')
   combine = uncurry $ biliftA2 (,) (,)
 
-instance Alternative f => Semigroupal (->) Either Either (,) (Joker f) where
+instance (Alternative f) => Semigroupal (->) Either Either (,) (Joker f) where
   combine :: (Joker f x y, Joker f x' y') -> Joker f (Either x x') (Either y y')
   combine = uncurry $ biliftA2 (\_ x' -> Right x') (\_ y' -> Right y')
 
-instance Functor f => Semigroupal (->) Either Either Either (Joker f) where
+instance (Functor f) => Semigroupal (->) Either Either Either (Joker f) where
   combine :: Either (Joker f x y) (Joker f x' y') -> Joker f (Either x x') (Either y y')
   combine = either (Joker . fmap Left . runJoker) (Joker . fmap Right . runJoker)
 
-instance Applicative f => Semigroupal (->) (,) (,) (,) (Clown f) where
+instance (Applicative f) => Semigroupal (->) (,) (,) (,) (Clown f) where
   combine :: (Clown f x y, Clown f x' y') -> Clown f (x, x') (y, y')
   combine = uncurry $ biliftA2 (,) (,)
 
-instance Alternative f => Semigroupal (->) Either Either (,) (Clown f) where
+instance (Alternative f) => Semigroupal (->) Either Either (,) (Clown f) where
   combine :: (Clown f x y, Clown f x' y') -> Clown f (Either x x') (Either y y')
   combine = uncurry $ biliftA2 (\_ x' -> Right x') (\_ y' -> Right y')
 
-instance Applicative f => Semigroupal (->) (,) (,) (,) (Star f) where
+instance (Applicative f) => Semigroupal (->) (,) (,) (,) (Star f) where
   combine :: (Star f x y, Star f x' y') -> Star f (x, x') (y, y')
   combine (Star fxy, Star fxy') = Star $ \(x, x') -> liftA2 (,) (fxy x) (fxy' x')
 
-instance Functor f => Semigroupal (->) Either Either (,) (Star f) where
+instance (Functor f) => Semigroupal (->) Either Either (,) (Star f) where
   combine :: (Star f x y, Star f x' y') -> Star f (Either x x') (Either y y')
   combine (Star fxy, Star fxy') = Star $ either (fmap Left . fxy) (fmap Right . fxy')
 
-instance Applicative f => Semigroupal (->) These These (,) (Star f) where
+instance (Applicative f) => Semigroupal (->) These These (,) (Star f) where
   combine :: (Star f x y, Star f x' y') -> Star f (These x x') (These y y')
   combine (Star fxy, Star fxy') = Star $ these (fmap This . fxy) (fmap That . fxy') (\x x' -> liftA2 These (fxy x) (fxy' x'))
 
-instance Alternative f => Semigroupal (->) These These These (Star f) where
-  combine :: Applicative f => These (Star f x y) (Star f x' y') -> Star f (These x x') (These y y')
+instance (Alternative f) => Semigroupal (->) These These These (Star f) where
+  combine :: (Applicative f) => These (Star f x y) (Star f x' y') -> Star f (These x x') (These y y')
   combine = \case
     This (Star fxy) -> Star $ these (fmap This . fxy) (const empty) (\x _ -> This <$> fxy x)
     That (Star fxy') -> Star $ these (const empty) (fmap That . fxy') (\_ x' -> That <$> fxy' x')
     These (Star fxy) (Star fxy') -> Star $ these (fmap This . fxy) (fmap That . fxy') (\x x' -> liftA2 These (fxy x) (fxy' x'))
 
-instance Alternative f => Semigroupal (->) Either Either Either (Star f) where
+instance (Alternative f) => Semigroupal (->) Either Either Either (Star f) where
   combine :: Either (Star f x y) (Star f x' y') -> Star f (Either x x') (Either y y')
   combine = \case
     Left (Star fxy) -> Star $ either (fmap Left . fxy) (const empty)
     Right (Star fxy') -> Star $ either (const empty) (fmap Right . fxy')
 
-instance Alternative f => Semigroupal (->) (,) Either (,) (Star f) where
+instance (Alternative f) => Semigroupal (->) (,) Either (,) (Star f) where
   combine :: (Star f x y, Star f x' y') -> Star f (x, x') (Either y y')
   combine (Star f, Star g) = Star $ \(x, x') -> (Left <$> f x) <|> (Right <$> g x')
 
-instance Applicative f => Semigroupal (->) (,) (,) (,) (Kleisli f) where
+instance (Applicative f) => Semigroupal (->) (,) (,) (,) (Kleisli f) where
   combine :: (Kleisli f x y, Kleisli f x' y') -> Kleisli f (x, x') (y, y')
   combine (Kleisli fxy, Kleisli fxy') = Kleisli $ \(x, x') -> liftA2 (,) (fxy x) (fxy' x')
 
-instance Functor f => Semigroupal (->) Either Either (,) (Kleisli f) where
+instance (Functor f) => Semigroupal (->) Either Either (,) (Kleisli f) where
   combine :: (Kleisli f x y, Kleisli f x' y') -> Kleisli f (Either x x') (Either y y')
   combine (Kleisli fxy, Kleisli fxy') = Kleisli $ either (fmap Left . fxy) (fmap Right . fxy')
 
-instance Applicative f => Semigroupal (->) These These (,) (Kleisli f) where
+instance (Applicative f) => Semigroupal (->) These These (,) (Kleisli f) where
   combine :: (Kleisli f x y, Kleisli f x' y') -> Kleisli f (These x x') (These y y')
   combine (Kleisli fxy, Kleisli fxy') = Kleisli $ these (fmap This . fxy) (fmap That . fxy') (\x x' -> liftA2 These (fxy x) (fxy' x'))
 
-instance Alternative f => Semigroupal (->) These These These (Kleisli f) where
-  combine :: Applicative f => These (Kleisli f x y) (Kleisli f x' y') -> Kleisli f (These x x') (These y y')
+instance (Alternative f) => Semigroupal (->) These These These (Kleisli f) where
+  combine :: (Applicative f) => These (Kleisli f x y) (Kleisli f x' y') -> Kleisli f (These x x') (These y y')
   combine = \case
     This (Kleisli fxy) -> Kleisli $ these (fmap This . fxy) (const empty) (\x _ -> This <$> fxy x)
     That (Kleisli fxy') -> Kleisli $ these (const empty) (fmap That . fxy') (\_ x' -> That <$> fxy' x')
     These (Kleisli fxy) (Kleisli fxy') -> Kleisli $ these (fmap This . fxy) (fmap That . fxy') (\x x' -> liftA2 These (fxy x) (fxy' x'))
 
-instance Alternative f => Semigroupal (->) Either Either Either (Kleisli f) where
+instance (Alternative f) => Semigroupal (->) Either Either Either (Kleisli f) where
   combine :: Either (Kleisli f x y) (Kleisli f x' y') -> Kleisli f (Either x x') (Either y y')
   combine = \case
     Left (Kleisli fxy) -> Kleisli $ either (fmap Left . fxy) (const empty)
     Right (Kleisli fxy') -> Kleisli $ either (const empty) (fmap Right . fxy')
 
-instance Alternative f => Semigroupal (->) (,) Either (,) (Kleisli f) where
+instance (Alternative f) => Semigroupal (->) (,) Either (,) (Kleisli f) where
   combine :: (Kleisli f x y, Kleisli f x' y') -> Kleisli f (x, x') (Either y y')
   combine (Kleisli f, Kleisli g) = Kleisli $ \(x, x') -> (Left <$> f x) <|> (Right <$> g x')
 
-instance Alternative f => Semigroupal (->) (,) (,) (,) (Forget (f r)) where
+instance (Alternative f) => Semigroupal (->) (,) (,) (,) (Forget (f r)) where
   combine :: (Forget (f r) x y, Forget (f r) x' y') -> Forget (f r) (x, x') (y, y')
   combine (Forget f, Forget g) = Forget $ \(x, x') -> f x <|> g x'
 
@@ -207,19 +207,19 @@ instance Semigroupal (->) Either Either (,) (Forget (f r)) where
   combine :: (Forget (f r) x y, Forget (f r) x' y') -> Forget (f r) (Either x x') (Either y y')
   combine (Forget f, Forget g) = Forget $ either f g
 
-instance Alternative f => Semigroupal (->) Either Either Either (Forget (f r)) where
+instance (Alternative f) => Semigroupal (->) Either Either Either (Forget (f r)) where
   combine :: Either (Forget (f r) x y) (Forget (f r) x' y') -> Forget (f r) (Either x x') (Either y y')
   combine = \case
     Left (Forget f) -> Forget $ either f (const empty)
     Right (Forget g) -> Forget $ either (const empty) g
 
-instance Alternative f => Semigroupal (->) (,) Either (,) (Forget (f r)) where
+instance (Alternative f) => Semigroupal (->) (,) Either (,) (Forget (f r)) where
   combine :: (Forget (f r) x y, Forget (f r) x' y') -> Forget (f r) (x, x') (Either y y')
   combine (Forget f, Forget g) = Forget $ \(x, x') -> f x <|> g x'
 
 infixr 9 |??|
 
-(|??|) :: Semigroupal (->) t1 t2 (,) p => p a b -> p a' b' -> p (a `t1` a') (b `t2` b')
+(|??|) :: (Semigroupal (->) t1 t2 (,) p) => p a b -> p a' b' -> p (a `t1` a') (b `t2` b')
 (|??|) = curry combine
 
 infixr 9 |**|
@@ -295,11 +295,11 @@ instance (Unital (->) Void Void () (->)) where
   introduce :: () -> Void -> Void
   introduce () = absurd
 
-instance Applicative f => Unital (->) () () () (Joker f) where
+instance (Applicative f) => Unital (->) () () () (Joker f) where
   introduce :: () -> Joker f () ()
   introduce = Joker . pure
 
-instance Alternative f => Unital (->) Void Void () (Joker f) where
+instance (Alternative f) => Unital (->) Void Void () (Joker f) where
   introduce :: () -> Joker f Void Void
   introduce () = Joker empty
 
@@ -307,7 +307,7 @@ instance Unital (->) Void Void Void (Joker f) where
   introduce :: Void -> Joker f Void Void
   introduce = absurd
 
-instance Applicative f => Unital (->) () () () (Star f) where
+instance (Applicative f) => Unital (->) () () () (Star f) where
   introduce :: () -> Star f () ()
   introduce () = Star pure
 
@@ -315,15 +315,15 @@ instance Unital (->) Void Void () (Star f) where
   introduce :: () -> Star f Void Void
   introduce () = Star absurd
 
-instance Alternative f => Unital (->) Void Void Void (Star f) where
+instance (Alternative f) => Unital (->) Void Void Void (Star f) where
   introduce :: Void -> Star f Void Void
   introduce = absurd
 
-instance Alternative f => Unital (->) () Void () (Star f) where
+instance (Alternative f) => Unital (->) () Void () (Star f) where
   introduce :: () -> Star f () Void
   introduce () = Star $ const empty
 
-instance Applicative f => Unital (->) () () () (Kleisli f) where
+instance (Applicative f) => Unital (->) () () () (Kleisli f) where
   introduce :: () -> Kleisli f () ()
   introduce () = Kleisli pure
 
@@ -331,11 +331,11 @@ instance Unital (->) Void Void () (Kleisli f) where
   introduce :: () -> Kleisli f Void Void
   introduce () = Kleisli absurd
 
-instance Alternative f => Unital (->) Void Void Void (Kleisli f) where
+instance (Alternative f) => Unital (->) Void Void Void (Kleisli f) where
   introduce :: Void -> Kleisli f Void Void
   introduce = absurd
 
-instance Alternative f => Unital (->) () Void () (Kleisli f) where
+instance (Alternative f) => Unital (->) () Void () (Kleisli f) where
   introduce :: () -> Kleisli f () Void
   introduce () = Kleisli $ const empty
 
@@ -403,40 +403,40 @@ instance Monoidal (->) (,) () (,) () (,) () (->)
 
 instance Monoidal (->) Either Void Either Void (,) () (->)
 
-instance Applicative f => Monoidal (->) (,) () (,) () (,) () (Joker f)
+instance (Applicative f) => Monoidal (->) (,) () (,) () (,) () (Joker f)
 
-instance Alternative f => Monoidal (->) Either Void Either Void (,) () (Joker f)
+instance (Alternative f) => Monoidal (->) Either Void Either Void (,) () (Joker f)
 
-instance Functor f => Monoidal (->) Either Void Either Void Either Void (Joker f)
+instance (Functor f) => Monoidal (->) Either Void Either Void Either Void (Joker f)
 
-instance Applicative f => Monoidal (->) (,) () (,) () (,) () (Star f)
+instance (Applicative f) => Monoidal (->) (,) () (,) () (,) () (Star f)
 
-instance Functor f => Monoidal (->) Either Void Either Void (,) () (Star f)
+instance (Functor f) => Monoidal (->) Either Void Either Void (,) () (Star f)
 
-instance Applicative f => Monoidal (->) These Void These Void (,) () (Star f)
+instance (Applicative f) => Monoidal (->) These Void These Void (,) () (Star f)
 
-instance Alternative f => Monoidal (->) Either Void Either Void Either Void (Star f)
+instance (Alternative f) => Monoidal (->) Either Void Either Void Either Void (Star f)
 
-instance Alternative f => Monoidal (->) These Void These Void These Void (Star f)
+instance (Alternative f) => Monoidal (->) These Void These Void These Void (Star f)
 
-instance Alternative f => Monoidal (->) (,) () Either Void (,) () (Star f)
+instance (Alternative f) => Monoidal (->) (,) () Either Void (,) () (Star f)
 
-instance Applicative f => Monoidal (->) (,) () (,) () (,) () (Kleisli f)
+instance (Applicative f) => Monoidal (->) (,) () (,) () (,) () (Kleisli f)
 
-instance Functor f => Monoidal (->) Either Void Either Void (,) () (Kleisli f)
+instance (Functor f) => Monoidal (->) Either Void Either Void (,) () (Kleisli f)
 
-instance Applicative f => Monoidal (->) These Void These Void (,) () (Kleisli f)
+instance (Applicative f) => Monoidal (->) These Void These Void (,) () (Kleisli f)
 
-instance Alternative f => Monoidal (->) Either Void Either Void Either Void (Kleisli f)
+instance (Alternative f) => Monoidal (->) Either Void Either Void Either Void (Kleisli f)
 
-instance Alternative f => Monoidal (->) These Void These Void These Void (Kleisli f)
+instance (Alternative f) => Monoidal (->) These Void These Void These Void (Kleisli f)
 
-instance Alternative f => Monoidal (->) (,) () Either Void (,) () (Kleisli f)
+instance (Alternative f) => Monoidal (->) (,) () Either Void (,) () (Kleisli f)
 
 newtype StrongCategory p a b = StrongCategory (p a b)
   deriving (Functor, Applicative, Monad, Profunctor, Category)
 
-instance Semigroupoid p => Semigroupoid (StrongCategory p) where
+instance (Semigroupoid p) => Semigroupoid (StrongCategory p) where
   o :: StrongCategory p b c -> StrongCategory p a b -> StrongCategory p a c
   o (StrongCategory f) (StrongCategory g) = StrongCategory (f `o` g)
 

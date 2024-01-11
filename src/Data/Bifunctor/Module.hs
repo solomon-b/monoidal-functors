@@ -92,55 +92,55 @@ class LeftModule cat t1 t2 p where
   -- lstrength @(->) @Either @Either :: LeftModule (->) Either Either p => p a b -> p (Either a x) (Either b x)
   lstrength :: cat (p a b) (p (t1 a x) (t2 b x))
 
-instance Strong p => LeftModule (->) (,) (,) (FromProfunctor p) where
+instance (Strong p) => LeftModule (->) (,) (,) (FromProfunctor p) where
   lstrength :: FromProfunctor p a b -> FromProfunctor p (a, x) (b, x)
   lstrength = first'
 
-instance Choice p => LeftModule (->) Either Either (FromProfunctor p) where
+instance (Choice p) => LeftModule (->) Either Either (FromProfunctor p) where
   lstrength :: FromProfunctor p a b -> FromProfunctor p (Either a x) (Either b x)
   lstrength = left'
 
-instance Bifunctor p => LeftModule (->) Either Either (FromBifunctor p) where
+instance (Bifunctor p) => LeftModule (->) Either Either (FromBifunctor p) where
   lstrength :: FromBifunctor p a b -> FromBifunctor p (Either a x) (Either b x)
   lstrength = gbimap Left Left
 
-instance Bifunctor p => LeftModule (->) These These (FromBifunctor p) where
+instance (Bifunctor p) => LeftModule (->) These These (FromBifunctor p) where
   lstrength :: FromBifunctor p a b -> FromBifunctor p (These a x) (These b x)
   lstrength = gbimap This This
 
-instance Bifunctor p => LeftModule Op (,) (,) (FromBifunctor p) where
+instance (Bifunctor p) => LeftModule Op (,) (,) (FromBifunctor p) where
   lstrength :: Op (FromBifunctor p a b) (FromBifunctor p (a, x) (b, x))
   lstrength = Op (gbimap fst fst)
 
-deriving via (FromProfunctor (Kleisli m)) instance Monad m => LeftModule (->) (,) (,) (Kleisli m)
+deriving via (FromProfunctor (Kleisli m)) instance (Monad m) => LeftModule (->) (,) (,) (Kleisli m)
 
 deriving via (FromProfunctor (Pastro p)) instance LeftModule (->) (,) (,) (Pastro p)
 
-deriving via (FromProfunctor (Tambara p)) instance Profunctor p => LeftModule (->) (,) (,) (Tambara p)
+deriving via (FromProfunctor (Tambara p)) instance (Profunctor p) => LeftModule (->) (,) (,) (Tambara p)
 
-deriving via (FromProfunctor (Closure p)) instance Strong p => LeftModule (->) (,) (,) (Closure p)
+deriving via (FromProfunctor (Closure p)) instance (Strong p) => LeftModule (->) (,) (,) (Closure p)
 
 deriving via (FromProfunctor (FreeTraversing p)) instance LeftModule (->) (,) (,) (FreeTraversing p)
 
-deriving via (FromProfunctor (CofreeTraversing p)) instance Profunctor p => LeftModule (->) (,) (,) (CofreeTraversing p)
+deriving via (FromProfunctor (CofreeTraversing p)) instance (Profunctor p) => LeftModule (->) (,) (,) (CofreeTraversing p)
 
 deriving via (FromProfunctor (FreeMapping p)) instance LeftModule (->) (,) (,) (FreeMapping p)
 
-deriving via (FromProfunctor (CofreeMapping p)) instance Profunctor p => LeftModule (->) (,) (,) (CofreeMapping p)
+deriving via (FromProfunctor (CofreeMapping p)) instance (Profunctor p) => LeftModule (->) (,) (,) (CofreeMapping p)
 
-deriving via (FromProfunctor (Coyoneda p)) instance Strong p => LeftModule (->) (,) (,) (Coyoneda p)
+deriving via (FromProfunctor (Coyoneda p)) instance (Strong p) => LeftModule (->) (,) (,) (Coyoneda p)
 
-deriving via (FromProfunctor (Yoneda p)) instance Strong p => LeftModule (->) (,) (,) (Yoneda p)
+deriving via (FromProfunctor (Yoneda p)) instance (Strong p) => LeftModule (->) (,) (,) (Yoneda p)
 
 deriving via (FromProfunctor (->)) instance LeftModule (->) (,) (,) (->)
 
 deriving via (FromProfunctor (Forget r)) instance LeftModule (->) (,) (,) (Forget r)
 
-deriving via (FromProfunctor (Star m)) instance Functor m => LeftModule (->) (,) (,) (Star m)
+deriving via (FromProfunctor (Star m)) instance (Functor m) => LeftModule (->) (,) (,) (Star m)
 
-deriving via (FromProfunctor (Clown f)) instance Contravariant f => LeftModule (->) (,) (,) (Clown f)
+deriving via (FromProfunctor (Clown f)) instance (Contravariant f) => LeftModule (->) (,) (,) (Clown f)
 
-deriving via (FromProfunctor (WrappedArrow p)) instance Arrow p => LeftModule (->) (,) (,) (WrappedArrow p)
+deriving via (FromProfunctor (WrappedArrow p)) instance (Arrow p) => LeftModule (->) (,) (,) (WrappedArrow p)
 
 deriving via (FromProfunctor (Sum p q)) instance (Strong p, Strong q) => LeftModule (->) (,) (,) (Sum p q)
 
@@ -152,7 +152,7 @@ deriving via (FromProfunctor (Procompose p q)) instance (Strong p, Strong q) => 
 
 deriving via (FromProfunctor (Cayley f q)) instance (Functor f, Strong q) => LeftModule (->) (,) (,) (Cayley f q)
 
-deriving via (FromProfunctor (Kleisli m)) instance Monad m => LeftModule (->) Either Either (Kleisli m)
+deriving via (FromProfunctor (Kleisli m)) instance (Monad m) => LeftModule (->) Either Either (Kleisli m)
 
 deriving via (FromProfunctor Tagged) instance LeftModule (->) Either Either Tagged
 
@@ -160,31 +160,31 @@ deriving via (FromProfunctor (Tambara p)) instance (Choice p) => LeftModule (->)
 
 deriving via (FromProfunctor (PastroSum p)) instance LeftModule (->) Either Either (PastroSum p)
 
-deriving via (FromProfunctor (TambaraSum p)) instance Profunctor p => LeftModule (->) Either Either (TambaraSum p)
+deriving via (FromProfunctor (TambaraSum p)) instance (Profunctor p) => LeftModule (->) Either Either (TambaraSum p)
 
 deriving via (FromProfunctor (FreeTraversing p)) instance LeftModule (->) Either Either (FreeTraversing p)
 
-deriving via (FromProfunctor (CofreeTraversing p)) instance Profunctor p => LeftModule (->) Either Either (CofreeTraversing p)
+deriving via (FromProfunctor (CofreeTraversing p)) instance (Profunctor p) => LeftModule (->) Either Either (CofreeTraversing p)
 
 deriving via (FromProfunctor (FreeMapping p)) instance LeftModule (->) Either Either (FreeMapping p)
 
-deriving via (FromProfunctor (CofreeMapping p)) instance Profunctor p => LeftModule (->) Either Either (CofreeMapping p)
+deriving via (FromProfunctor (CofreeMapping p)) instance (Profunctor p) => LeftModule (->) Either Either (CofreeMapping p)
 
-deriving via (FromProfunctor (Coyoneda p)) instance Choice p => LeftModule (->) Either Either (Coyoneda p)
+deriving via (FromProfunctor (Coyoneda p)) instance (Choice p) => LeftModule (->) Either Either (Coyoneda p)
 
-deriving via (FromProfunctor (Yoneda p)) instance Choice p => LeftModule (->) Either Either (Yoneda p)
+deriving via (FromProfunctor (Yoneda p)) instance (Choice p) => LeftModule (->) Either Either (Yoneda p)
 
 deriving via (FromProfunctor (->)) instance LeftModule (->) Either Either (->)
 
-deriving via (FromProfunctor (Cokleisli w)) instance Comonad w => LeftModule (->) Either Either (Cokleisli w)
+deriving via (FromProfunctor (Cokleisli w)) instance (Comonad w) => LeftModule (->) Either Either (Cokleisli w)
 
-deriving via (FromProfunctor (Forget r)) instance Monoid r => LeftModule (->) Either Either (Forget r)
+deriving via (FromProfunctor (Forget r)) instance (Monoid r) => LeftModule (->) Either Either (Forget r)
 
-deriving via (FromProfunctor (Star f)) instance Applicative f => LeftModule (->) Either Either (Star f)
+deriving via (FromProfunctor (Star f)) instance (Applicative f) => LeftModule (->) Either Either (Star f)
 
-deriving via (FromProfunctor (Joker f)) instance Functor f => LeftModule (->) Either Either (Joker f)
+deriving via (FromProfunctor (Joker f)) instance (Functor f) => LeftModule (->) Either Either (Joker f)
 
-deriving via (FromProfunctor (WrappedArrow p)) instance ArrowChoice p => LeftModule (->) Either Either (WrappedArrow p)
+deriving via (FromProfunctor (WrappedArrow p)) instance (ArrowChoice p) => LeftModule (->) Either Either (WrappedArrow p)
 
 deriving via (FromProfunctor (Sum p q)) instance (Choice p, Choice q) => LeftModule (->) Either Either (Sum p q)
 
@@ -289,55 +289,55 @@ class RightModule cat t1 t2 f where
   -- rstrength @(->) @Either @Either :: RightModule (->) Either Either f => f a b -> f (Either x a) (Either x b)
   rstrength :: cat (f a b) (f (x `t1` a) (x `t2` b))
 
-instance Strong p => RightModule (->) (,) (,) (FromProfunctor p) where
+instance (Strong p) => RightModule (->) (,) (,) (FromProfunctor p) where
   rstrength :: FromProfunctor p a b -> FromProfunctor p (c, a) (c, b)
   rstrength = second'
 
-instance Choice p => RightModule (->) Either Either (FromProfunctor p) where
+instance (Choice p) => RightModule (->) Either Either (FromProfunctor p) where
   rstrength :: FromProfunctor p a b -> FromProfunctor p (Either c a) (Either c b)
   rstrength = right'
 
-instance Bifunctor p => RightModule (->) Either Either (FromBifunctor p) where
+instance (Bifunctor p) => RightModule (->) Either Either (FromBifunctor p) where
   rstrength :: FromBifunctor p a b -> FromBifunctor p (Either x a) (Either x b)
   rstrength = gbimap Right Right
 
-instance Bifunctor p => RightModule (->) These These (FromBifunctor p) where
+instance (Bifunctor p) => RightModule (->) These These (FromBifunctor p) where
   rstrength :: FromBifunctor p a b -> FromBifunctor p (These x a) (These x b)
   rstrength = gbimap That That
 
-instance Bifunctor p => RightModule Op (,) (,) (FromBifunctor p) where
+instance (Bifunctor p) => RightModule Op (,) (,) (FromBifunctor p) where
   rstrength :: Op (FromBifunctor p a b) (FromBifunctor p (x, a) (x, b))
   rstrength = Op (gbimap snd snd)
 
-deriving via (FromProfunctor (Kleisli m)) instance Monad m => RightModule (->) (,) (,) (Kleisli m)
+deriving via (FromProfunctor (Kleisli m)) instance (Monad m) => RightModule (->) (,) (,) (Kleisli m)
 
 deriving via (FromProfunctor (Pastro p)) instance RightModule (->) (,) (,) (Pastro p)
 
-deriving via (FromProfunctor (Tambara p)) instance Profunctor p => RightModule (->) (,) (,) (Tambara p)
+deriving via (FromProfunctor (Tambara p)) instance (Profunctor p) => RightModule (->) (,) (,) (Tambara p)
 
-deriving via (FromProfunctor (Closure p)) instance Strong p => RightModule (->) (,) (,) (Closure p)
+deriving via (FromProfunctor (Closure p)) instance (Strong p) => RightModule (->) (,) (,) (Closure p)
 
 deriving via (FromProfunctor (FreeTraversing p)) instance RightModule (->) (,) (,) (FreeTraversing p)
 
-deriving via (FromProfunctor (CofreeTraversing p)) instance Profunctor p => RightModule (->) (,) (,) (CofreeTraversing p)
+deriving via (FromProfunctor (CofreeTraversing p)) instance (Profunctor p) => RightModule (->) (,) (,) (CofreeTraversing p)
 
 deriving via (FromProfunctor (FreeMapping p)) instance RightModule (->) (,) (,) (FreeMapping p)
 
-deriving via (FromProfunctor (CofreeMapping p)) instance Profunctor p => RightModule (->) (,) (,) (CofreeMapping p)
+deriving via (FromProfunctor (CofreeMapping p)) instance (Profunctor p) => RightModule (->) (,) (,) (CofreeMapping p)
 
-deriving via (FromProfunctor (Coyoneda p)) instance Strong p => RightModule (->) (,) (,) (Coyoneda p)
+deriving via (FromProfunctor (Coyoneda p)) instance (Strong p) => RightModule (->) (,) (,) (Coyoneda p)
 
-deriving via (FromProfunctor (Yoneda p)) instance Strong p => RightModule (->) (,) (,) (Yoneda p)
+deriving via (FromProfunctor (Yoneda p)) instance (Strong p) => RightModule (->) (,) (,) (Yoneda p)
 
 deriving via (FromProfunctor (->)) instance RightModule (->) (,) (,) (->)
 
 deriving via (FromProfunctor (Forget r)) instance RightModule (->) (,) (,) (Forget r)
 
-deriving via (FromProfunctor (Star m)) instance Functor m => RightModule (->) (,) (,) (Star m)
+deriving via (FromProfunctor (Star m)) instance (Functor m) => RightModule (->) (,) (,) (Star m)
 
-deriving via (FromProfunctor (Clown f)) instance Contravariant f => RightModule (->) (,) (,) (Clown f)
+deriving via (FromProfunctor (Clown f)) instance (Contravariant f) => RightModule (->) (,) (,) (Clown f)
 
-deriving via (FromProfunctor (WrappedArrow p)) instance Arrow p => RightModule (->) (,) (,) (WrappedArrow p)
+deriving via (FromProfunctor (WrappedArrow p)) instance (Arrow p) => RightModule (->) (,) (,) (WrappedArrow p)
 
 deriving via (FromProfunctor (Sum p q)) instance (Strong p, Strong q) => RightModule (->) (,) (,) (Sum p q)
 
@@ -349,7 +349,7 @@ deriving via (FromProfunctor (Procompose p q)) instance (Strong p, Strong q) => 
 
 deriving via (FromProfunctor (Cayley f q)) instance (Functor f, Strong q) => RightModule (->) (,) (,) (Cayley f q)
 
-deriving via (FromProfunctor (Kleisli m)) instance Monad m => RightModule (->) Either Either (Kleisli m)
+deriving via (FromProfunctor (Kleisli m)) instance (Monad m) => RightModule (->) Either Either (Kleisli m)
 
 deriving via (FromProfunctor Tagged) instance RightModule (->) Either Either Tagged
 
@@ -357,31 +357,31 @@ deriving via (FromProfunctor (Tambara p)) instance (Choice p) => RightModule (->
 
 deriving via (FromProfunctor (PastroSum p)) instance RightModule (->) Either Either (PastroSum p)
 
-deriving via (FromProfunctor (TambaraSum p)) instance Profunctor p => RightModule (->) Either Either (TambaraSum p)
+deriving via (FromProfunctor (TambaraSum p)) instance (Profunctor p) => RightModule (->) Either Either (TambaraSum p)
 
 deriving via (FromProfunctor (FreeTraversing p)) instance RightModule (->) Either Either (FreeTraversing p)
 
-deriving via (FromProfunctor (CofreeTraversing p)) instance Profunctor p => RightModule (->) Either Either (CofreeTraversing p)
+deriving via (FromProfunctor (CofreeTraversing p)) instance (Profunctor p) => RightModule (->) Either Either (CofreeTraversing p)
 
 deriving via (FromProfunctor (FreeMapping p)) instance RightModule (->) Either Either (FreeMapping p)
 
-deriving via (FromProfunctor (CofreeMapping p)) instance Profunctor p => RightModule (->) Either Either (CofreeMapping p)
+deriving via (FromProfunctor (CofreeMapping p)) instance (Profunctor p) => RightModule (->) Either Either (CofreeMapping p)
 
-deriving via (FromProfunctor (Coyoneda p)) instance Choice p => RightModule (->) Either Either (Coyoneda p)
+deriving via (FromProfunctor (Coyoneda p)) instance (Choice p) => RightModule (->) Either Either (Coyoneda p)
 
-deriving via (FromProfunctor (Yoneda p)) instance Choice p => RightModule (->) Either Either (Yoneda p)
+deriving via (FromProfunctor (Yoneda p)) instance (Choice p) => RightModule (->) Either Either (Yoneda p)
 
 deriving via (FromProfunctor (->)) instance RightModule (->) Either Either (->)
 
-deriving via (FromProfunctor (Cokleisli w)) instance Comonad w => RightModule (->) Either Either (Cokleisli w)
+deriving via (FromProfunctor (Cokleisli w)) instance (Comonad w) => RightModule (->) Either Either (Cokleisli w)
 
-deriving via (FromProfunctor (Forget r)) instance Monoid r => RightModule (->) Either Either (Forget r)
+deriving via (FromProfunctor (Forget r)) instance (Monoid r) => RightModule (->) Either Either (Forget r)
 
-deriving via (FromProfunctor (Star f)) instance Applicative f => RightModule (->) Either Either (Star f)
+deriving via (FromProfunctor (Star f)) instance (Applicative f) => RightModule (->) Either Either (Star f)
 
-deriving via (FromProfunctor (Joker f)) instance Functor f => RightModule (->) Either Either (Joker f)
+deriving via (FromProfunctor (Joker f)) instance (Functor f) => RightModule (->) Either Either (Joker f)
 
-deriving via (FromProfunctor (WrappedArrow p)) instance ArrowChoice p => RightModule (->) Either Either (WrappedArrow p)
+deriving via (FromProfunctor (WrappedArrow p)) instance (ArrowChoice p) => RightModule (->) Either Either (WrappedArrow p)
 
 deriving via (FromProfunctor (Sum p q)) instance (Choice p, Choice q) => RightModule (->) Either Either (Sum p q)
 
@@ -472,45 +472,45 @@ deriving via (FromBifunctor ((,,,,,,) x1 x2 x3 x4 x5)) instance RightModule Op (
 -- @
 class (LeftModule cat t1 t2 f, RightModule cat t1 t2 f) => Bimodule cat t1 t2 f
 
-instance Strong p => Bimodule (->) (,) (,) (FromProfunctor p)
+instance (Strong p) => Bimodule (->) (,) (,) (FromProfunctor p)
 
-instance Choice p => Bimodule (->) Either Either (FromProfunctor p)
+instance (Choice p) => Bimodule (->) Either Either (FromProfunctor p)
 
-instance Bifunctor p => Bimodule (->) Either Either (FromBifunctor p)
+instance (Bifunctor p) => Bimodule (->) Either Either (FromBifunctor p)
 
-instance Bifunctor p => Bimodule (->) These These (FromBifunctor p)
+instance (Bifunctor p) => Bimodule (->) These These (FromBifunctor p)
 
-instance Bifunctor p => Bimodule Op (,) (,) (FromBifunctor p)
+instance (Bifunctor p) => Bimodule Op (,) (,) (FromBifunctor p)
 
-deriving via (FromProfunctor (Kleisli m)) instance Monad m => Bimodule (->) (,) (,) (Kleisli m)
+deriving via (FromProfunctor (Kleisli m)) instance (Monad m) => Bimodule (->) (,) (,) (Kleisli m)
 
 deriving via (FromProfunctor (Pastro p)) instance Bimodule (->) (,) (,) (Pastro p)
 
-deriving via (FromProfunctor (Tambara p)) instance Profunctor p => Bimodule (->) (,) (,) (Tambara p)
+deriving via (FromProfunctor (Tambara p)) instance (Profunctor p) => Bimodule (->) (,) (,) (Tambara p)
 
-deriving via (FromProfunctor (Closure p)) instance Strong p => Bimodule (->) (,) (,) (Closure p)
+deriving via (FromProfunctor (Closure p)) instance (Strong p) => Bimodule (->) (,) (,) (Closure p)
 
 deriving via (FromProfunctor (FreeTraversing p)) instance Bimodule (->) (,) (,) (FreeTraversing p)
 
-deriving via (FromProfunctor (CofreeTraversing p)) instance Profunctor p => Bimodule (->) (,) (,) (CofreeTraversing p)
+deriving via (FromProfunctor (CofreeTraversing p)) instance (Profunctor p) => Bimodule (->) (,) (,) (CofreeTraversing p)
 
 deriving via (FromProfunctor (FreeMapping p)) instance Bimodule (->) (,) (,) (FreeMapping p)
 
-deriving via (FromProfunctor (CofreeMapping p)) instance Profunctor p => Bimodule (->) (,) (,) (CofreeMapping p)
+deriving via (FromProfunctor (CofreeMapping p)) instance (Profunctor p) => Bimodule (->) (,) (,) (CofreeMapping p)
 
-deriving via (FromProfunctor (Coyoneda p)) instance Strong p => Bimodule (->) (,) (,) (Coyoneda p)
+deriving via (FromProfunctor (Coyoneda p)) instance (Strong p) => Bimodule (->) (,) (,) (Coyoneda p)
 
-deriving via (FromProfunctor (Yoneda p)) instance Strong p => Bimodule (->) (,) (,) (Yoneda p)
+deriving via (FromProfunctor (Yoneda p)) instance (Strong p) => Bimodule (->) (,) (,) (Yoneda p)
 
 deriving via (FromProfunctor (->)) instance Bimodule (->) (,) (,) (->)
 
 deriving via (FromProfunctor (Forget r)) instance Bimodule (->) (,) (,) (Forget r)
 
-deriving via (FromProfunctor (Star m)) instance Functor m => Bimodule (->) (,) (,) (Star m)
+deriving via (FromProfunctor (Star m)) instance (Functor m) => Bimodule (->) (,) (,) (Star m)
 
-deriving via (FromProfunctor (Clown f)) instance Contravariant f => Bimodule (->) (,) (,) (Clown f)
+deriving via (FromProfunctor (Clown f)) instance (Contravariant f) => Bimodule (->) (,) (,) (Clown f)
 
-deriving via (FromProfunctor (WrappedArrow p)) instance Arrow p => Bimodule (->) (,) (,) (WrappedArrow p)
+deriving via (FromProfunctor (WrappedArrow p)) instance (Arrow p) => Bimodule (->) (,) (,) (WrappedArrow p)
 
 deriving via (FromProfunctor (Sum p q)) instance (Strong p, Strong q) => Bimodule (->) (,) (,) (Sum p q)
 
@@ -522,7 +522,7 @@ deriving via (FromProfunctor (Procompose p q)) instance (Strong p, Strong q) => 
 
 deriving via (FromProfunctor (Cayley f q)) instance (Functor f, Strong q) => Bimodule (->) (,) (,) (Cayley f q)
 
-deriving via (FromProfunctor (Kleisli m)) instance Monad m => Bimodule (->) Either Either (Kleisli m)
+deriving via (FromProfunctor (Kleisli m)) instance (Monad m) => Bimodule (->) Either Either (Kleisli m)
 
 deriving via (FromProfunctor Tagged) instance Bimodule (->) Either Either Tagged
 
@@ -530,31 +530,31 @@ deriving via (FromProfunctor (Tambara p)) instance (Choice p) => Bimodule (->) E
 
 deriving via (FromProfunctor (PastroSum p)) instance Bimodule (->) Either Either (PastroSum p)
 
-deriving via (FromProfunctor (TambaraSum p)) instance Profunctor p => Bimodule (->) Either Either (TambaraSum p)
+deriving via (FromProfunctor (TambaraSum p)) instance (Profunctor p) => Bimodule (->) Either Either (TambaraSum p)
 
 deriving via (FromProfunctor (FreeTraversing p)) instance Bimodule (->) Either Either (FreeTraversing p)
 
-deriving via (FromProfunctor (CofreeTraversing p)) instance Profunctor p => Bimodule (->) Either Either (CofreeTraversing p)
+deriving via (FromProfunctor (CofreeTraversing p)) instance (Profunctor p) => Bimodule (->) Either Either (CofreeTraversing p)
 
 deriving via (FromProfunctor (FreeMapping p)) instance Bimodule (->) Either Either (FreeMapping p)
 
-deriving via (FromProfunctor (CofreeMapping p)) instance Profunctor p => Bimodule (->) Either Either (CofreeMapping p)
+deriving via (FromProfunctor (CofreeMapping p)) instance (Profunctor p) => Bimodule (->) Either Either (CofreeMapping p)
 
-deriving via (FromProfunctor (Coyoneda p)) instance Choice p => Bimodule (->) Either Either (Coyoneda p)
+deriving via (FromProfunctor (Coyoneda p)) instance (Choice p) => Bimodule (->) Either Either (Coyoneda p)
 
-deriving via (FromProfunctor (Yoneda p)) instance Choice p => Bimodule (->) Either Either (Yoneda p)
+deriving via (FromProfunctor (Yoneda p)) instance (Choice p) => Bimodule (->) Either Either (Yoneda p)
 
 deriving via (FromProfunctor (->)) instance Bimodule (->) Either Either (->)
 
-deriving via (FromProfunctor (Cokleisli w)) instance Comonad w => Bimodule (->) Either Either (Cokleisli w)
+deriving via (FromProfunctor (Cokleisli w)) instance (Comonad w) => Bimodule (->) Either Either (Cokleisli w)
 
-deriving via (FromProfunctor (Forget r)) instance Monoid r => Bimodule (->) Either Either (Forget r)
+deriving via (FromProfunctor (Forget r)) instance (Monoid r) => Bimodule (->) Either Either (Forget r)
 
-deriving via (FromProfunctor (Star f)) instance Applicative f => Bimodule (->) Either Either (Star f)
+deriving via (FromProfunctor (Star f)) instance (Applicative f) => Bimodule (->) Either Either (Star f)
 
-deriving via (FromProfunctor (Joker f)) instance Functor f => Bimodule (->) Either Either (Joker f)
+deriving via (FromProfunctor (Joker f)) instance (Functor f) => Bimodule (->) Either Either (Joker f)
 
-deriving via (FromProfunctor (WrappedArrow p)) instance ArrowChoice p => Bimodule (->) Either Either (WrappedArrow p)
+deriving via (FromProfunctor (WrappedArrow p)) instance (ArrowChoice p) => Bimodule (->) Either Either (WrappedArrow p)
 
 deriving via (FromProfunctor (Sum p q)) instance (Choice p, Choice q) => Bimodule (->) Either Either (Sum p q)
 
@@ -659,43 +659,43 @@ class LeftCoModule cat t1 t2 f where
   -- lcostrength @(->) @Either @Either :: LeftCoModule (->) Either Either f => f (Either a x) (Either b x) -> f a b
   lcostrength :: cat (f (t1 a x) (t2 b x)) (f a b)
 
-instance Costrong p => LeftCoModule (->) (,) (,) (FromProfunctor p) where
+instance (Costrong p) => LeftCoModule (->) (,) (,) (FromProfunctor p) where
   lcostrength :: FromProfunctor p (a, x) (b, x) -> FromProfunctor p a b
   lcostrength = unfirst
 
-instance Cochoice p => LeftCoModule (->) Either Either (FromProfunctor p) where
-  lcostrength :: Cochoice p => FromProfunctor p (Either a x) (Either b x) -> FromProfunctor p a b
+instance (Cochoice p) => LeftCoModule (->) Either Either (FromProfunctor p) where
+  lcostrength :: (Cochoice p) => FromProfunctor p (Either a x) (Either b x) -> FromProfunctor p a b
   lcostrength = unleft
 
-instance Bifunctor p => LeftCoModule (->) (,) (,) (FromBifunctor p) where
-  lcostrength :: Bifunctor p => FromBifunctor p (a, x) (b, x) -> FromBifunctor p a b
+instance (Bifunctor p) => LeftCoModule (->) (,) (,) (FromBifunctor p) where
+  lcostrength :: (Bifunctor p) => FromBifunctor p (a, x) (b, x) -> FromBifunctor p a b
   lcostrength = gbimap fst fst
 
-instance Bifunctor p => LeftCoModule Op Either Either (FromBifunctor p) where
-  lcostrength :: Bifunctor p => Op (FromBifunctor p (Either a x) (Either b x)) (FromBifunctor p a b)
+instance (Bifunctor p) => LeftCoModule Op Either Either (FromBifunctor p) where
+  lcostrength :: (Bifunctor p) => Op (FromBifunctor p (Either a x) (Either b x)) (FromBifunctor p a b)
   lcostrength = Op (gbimap Left Left)
 
-instance Bifunctor p => LeftCoModule Op These These (FromBifunctor p) where
-  lcostrength :: Bifunctor p => Op (FromBifunctor p (These a x) (These b x)) (FromBifunctor p a b)
+instance (Bifunctor p) => LeftCoModule Op These These (FromBifunctor p) where
+  lcostrength :: (Bifunctor p) => Op (FromBifunctor p (These a x) (These b x)) (FromBifunctor p a b)
   lcostrength = Op (gbimap This This)
 
-deriving via (FromProfunctor (Kleisli m)) instance MonadFix m => LeftCoModule (->) (,) (,) (Kleisli m)
+deriving via (FromProfunctor (Kleisli m)) instance (MonadFix m) => LeftCoModule (->) (,) (,) (Kleisli m)
 
 deriving via (FromProfunctor Tagged) instance LeftCoModule (->) (,) (,) Tagged
 
-deriving via (FromProfunctor (Coyoneda p)) instance Costrong p => LeftCoModule (->) (,) (,) (Coyoneda p)
+deriving via (FromProfunctor (Coyoneda p)) instance (Costrong p) => LeftCoModule (->) (,) (,) (Coyoneda p)
 
-deriving via (FromProfunctor (Copastro p)) instance Cochoice p => LeftCoModule (->) (,) (,) (Copastro p)
+deriving via (FromProfunctor (Copastro p)) instance (Cochoice p) => LeftCoModule (->) (,) (,) (Copastro p)
 
-deriving via (FromProfunctor (Yoneda p)) instance Costrong p => LeftCoModule (->) (,) (,) (Yoneda p)
+deriving via (FromProfunctor (Yoneda p)) instance (Costrong p) => LeftCoModule (->) (,) (,) (Yoneda p)
 
 deriving via (FromProfunctor (->)) instance LeftCoModule (->) (,) (,) (->)
 
-deriving via (FromProfunctor (Cokleisli f)) instance Functor f => LeftCoModule (->) (,) (,) (Cokleisli f)
+deriving via (FromProfunctor (Cokleisli f)) instance (Functor f) => LeftCoModule (->) (,) (,) (Cokleisli f)
 
-deriving via (FromProfunctor (Costar f)) instance Functor f => LeftCoModule (->) (,) (,) (Costar f)
+deriving via (FromProfunctor (Costar f)) instance (Functor f) => LeftCoModule (->) (,) (,) (Costar f)
 
-deriving via (FromProfunctor (WrappedArrow p)) instance ArrowLoop p => LeftCoModule (->) (,) (,) (WrappedArrow p)
+deriving via (FromProfunctor (WrappedArrow p)) instance (ArrowLoop p) => LeftCoModule (->) (,) (,) (WrappedArrow p)
 
 deriving via (FromProfunctor (Sum p q)) instance (Costrong p, Costrong q) => LeftCoModule (->) (,) (,) (Sum p q)
 
@@ -711,17 +711,17 @@ deriving via (FromProfunctor (CopastroSum p)) instance LeftCoModule (->) Either 
 
 deriving via (FromProfunctor (CotambaraSum p)) instance LeftCoModule (->) Either Either (CotambaraSum p)
 
-deriving via (FromProfunctor (Coyoneda p)) instance Cochoice p => LeftCoModule (->) Either Either (Coyoneda p)
+deriving via (FromProfunctor (Coyoneda p)) instance (Cochoice p) => LeftCoModule (->) Either Either (Coyoneda p)
 
-deriving via (FromProfunctor (Yoneda p)) instance Cochoice p => LeftCoModule (->) Either Either (Yoneda p)
+deriving via (FromProfunctor (Yoneda p)) instance (Cochoice p) => LeftCoModule (->) Either Either (Yoneda p)
 
 deriving via (FromProfunctor (->)) instance LeftCoModule (->) Either Either (->)
 
 deriving via (FromProfunctor (Forget r)) instance LeftCoModule (->) Either Either (Forget r)
 
-deriving via (FromProfunctor (Costar f)) instance Applicative f => LeftCoModule (->) Either Either (Costar f)
+deriving via (FromProfunctor (Costar f)) instance (Applicative f) => LeftCoModule (->) Either Either (Costar f)
 
-deriving via (FromProfunctor (Star f)) instance Traversable f => LeftCoModule (->) Either Either (Star f)
+deriving via (FromProfunctor (Star f)) instance (Traversable f) => LeftCoModule (->) Either Either (Star f)
 
 deriving via (FromProfunctor (Sum p q)) instance (Cochoice p, Cochoice q) => LeftCoModule (->) Either Either (Sum p q)
 
@@ -824,43 +824,43 @@ class RightCoModule cat t1 t2 f where
   -- rcostrength @(->) @Either @Either :: RightCoModule (->) Either Either f => f (Either x a) (Either x b) -> f a b
   rcostrength :: cat (f (x `t1` a) (x `t2` b)) (f a b)
 
-instance Costrong p => RightCoModule (->) (,) (,) (FromProfunctor p) where
+instance (Costrong p) => RightCoModule (->) (,) (,) (FromProfunctor p) where
   rcostrength :: FromProfunctor p (x, a) (x, b) -> FromProfunctor p a b
   rcostrength = unsecond
 
-instance Cochoice p => RightCoModule (->) Either Either (FromProfunctor p) where
+instance (Cochoice p) => RightCoModule (->) Either Either (FromProfunctor p) where
   rcostrength :: FromProfunctor p (Either x a) (Either x b) -> FromProfunctor p a b
   rcostrength = unright
 
-instance Bifunctor p => RightCoModule (->) (,) (,) (FromBifunctor p) where
+instance (Bifunctor p) => RightCoModule (->) (,) (,) (FromBifunctor p) where
   rcostrength :: FromBifunctor p (x, a) (x, b) -> FromBifunctor p a b
   rcostrength = gbimap snd snd
 
-instance Bifunctor p => RightCoModule Op Either Either (FromBifunctor p) where
+instance (Bifunctor p) => RightCoModule Op Either Either (FromBifunctor p) where
   rcostrength :: Op (FromBifunctor p (Either x a) (Either x b)) (FromBifunctor p a b)
   rcostrength = Op (gbimap Right Right)
 
-instance Bifunctor p => RightCoModule Op These These (FromBifunctor p) where
+instance (Bifunctor p) => RightCoModule Op These These (FromBifunctor p) where
   rcostrength :: Op (FromBifunctor p (These x a) (These x b)) (FromBifunctor p a b)
   rcostrength = Op (gbimap That That)
 
-deriving via (FromProfunctor (Kleisli m)) instance MonadFix m => RightCoModule (->) (,) (,) (Kleisli m)
+deriving via (FromProfunctor (Kleisli m)) instance (MonadFix m) => RightCoModule (->) (,) (,) (Kleisli m)
 
 deriving via (FromProfunctor Tagged) instance RightCoModule (->) (,) (,) Tagged
 
-deriving via (FromProfunctor (Coyoneda p)) instance Costrong p => RightCoModule (->) (,) (,) (Coyoneda p)
+deriving via (FromProfunctor (Coyoneda p)) instance (Costrong p) => RightCoModule (->) (,) (,) (Coyoneda p)
 
-deriving via (FromProfunctor (Copastro p)) instance Cochoice p => RightCoModule (->) (,) (,) (Copastro p)
+deriving via (FromProfunctor (Copastro p)) instance (Cochoice p) => RightCoModule (->) (,) (,) (Copastro p)
 
-deriving via (FromProfunctor (Yoneda p)) instance Costrong p => RightCoModule (->) (,) (,) (Yoneda p)
+deriving via (FromProfunctor (Yoneda p)) instance (Costrong p) => RightCoModule (->) (,) (,) (Yoneda p)
 
 deriving via (FromProfunctor (->)) instance RightCoModule (->) (,) (,) (->)
 
-deriving via (FromProfunctor (Cokleisli f)) instance Functor f => RightCoModule (->) (,) (,) (Cokleisli f)
+deriving via (FromProfunctor (Cokleisli f)) instance (Functor f) => RightCoModule (->) (,) (,) (Cokleisli f)
 
-deriving via (FromProfunctor (Costar f)) instance Functor f => RightCoModule (->) (,) (,) (Costar f)
+deriving via (FromProfunctor (Costar f)) instance (Functor f) => RightCoModule (->) (,) (,) (Costar f)
 
-deriving via (FromProfunctor (WrappedArrow p)) instance ArrowLoop p => RightCoModule (->) (,) (,) (WrappedArrow p)
+deriving via (FromProfunctor (WrappedArrow p)) instance (ArrowLoop p) => RightCoModule (->) (,) (,) (WrappedArrow p)
 
 deriving via (FromProfunctor (Sum p q)) instance (Costrong p, Costrong q) => RightCoModule (->) (,) (,) (Sum p q)
 
@@ -876,17 +876,17 @@ deriving via (FromProfunctor (CopastroSum p)) instance RightCoModule (->) Either
 
 deriving via (FromProfunctor (CotambaraSum p)) instance RightCoModule (->) Either Either (CotambaraSum p)
 
-deriving via (FromProfunctor (Coyoneda p)) instance Cochoice p => RightCoModule (->) Either Either (Coyoneda p)
+deriving via (FromProfunctor (Coyoneda p)) instance (Cochoice p) => RightCoModule (->) Either Either (Coyoneda p)
 
-deriving via (FromProfunctor (Yoneda p)) instance Cochoice p => RightCoModule (->) Either Either (Yoneda p)
+deriving via (FromProfunctor (Yoneda p)) instance (Cochoice p) => RightCoModule (->) Either Either (Yoneda p)
 
 deriving via (FromProfunctor (->)) instance RightCoModule (->) Either Either (->)
 
 deriving via (FromProfunctor (Forget r)) instance RightCoModule (->) Either Either (Forget r)
 
-deriving via (FromProfunctor (Costar f)) instance Applicative f => RightCoModule (->) Either Either (Costar f)
+deriving via (FromProfunctor (Costar f)) instance (Applicative f) => RightCoModule (->) Either Either (Costar f)
 
-deriving via (FromProfunctor (Star f)) instance Traversable f => RightCoModule (->) Either Either (Star f)
+deriving via (FromProfunctor (Star f)) instance (Traversable f) => RightCoModule (->) Either Either (Star f)
 
 deriving via (FromProfunctor (Sum p q)) instance (Cochoice p, Cochoice q) => RightCoModule (->) Either Either (Sum p q)
 
@@ -975,33 +975,33 @@ deriving via (FromBifunctor ((,,,,,,) x1 x2 x3 x4 x5)) instance RightCoModule Op
 -- @
 class (LeftCoModule cat t1 t2 f, RightCoModule cat t1 t2 f) => CoBimodule cat t1 t2 f
 
-instance Costrong p => CoBimodule (->) (,) (,) (FromProfunctor p)
+instance (Costrong p) => CoBimodule (->) (,) (,) (FromProfunctor p)
 
-instance Cochoice p => CoBimodule (->) Either Either (FromProfunctor p)
+instance (Cochoice p) => CoBimodule (->) Either Either (FromProfunctor p)
 
-instance Bifunctor p => CoBimodule (->) (,) (,) (FromBifunctor p)
+instance (Bifunctor p) => CoBimodule (->) (,) (,) (FromBifunctor p)
 
-instance Bifunctor p => CoBimodule Op Either Either (FromBifunctor p)
+instance (Bifunctor p) => CoBimodule Op Either Either (FromBifunctor p)
 
-instance Bifunctor p => CoBimodule Op These These (FromBifunctor p)
+instance (Bifunctor p) => CoBimodule Op These These (FromBifunctor p)
 
-deriving via (FromProfunctor (Kleisli m)) instance MonadFix m => CoBimodule (->) (,) (,) (Kleisli m)
+deriving via (FromProfunctor (Kleisli m)) instance (MonadFix m) => CoBimodule (->) (,) (,) (Kleisli m)
 
 deriving via (FromProfunctor Tagged) instance CoBimodule (->) (,) (,) Tagged
 
-deriving via (FromProfunctor (Coyoneda p)) instance Costrong p => CoBimodule (->) (,) (,) (Coyoneda p)
+deriving via (FromProfunctor (Coyoneda p)) instance (Costrong p) => CoBimodule (->) (,) (,) (Coyoneda p)
 
-deriving via (FromProfunctor (Copastro p)) instance Cochoice p => CoBimodule (->) (,) (,) (Copastro p)
+deriving via (FromProfunctor (Copastro p)) instance (Cochoice p) => CoBimodule (->) (,) (,) (Copastro p)
 
-deriving via (FromProfunctor (Yoneda p)) instance Costrong p => CoBimodule (->) (,) (,) (Yoneda p)
+deriving via (FromProfunctor (Yoneda p)) instance (Costrong p) => CoBimodule (->) (,) (,) (Yoneda p)
 
 deriving via (FromProfunctor (->)) instance CoBimodule (->) (,) (,) (->)
 
-deriving via (FromProfunctor (Cokleisli f)) instance Functor f => CoBimodule (->) (,) (,) (Cokleisli f)
+deriving via (FromProfunctor (Cokleisli f)) instance (Functor f) => CoBimodule (->) (,) (,) (Cokleisli f)
 
-deriving via (FromProfunctor (Costar f)) instance Functor f => CoBimodule (->) (,) (,) (Costar f)
+deriving via (FromProfunctor (Costar f)) instance (Functor f) => CoBimodule (->) (,) (,) (Costar f)
 
-deriving via (FromProfunctor (WrappedArrow p)) instance ArrowLoop p => CoBimodule (->) (,) (,) (WrappedArrow p)
+deriving via (FromProfunctor (WrappedArrow p)) instance (ArrowLoop p) => CoBimodule (->) (,) (,) (WrappedArrow p)
 
 deriving via (FromProfunctor (Sum p q)) instance (Costrong p, Costrong q) => CoBimodule (->) (,) (,) (Sum p q)
 
@@ -1017,17 +1017,17 @@ deriving via (FromProfunctor (CopastroSum p)) instance CoBimodule (->) Either Ei
 
 deriving via (FromProfunctor (CotambaraSum p)) instance CoBimodule (->) Either Either (CotambaraSum p)
 
-deriving via (FromProfunctor (Coyoneda p)) instance Cochoice p => CoBimodule (->) Either Either (Coyoneda p)
+deriving via (FromProfunctor (Coyoneda p)) instance (Cochoice p) => CoBimodule (->) Either Either (Coyoneda p)
 
-deriving via (FromProfunctor (Yoneda p)) instance Cochoice p => CoBimodule (->) Either Either (Yoneda p)
+deriving via (FromProfunctor (Yoneda p)) instance (Cochoice p) => CoBimodule (->) Either Either (Yoneda p)
 
 deriving via (FromProfunctor (->)) instance CoBimodule (->) Either Either (->)
 
 deriving via (FromProfunctor (Forget r)) instance CoBimodule (->) Either Either (Forget r)
 
-deriving via (FromProfunctor (Costar f)) instance Applicative f => CoBimodule (->) Either Either (Costar f)
+deriving via (FromProfunctor (Costar f)) instance (Applicative f) => CoBimodule (->) Either Either (Costar f)
 
-deriving via (FromProfunctor (Star f)) instance Traversable f => CoBimodule (->) Either Either (Star f)
+deriving via (FromProfunctor (Star f)) instance (Traversable f) => CoBimodule (->) Either Either (Star f)
 
 deriving via (FromProfunctor (Sum p q)) instance (Cochoice p, Cochoice q) => CoBimodule (->) Either Either (Sum p q)
 

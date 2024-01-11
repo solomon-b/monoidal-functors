@@ -50,11 +50,11 @@ type family MConcat mappend mempty xs where
 
 newtype Tensored t i xs = Tensored {getTensored :: MConcat t i xs}
 
-deriving newtype instance Show (MConcat t i xs) => Show (Tensored t i xs)
+deriving newtype instance (Show (MConcat t i xs)) => Show (Tensored t i xs)
 
-deriving newtype instance Eq (MConcat t i xs) => Eq (Tensored t i xs)
+deriving newtype instance (Eq (MConcat t i xs)) => Eq (Tensored t i xs)
 
-deriving newtype instance Ord (MConcat t i xs) => Ord (Tensored t i xs)
+deriving newtype instance (Ord (MConcat t i xs)) => Ord (Tensored t i xs)
 
 --------------------------------------------------------------------------------
 
@@ -64,10 +64,10 @@ type family xs ++ ys where
   (x ': xs) ++ ys = x ': (xs ++ ys)
 
 class AppendTensored xs where
-  appendTensored :: Tensor (->) t i => Tensored t i xs `t` Tensored t i ys -> Tensored t i (xs ++ ys)
+  appendTensored :: (Tensor (->) t i) => Tensored t i xs `t` Tensored t i ys -> Tensored t i (xs ++ ys)
 
 instance AppendTensored '[] where
   appendTensored = fwd unitl . glmap getTensored
 
-instance AppendTensored xs => AppendTensored (x ': xs) where
+instance (AppendTensored xs) => AppendTensored (x ': xs) where
   appendTensored = Tensored . grmap (getTensored . appendTensored @xs . glmap Tensored) . bwd assoc . glmap getTensored

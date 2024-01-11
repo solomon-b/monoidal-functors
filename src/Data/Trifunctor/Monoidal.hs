@@ -17,8 +17,8 @@ where
 --------------------------------------------------------------------------------
 
 import Control.Category.Tensor (Associative, Tensor)
-import Prelude (curry, Either)
 import Data.These (These)
+import Prelude (Either, curry)
 
 --------------------------------------------------------------------------------
 
