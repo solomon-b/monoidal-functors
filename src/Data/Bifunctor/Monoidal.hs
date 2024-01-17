@@ -12,6 +12,9 @@ module Data.Bifunctor.Monoidal
 
     -- * Monoidal
     Monoidal,
+
+    -- * Newtypes for Deriving Via
+    StrongCategory (..),
   )
 where
 
