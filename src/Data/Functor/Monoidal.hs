@@ -11,6 +11,15 @@ module Data.Functor.Monoidal
 
     -- * Monoidal
     Monoidal,
+
+    -- * Newtypes for Deriving Via
+    FromApplicative (..),
+    FromAlternative (..),
+    FromSemialign (..),
+    FromDivisible (..),
+    FromDecidable (..),
+    FromUnalign (..),
+    FromAlign (..),
   )
 where
 
