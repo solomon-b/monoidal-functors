@@ -14,29 +14,38 @@ module Data.Bifunctor.Monoidal
     Monoidal,
 
     -- * Newtypes for Deriving Via
+    FromBiapplicative (..),
     StrongCategory (..),
   )
 where
 
 --------------------------------------------------------------------------------
 
-import Control.Applicative (Alternative (..), Applicative (..), pure, (<$>))
+import Control.Applicative (Alternative (..), Applicative (..), Const, pure, (<$>))
 import Control.Arrow (Kleisli (..))
 import Control.Category (Category (..))
-import Control.Category.Cartesian (Cocartesian (..), Semicartesian (..))
+import Control.Category.Cartesian (Cocartesian (..))
 import Control.Category.Tensor (Associative, Iso (..), Tensor (..))
 import Control.Monad (Functor (..), Monad)
 import Data.Biapplicative (Biapplicative (..), Bifunctor (..))
+import Data.Bifunctor.Biap (Biap)
+import Data.Bifunctor.Biff (Biff)
 import Data.Bifunctor.Clown (Clown)
+import Data.Bifunctor.Flip (Flip)
 import Data.Bifunctor.Joker (Joker (..))
+import Data.Bifunctor.Product (Product)
+import Data.Bifunctor.Tannen (Tannen)
+import Data.Bifunctor.Wrapped (WrappedBifunctor)
 import Data.Either (Either, either)
 import Data.Function (const, ($))
 import Data.Profunctor (Forget (..), Profunctor (..), Star (..), Strong (..))
+import Data.Semigroup (Arg)
 import Data.Semigroupoid (Semigroupoid (..))
+import Data.Tagged (Tagged)
 import Data.These (These (..), these)
 import Data.Tuple (fst, snd, uncurry)
 import Data.Void (Void, absurd)
-import Prelude (Either (..), curry)
+import Prelude (Either (..), Monoid, curry)
 
 --------------------------------------------------------------------------------
 
@@ -77,13 +86,50 @@ class (Associative cat t1, Associative cat t2, Associative cat to) => Semigroupa
   -- ("True",True)
   combine :: cat (to (f x y) (f x' y')) (f (t1 x x') (t2 y y'))
 
+newtype FromBiapplicative p a b = FromBiapplicative (p a b)
+  deriving newtype (Functor, Bifunctor, Biapplicative)
+
+instance (Biapplicative p) => Semigroupal (->) (,) (,) (,) (FromBiapplicative p) where
+  combine :: (FromBiapplicative p x y, FromBiapplicative p x' y') -> FromBiapplicative p (x, x') (y, y')
+  combine = uncurry $ biliftA2 (,) (,)
+
+deriving via FromBiapplicative (,) instance Semigroupal (->) (,) (,) (,) (,)
+
+deriving via FromBiapplicative ((,,) x) instance (Monoid x) => Semigroupal (->) (,) (,) (,) ((,,) x)
+
+deriving via FromBiapplicative ((,,,) x y) instance (Monoid x, Monoid y) => Semigroupal (->) (,) (,) (,) ((,,,) x y)
+
+deriving via FromBiapplicative ((,,,,) x y z) instance (Monoid x, Monoid y, Monoid z) => Semigroupal (->) (,) (,) (,) ((,,,,) x y z)
+
+deriving via FromBiapplicative ((,,,,,) x y z w) instance (Monoid x, Monoid y, Monoid z, Monoid w) => Semigroupal (->) (,) (,) (,) ((,,,,,) x y z w)
+
+deriving via FromBiapplicative ((,,,,,,) x y z w v) instance (Monoid x, Monoid y, Monoid z, Monoid w, Monoid v) => Semigroupal (->) (,) (,) (,) ((,,,,,,) x y z w v)
+
+deriving via FromBiapplicative Arg instance Semigroupal (->) (,) (,) (,) Arg
+
+deriving via FromBiapplicative Const instance Semigroupal (->) (,) (,) (,) Const
+
+deriving via FromBiapplicative (Biap p) instance (Biapplicative p) => Semigroupal (->) (,) (,) (,) (Biap p)
+
+deriving via FromBiapplicative Tagged instance Semigroupal (->) (,) (,) (,) Tagged
+
+deriving via FromBiapplicative (Clown f) instance (Applicative f) => Semigroupal (->) (,) (,) (,) (Clown f)
+
+deriving via FromBiapplicative (Flip p) instance (Biapplicative p) => Semigroupal (->) (,) (,) (,) (Flip p)
+
+deriving via FromBiapplicative (Joker g) instance (Applicative g) => Semigroupal (->) (,) (,) (,) (Joker g)
+
+deriving via FromBiapplicative (WrappedBifunctor p) instance (Biapplicative p) => Semigroupal (->) (,) (,) (,) (WrappedBifunctor p)
+
+deriving via FromBiapplicative (Product f g) instance (Biapplicative f, Biapplicative g) => Semigroupal (->) (,) (,) (,) (Product f g)
+
+deriving via FromBiapplicative (Tannen f p) instance (Applicative f, Biapplicative p) => Semigroupal (->) (,) (,) (,) (Tannen f p)
+
+deriving via FromBiapplicative (Biff p f g) instance (Applicative f, Applicative g, Biapplicative p) => Semigroupal (->) (,) (,) (,) (Biff p f g)
+
 instance (Profunctor p) => Semigroupal (->) (,) Either Either p where
   combine :: Either (p x y) (p x' y') -> p (x, x') (Either y y')
   combine = either (dimap fst Left) (dimap snd Right)
-
-instance Semigroupal (->) (,) (,) (,) (,) where
-  combine :: ((x, y), (x', y')) -> ((x, x'), (y, y'))
-  combine ((x, y), (x', y')) = ((x, x'), (y, y'))
 
 -- NOTE: This version could be used for a more general abstraction
 -- of products in a category:
@@ -124,10 +170,6 @@ instance Semigroupal (->) Either Either (,) (->) where
   combine :: (x -> y, x' -> y') -> Either x x' -> Either y y'
   combine fs = either (Left . fst fs) (Right . snd fs)
 
-instance (Applicative f) => Semigroupal (->) (,) (,) (,) (Joker f) where
-  combine :: (Joker f x y, Joker f x' y') -> Joker f (x, x') (y, y')
-  combine = uncurry $ biliftA2 (,) (,)
-
 instance (Alternative f) => Semigroupal (->) Either Either (,) (Joker f) where
   combine :: (Joker f x y, Joker f x' y') -> Joker f (Either x x') (Either y y')
   combine = uncurry $ biliftA2 (\_ x' -> Right x') (\_ y' -> Right y')
@@ -135,10 +177,6 @@ instance (Alternative f) => Semigroupal (->) Either Either (,) (Joker f) where
 instance (Functor f) => Semigroupal (->) Either Either Either (Joker f) where
   combine :: Either (Joker f x y) (Joker f x' y') -> Joker f (Either x x') (Either y y')
   combine = either (Joker . fmap Left . runJoker) (Joker . fmap Right . runJoker)
-
-instance (Applicative f) => Semigroupal (->) (,) (,) (,) (Clown f) where
-  combine :: (Clown f x y, Clown f x' y') -> Clown f (x, x') (y, y')
-  combine = uncurry $ biliftA2 (,) (,)
 
 instance (Alternative f) => Semigroupal (->) Either Either (,) (Clown f) where
   combine :: (Clown f x y, Clown f x' y') -> Clown f (Either x x') (Either y y')
@@ -266,13 +304,47 @@ class Unital cat i1 i2 io f where
   -- Right ()
   introduce :: cat io (f i1 i2)
 
+instance (Biapplicative p) => Unital (->) () () () (FromBiapplicative p) where
+  introduce :: () -> FromBiapplicative p () ()
+  introduce () = bipure () ()
+
+deriving via FromBiapplicative (,) instance Unital (->) () () () (,)
+
+deriving via FromBiapplicative ((,,) x) instance (Monoid x) => Unital (->) () () () ((,,) x)
+
+deriving via FromBiapplicative ((,,,) x y) instance (Monoid x, Monoid y) => Unital (->) () () () ((,,,) x y)
+
+deriving via FromBiapplicative ((,,,,) x y z) instance (Monoid x, Monoid y, Monoid z) => Unital (->) () () () ((,,,,) x y z)
+
+deriving via FromBiapplicative ((,,,,,) x y z w) instance (Monoid x, Monoid y, Monoid z, Monoid w) => Unital (->) () () () ((,,,,,) x y z w)
+
+deriving via FromBiapplicative ((,,,,,,) x y z w v) instance (Monoid x, Monoid y, Monoid z, Monoid w, Monoid v) => Unital (->) () () () ((,,,,,,) x y z w v)
+
+deriving via FromBiapplicative Arg instance Unital (->) () () () Arg
+
+deriving via FromBiapplicative Const instance Unital (->) () () () Const
+
+deriving via FromBiapplicative (Biap p) instance (Biapplicative p) => Unital (->) () () () (Biap p)
+
+deriving via FromBiapplicative Tagged instance Unital (->) () () () Tagged
+
+deriving via FromBiapplicative (Clown f) instance (Applicative f) => Unital (->) () () () (Clown f)
+
+deriving via FromBiapplicative (Flip p) instance (Biapplicative p) => Unital (->) () () () (Flip p)
+
+deriving via FromBiapplicative (Joker g) instance (Applicative g) => Unital (->) () () () (Joker g)
+
+deriving via FromBiapplicative (WrappedBifunctor p) instance (Biapplicative p) => Unital (->) () () () (WrappedBifunctor p)
+
+deriving via FromBiapplicative (Product f g) instance (Biapplicative f, Biapplicative g) => Unital (->) () () () (Product f g)
+
+deriving via FromBiapplicative (Tannen f p) instance (Applicative f, Biapplicative p) => Unital (->) () () () (Tannen f p)
+
+deriving via FromBiapplicative (Biff p f g) instance (Applicative f, Applicative g, Biapplicative p) => Unital (->) () () () (Biff p f g)
+
 instance (Profunctor p, Category p) => Unital (->) () () () (StrongCategory p) where
   introduce :: () -> StrongCategory p () ()
   introduce () = StrongCategory id
-
-instance Unital (->) () () () (,) where
-  introduce :: () -> ((), ())
-  introduce = split
 
 instance Unital (->) Void Void Void (,) where
   introduce :: Void -> (Void, Void)
@@ -297,10 +369,6 @@ instance Unital (->) Void Void Void (->) where
 instance (Unital (->) Void Void () (->)) where
   introduce :: () -> Void -> Void
   introduce () = absurd
-
-instance (Applicative f) => Unital (->) () () () (Joker f) where
-  introduce :: () -> Joker f () ()
-  introduce = Joker . pure
 
 instance (Alternative f) => Unital (->) Void Void () (Joker f) where
   introduce :: () -> Joker f Void Void
@@ -390,9 +458,41 @@ class
   ) =>
   Monoidal cat t1 i1 t2 i2 to io f
 
-instance (Strong p, Semigroupoid p, Category p) => Monoidal (->) (,) () (,) () (,) () (StrongCategory p)
-
 instance Monoidal (->) (,) () (,) () (,) () (,)
+
+instance (Monoid x) => Monoidal (->) (,) () (,) () (,) () ((,,) x)
+
+instance (Monoid x, Monoid y) => Monoidal (->) (,) () (,) () (,) () ((,,,) x y)
+
+instance (Monoid x, Monoid y, Monoid z) => Monoidal (->) (,) () (,) () (,) () ((,,,,) x y z)
+
+instance (Monoid x, Monoid y, Monoid z, Monoid w) => Monoidal (->) (,) () (,) () (,) () ((,,,,,) x y z w)
+
+instance (Monoid x, Monoid y, Monoid z, Monoid w, Monoid v) => Monoidal (->) (,) () (,) () (,) () ((,,,,,,) x y z w v)
+
+instance Monoidal (->) (,) () (,) () (,) () Arg
+
+instance Monoidal (->) (,) () (,) () (,) () Const
+
+instance (Biapplicative p) => Monoidal (->) (,) () (,) () (,) () (Biap p)
+
+instance Monoidal (->) (,) () (,) () (,) () Tagged
+
+instance (Applicative f) => Monoidal (->) (,) () (,) () (,) () (Clown f)
+
+instance (Biapplicative p) => Monoidal (->) (,) () (,) () (,) () (Flip p)
+
+instance (Applicative g) => Monoidal (->) (,) () (,) () (,) () (Joker g)
+
+instance (Biapplicative p) => Monoidal (->) (,) () (,) () (,) () (WrappedBifunctor p)
+
+instance (Biapplicative f, Biapplicative g) => Monoidal (->) (,) () (,) () (,) () (Product f g)
+
+instance (Applicative f, Biapplicative p) => Monoidal (->) (,) () (,) () (,) () (Tannen f p)
+
+instance (Applicative f, Applicative g, Biapplicative p) => Monoidal (->) (,) () (,) () (,) () (Biff p f g)
+
+instance (Strong p, Semigroupoid p, Category p) => Monoidal (->) (,) () (,) () (,) () (StrongCategory p)
 
 instance Monoidal (->) Either Void Either Void Either Void (,)
 
@@ -405,8 +505,6 @@ instance Monoidal (->) These Void (,) () (,) () Either
 instance Monoidal (->) (,) () (,) () (,) () (->)
 
 instance Monoidal (->) Either Void Either Void (,) () (->)
-
-instance (Applicative f) => Monoidal (->) (,) () (,) () (,) () (Joker f)
 
 instance (Alternative f) => Monoidal (->) Either Void Either Void (,) () (Joker f)
 
