@@ -83,6 +83,7 @@ library
     Data.Functor.Monoidal
     Data.Functor.Monoidal.Generic
     Data.Functor.Monoidal.Specialized
+    Data.Functor.Traversable
     Data.Trifunctor.Module
     Data.Trifunctor.Monoidal
 
