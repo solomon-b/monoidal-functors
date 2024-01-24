@@ -8,6 +8,8 @@
 
   outputs = { self, nixpkgs, flake-utils }:
     let
+      ghcVersion = "963";
+      compiler = "ghc${ghcVersion}";
       overlay = import ./overlay.nix;
       overlays = [ overlay ];
     in
@@ -19,9 +21,9 @@
         rec {
           devShell = pkgs.mkShell {
             buildInputs = with pkgs; [
-              pkgs.haskellPackages.cabal-install
-              pkgs.haskellPackages.ghc
-              pkgs.haskellPackages.haskell-language-server
+              cabal-install
+              haskell.compiler.${compiler}
+              haskell.packages.${compiler}.haskell-language-server
               nixpkgs-fmt
               ormolu
             ];
