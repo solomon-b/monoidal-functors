@@ -2,7 +2,7 @@
 
 ## Upcoming
 * Adds `Bifunctor.Monoidal` instances for `Biapplicative`.
-* Adds common infix operators for Semigroupal.
+* Adds infix operators for `Semigroupal`.
 * Adds `Data.Functor.Monoidal.Specialized` combinators module.
 * Adds `Biapplicative` operations to `Data.Bifunctor.Monoidal.Specialized`.
 * Adds `Unalign` `Semigroupal` instances.
