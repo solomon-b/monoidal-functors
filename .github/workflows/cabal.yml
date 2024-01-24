@@ -19,15 +19,15 @@ jobs:
     
     strategy:
       matrix:
-        cabal: ["3.6"]
-        ghc: ["8.10.7", "9.0.2", "9.2.4", "9.4.5", "9.6.2"]
+        cabal: ["3.6", "3.10"]
+        ghc: ["8.10.7", "9.0.2", "9.2.8", "9.4.8", "9.6.3"]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
       - name: Setup
-        uses: haskell/actions/setup@v1
+        uses: haskell-actions/setup@v2
         id: setup-haskell-cabal
         with:
           ghc-version: ${{ matrix.ghc }}
