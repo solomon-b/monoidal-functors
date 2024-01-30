@@ -63,6 +63,7 @@ library
     semigroupoids                 >= 6.0.0 && < 6.1,
     these                         >= 1.2 && < 1.3,
     mtl                           >= 2.2.2 && < 2.4,
+    witherable                    >= 0.4.2 && < 0.5,
 
   exposed-modules:
     Control.Category.Tensor
@@ -72,6 +73,7 @@ library
     Data.Bifunctor.Module
     Data.Bifunctor.Monoidal
     Data.Bifunctor.Monoidal.Specialized
+    Data.Functor.Categorical
     Data.Functor.Invariant
     Data.Functor.Module
     Data.Functor.Monoidal
