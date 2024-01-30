@@ -31,7 +31,7 @@ import Data.Functor.Contravariant (Op (..))
 import Data.Profunctor (Profunctor (..), Star (..))
 import Data.These (These (..), these)
 import Data.Void (Void, absurd)
-import Prelude hiding (id, (.))
+import Prelude hiding (Applicative (..), id, (.))
 
 --------------------------------------------------------------------------------
 
