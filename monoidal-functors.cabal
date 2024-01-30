@@ -74,6 +74,7 @@ library
     Data.Bifunctor.Monoidal
     Data.Bifunctor.Monoidal.Specialized
     Data.Functor.Categorical
+    Data.Functor.CategoricalV2
     Data.Functor.Invariant
     Data.Functor.Module
     Data.Functor.Monoidal
