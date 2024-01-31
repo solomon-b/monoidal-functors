@@ -53,21 +53,18 @@ type Nat :: Cat s -> Cat t -> Cat (s -> t)
 data Nat source target f f' where
   Nat :: (forall x. target (f x) (f' x)) -> Nat source target f f'
 
+infixr 0 ~>
+type (~>) c1 c2 = Nat c1 c2
+
 instance (Semigroupoid c1, Semigroupoid c2) => Semigroupoid (Nat c1 c2) where
   o :: Nat c1 c2 j k1 -> Nat c1 c2 i j -> Nat c1 c2 i k1
   Nat c1 `o` Nat c2 = Nat (c1 `o` c2)
 
-instance (Semigroupoid c1, Semigroupoid c2, Category c1, Category c2) => Category (Nat c1 c2) where
-  id :: Nat c1 c2 a a
+instance (Semigroupoid c1, Semigroupoid c2, Category c1, Category c2) => Category (c1 ~> c2) where
+  id :: (c1 ~> c2) a a
   id = Nat id
 
   (.) = o
-
--- data Nat2 source target f f' f'' where
---   Nat2 :: (forall x y. target (f x y) (f' x y)) -> Nat2 source target f f' f''
-
--- instance (Category c1, Category c2, Category c3) => Category (Nat2 c1 c2 c3) where
---   id = Nat2 _
 
 type FunctorOf :: Cat from -> Cat to -> (from -> to) -> Constraint
 class (Functor f, dom ~ Dom f, cod ~ Cod f) => FunctorOf dom cod f
@@ -150,34 +147,34 @@ instance (Hask.Bifunctor p, FunctorOf (->) (->) (p x)) => Functor (FromBifunctor
 
 instance (Hask.Bifunctor p, forall x. FunctorOf (->) (->) (p x)) => Functor (FromBifunctor p) where
   type Dom (FromBifunctor p) = (->)
-  type Cod (FromBifunctor p) = (Nat (->) (->))
+  type Cod (FromBifunctor p) = (->) ~> (->)
 
-  map :: (a -> b) -> (Nat (->) (->)) (FromBifunctor p a) (FromBifunctor p b)
+  map :: (a -> b) -> ((->) ~> (->)) (FromBifunctor p a) (FromBifunctor p b)
   map f = Nat (\(FromBifunctor pax) -> FromBifunctor (Hask.first f pax))
 
-first :: forall p a b. (FunctorOf (->) (Nat (->) (->)) p) => (a -> b) -> forall x. p a x -> p b x
+first :: forall p a b. (FunctorOf (->) ((->) ~> (->)) p) => (a -> b) -> forall x. p a x -> p b x
 first f = let (Nat f') = map f in f'
 
 second :: (FunctorOf (->) (->) (p x)) => (a -> b) -> p x a -> p x b
 second = fmap
 
-bimap :: (FunctorOf (->) (->) (p a), FunctorOf (->) (Nat (->) (->)) p) => (a -> b) -> (c -> d) -> p a c -> p b d
+bimap :: (FunctorOf (->) (->) (p a), FunctorOf (->) ((->) ~> (->)) p) => (a -> b) -> (c -> d) -> p a c -> p b d
 bimap f g = first f . second g
 
 -- deriving via (FromBifunctor (,)) instance Functor (,)
 
 instance Functor (,) where
   type Dom (,) = (->)
-  type Cod (,) = Nat (->) (->)
+  type Cod (,) = (->) ~> (->)
 
-  map :: (a -> b) -> Nat (->) (->) ((,) a) ((,) b)
+  map :: (a -> b) -> ((->) ~> (->)) ((,) a) ((,) b)
   map f = Nat (Hask.first f)
 
 instance Functor Either where
   type Dom Either = (->)
-  type Cod Either = Nat (->) (->)
+  type Cod Either = (->) ~> (->)
 
-  map :: (e -> e1) -> Nat (->) (->) (Either e) (Either e1)
+  map :: (e -> e1) -> ((->) ~> (->)) (Either e) (Either e1)
   map f = Nat (Hask.first f)
 
 --------------------------------------------------------------------------------
@@ -194,25 +191,25 @@ instance (Hask.Profunctor p, FunctorOf (->) (->) (p x)) => Functor (FromProfunct
 
 instance (Hask.Profunctor p) => Functor (FromProfunctor p) where
   type Dom (FromProfunctor p) = Op
-  type Cod (FromProfunctor p) = (Nat (->) (->))
+  type Cod (FromProfunctor p) = (->) ~> (->)
 
-  map :: Op a b -> Nat (->) (->) ((FromProfunctor p) a) ((FromProfunctor p) b)
+  map :: Op a b -> ((->) ~> (->)) ((FromProfunctor p) a) ((FromProfunctor p) b)
   map (Op f) = Nat (\(FromProfunctor pax) -> FromProfunctor (Hask.lmap f pax))
 
-lmap :: forall p a b. (FunctorOf Op (Nat (->) (->)) p) => (a -> b) -> forall x. p b x -> p a x
+lmap :: forall p a b. (FunctorOf Op ((->) ~> (->)) p) => (a -> b) -> forall x. p b x -> p a x
 lmap f = let (Nat f') = map @_ @_ @p (Op f) in f'
 
 rmap :: (FunctorOf (->) (->) (f x)) => (a -> b) -> f x a -> f x b
 rmap = fmap
 
-dimap :: (FunctorOf Op (Nat (->) (->)) p, forall x. FunctorOf (->) (->) (p x)) => (a -> b) -> (c -> d) -> p b c -> p a d
+dimap :: (FunctorOf Op ((->) ~> (->)) p, forall x. FunctorOf (->) (->) (p x)) => (a -> b) -> (c -> d) -> p b c -> p a d
 dimap f g = lmap f . rmap g
 
 instance Functor (->) where
   type Dom (->) = Op
-  type Cod (->) = Nat (->) (->)
+  type Cod (->) = (->) ~> (->)
 
-  map :: Op a b -> Nat (->) (->) ((->) a) ((->) b)
+  map :: Op a b -> ((->) ~> (->)) ((->) a) ((->) b)
   map (Op f) = Nat (. f)
 
 --------------------------------------------------------------------------------
@@ -247,20 +244,20 @@ filter f = map (Hask.Star (\a -> if f a then Just a else Nothing))
 --------------------------------------------------------------------------------
 
 type Trifunctor :: (Type -> Type -> Type -> Type) -> Constraint
-type Trifunctor = FunctorOf (->) (Nat (->) (Nat (->) (->)))
+type Trifunctor = FunctorOf (->) ((->) ~> (->) ~> (->))
 
 instance Functor (,,) where
   type Dom (,,) = (->)
-  type Cod (,,) = (Nat (->) (Nat (->) (->)))
+  type Cod (,,) = (->) ~> (->) ~> (->)
 
-  map :: (a -> b) -> (Nat (->) (Nat (->) (->))) ((,,) a) ((,,) b)
+  map :: (a -> b) -> ((->) ~> (->) ~> (->)) ((,,) a) ((,,) b)
   map f = Nat (Nat (\(x, y, z) -> (f x, y, z)))
 
 instance Functor ((,,) x) where
   type Dom ((,,) x) = (->)
-  type Cod ((,,) x) = Nat (->) (->)
+  type Cod ((,,) x) = (->) ~> (->)
 
-  map :: (a -> b) -> Nat (->) (->) ((,,) x a) ((,,) x b)
+  map :: (a -> b) -> ((->) ~> (->)) ((,,) x a) ((,,) x b)
   map f = Nat (\(x, y, z) -> (x, f y, z))
 
 deriving via FromFunctor ((,,) x y) instance Functor ((,,) x y)
@@ -283,14 +280,14 @@ deriving via (FromFunctor (MealyM m s i)) instance (Hask.Functor m) => Functor (
 
 instance (FunctorOf (->) (->) m) => Functor (MealyM m) where
   type Dom (MealyM m) = (<->)
-  type Cod (MealyM m) = Nat Op (Nat (->) (->))
+  type Cod (MealyM m) = Nat Op ((->) ~> (->))
 
-  map :: (a <-> b) -> Nat Op (Nat (->) (->)) (MealyM m a) (MealyM m b)
+  map :: (a <-> b) -> Nat Op ((->) ~> (->)) (MealyM m a) (MealyM m b)
   map Iso {..} = Nat $ Nat $ \(MealyM mealy) -> MealyM $ \s i -> map (map fwd) $ mealy (bwd s) i
 
 instance Functor (MealyM m s) where
   type Dom (MealyM m s) = Op
-  type Cod (MealyM m s) = Nat (->) (->)
+  type Cod (MealyM m s) = (->) ~> (->)
 
   map :: Op a b -> Nat (->) (->) (MealyM m s a) (MealyM m s b)
   map (Op f) = Nat $ \(MealyM mealy) -> MealyM $ \s -> mealy s . f
@@ -300,7 +297,7 @@ instance Functor (MealyM m s) where
 data MyHKD f = MyHKD {one :: f Bool, two :: f ()}
 
 instance Functor MyHKD where
-  type Dom MyHKD = (Nat (->) (->))
+  type Dom MyHKD = (->) ~> (->)
   type Cod MyHKD = (->)
 
   map :: (Nat (->) (->)) f g -> MyHKD f -> MyHKD g
@@ -309,7 +306,7 @@ instance Functor MyHKD where
 newtype MyHKD2 p = MyHKD2 {field :: p () Bool}
 
 instance Functor MyHKD2 where
-  type Dom MyHKD2 = (Nat (->) (Nat (->) (->)))
+  type Dom MyHKD2 = (->) ~> ((->) ~> (->))
   type Cod MyHKD2 = (->)
 
   map :: Dom MyHKD2 p q -> MyHKD2 p -> MyHKD2 q
