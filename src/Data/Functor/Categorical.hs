@@ -25,7 +25,7 @@ import Control.Monad qualified as Hask
 import Control.Monad.Reader qualified as Hask
 import Control.Monad.State qualified as Hask
 import Data.Bifunctor qualified as Hask
-import Data.Bool (Bool)
+import Data.Bool (Bool (..))
 import Data.Either (Either)
 import Data.Function (($))
 import Data.Functor.Contravariant (Op (..), Predicate (..))
@@ -50,8 +50,11 @@ class (Category (Dom f), Category (Cod f)) => Functor (f :: from -> to) where
 type Cat i = i -> i -> Type
 
 type Nat :: Cat s -> Cat t -> Cat (s -> t)
-data Nat source target f f' where
+newtype Nat source target f f' where
   Nat :: (forall x. target (f x) (f' x)) -> Nat source target f f'
+
+runNat :: Nat source target f f' -> (forall x. target (f x) (f' x))
+runNat (Nat f) = f
 
 infixr 0 ~>
 type (~>) c1 c2 = Nat c1 c2
@@ -65,7 +68,7 @@ instance (Semigroupoid c1, Semigroupoid c2, Category c1, Category c2) => Categor
   id = Nat id
 
   (.) = o
-
+    
 type FunctorOf :: Cat from -> Cat to -> (from -> to) -> Constraint
 class (Functor f, dom ~ Dom f, cod ~ Cod f) => FunctorOf dom cod f
 
@@ -152,8 +155,8 @@ instance (Hask.Bifunctor p, forall x. FunctorOf (->) (->) (p x)) => Functor (Fro
   map :: (a -> b) -> ((->) ~> (->)) (FromBifunctor p a) (FromBifunctor p b)
   map f = Nat (\(FromBifunctor pax) -> FromBifunctor (Hask.first f pax))
 
-first :: forall p a b. (FunctorOf (->) ((->) ~> (->)) p) => (a -> b) -> forall x. p a x -> p b x
-first f = let (Nat f') = map f in f'
+first :: (FunctorOf (->) ((->) ~> (->)) p) => (a -> b) -> p a x -> p b x
+first = runNat . map
 
 second :: (FunctorOf (->) (->) (p x)) => (a -> b) -> p x a -> p x b
 second = fmap
@@ -161,21 +164,9 @@ second = fmap
 bimap :: (FunctorOf (->) (->) (p a), FunctorOf (->) ((->) ~> (->)) p) => (a -> b) -> (c -> d) -> p a c -> p b d
 bimap f g = first f . second g
 
--- deriving via (FromBifunctor (,)) instance Functor (,)
+deriving via (FromBifunctor (,)) instance Functor (,)
 
-instance Functor (,) where
-  type Dom (,) = (->)
-  type Cod (,) = (->) ~> (->)
-
-  map :: (a -> b) -> ((->) ~> (->)) ((,) a) ((,) b)
-  map f = Nat (Hask.first f)
-
-instance Functor Either where
-  type Dom Either = (->)
-  type Cod Either = (->) ~> (->)
-
-  map :: (e -> e1) -> ((->) ~> (->)) (Either e) (Either e1)
-  map f = Nat (Hask.first f)
+deriving via (FromBifunctor Either) instance Functor Either
 
 --------------------------------------------------------------------------------
 
@@ -196,8 +187,8 @@ instance (Hask.Profunctor p) => Functor (FromProfunctor p) where
   map :: Op a b -> ((->) ~> (->)) ((FromProfunctor p) a) ((FromProfunctor p) b)
   map (Op f) = Nat (\(FromProfunctor pax) -> FromProfunctor (Hask.lmap f pax))
 
-lmap :: forall p a b. (FunctorOf Op ((->) ~> (->)) p) => (a -> b) -> forall x. p b x -> p a x
-lmap f = let (Nat f') = map @_ @_ @p (Op f) in f'
+lmap :: (FunctorOf Op ((->) ~> (->)) p) => (a -> b) -> p b x -> p a x
+lmap = runNat . map . Op
 
 rmap :: (FunctorOf (->) (->) (f x)) => (a -> b) -> f x a -> f x b
 rmap = fmap
@@ -205,12 +196,7 @@ rmap = fmap
 dimap :: (FunctorOf Op ((->) ~> (->)) p, forall x. FunctorOf (->) (->) (p x)) => (a -> b) -> (c -> d) -> p b c -> p a d
 dimap f g = lmap f . rmap g
 
-instance Functor (->) where
-  type Dom (->) = Op
-  type Cod (->) = (->) ~> (->)
-
-  map :: Op a b -> ((->) ~> (->)) ((->) a) ((->) b)
-  map (Op f) = Nat (. f)
+deriving via (FromProfunctor (->)) instance Functor (->)
 
 --------------------------------------------------------------------------------
 
@@ -266,7 +252,7 @@ tripleFirst :: (a -> b) -> (a, x, y) -> (b, x, y)
 tripleFirst f = let (Nat (Nat f')) = map f in f'
 
 tripleSecond :: (a -> b) -> (x, a, z) -> (x, b, z)
-tripleSecond f = let (Nat f') = map f in f'
+tripleSecond = runNat . map
 
 tripleThird :: (a -> b) -> (x, y, a) -> (x, y, b)
 tripleThird = map
