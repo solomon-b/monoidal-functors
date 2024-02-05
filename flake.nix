@@ -10,7 +10,7 @@
     let
       ghcVersion = "963";
       compiler = "ghc${ghcVersion}";
-      overlay = import ./overlay.nix;
+      overlay = import ./overlay.nix compiler;
       overlays = [ overlay ];
     in
     flake-utils.lib.eachDefaultSystem

@@ -1,12 +1,12 @@
-final: prev: {
-  haskellPackages = prev.haskellPackages.override (old: {
+compiler: final: prev: {
+  haskellPackages = prev.haskell.packages.${compiler}.override (old: {
     overrides = prev.lib.composeExtensions (old.overrides or (_: _: { }))
       (hfinal: hprev: {
         kindly-functors = hfinal.callCabal2nix "kindly-functors" (final.fetchFromGitHub {
           owner = "solomon-b";
           repo = "kindly-functors";
-          rev = "b69c4d7240e0c40da61be522410e8ffc8880f80d";
-          sha256 = "sha256-bQvG60Pa8+6NbJWGOCv605XjEraHn0LZHQ4sSC5qtbg=";
+          rev = "26fdb99ef92124241e38e6f4511961ad2f9fb920";
+          sha256 = "sha256-nZHERb1QA3XtRZWEcIoq8P4atOBioE7cRrJqrjkw9m0=";
         }) {};
         monoidal-functors = (hfinal.callCabal2nix "monoidal-functors" ./. { }).overrideScope (hfinal': hprev': {
           bifunctors = hfinal.bifunctors_5_6_1;

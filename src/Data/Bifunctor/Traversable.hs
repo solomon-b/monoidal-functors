@@ -1,55 +1,60 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ImpredicativeTypes #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 
 module Data.Bifunctor.Traversable
   ( Traversable (..),
     First (..),
     Second (..),
+    -- F (..),
+    -- ffirst,
+    -- farrow,
+    -- sequencedF,
+    -- example,
   )
 where
 
 --------------------------------------------------------------------------------
 
-import Control.Applicative (Applicative (..))
 import Data.Bifunctor (Bifunctor (..))
 import Data.Bifunctor.Monoidal (Monoidal, Semigroupal (..), Unital (..))
-import Data.Functor.Contravariant (Contravariant (..))
+import Data.Functor.Contravariant (Contravariant (..), Op (..))
 import Data.Kind (Constraint, Type)
-import Data.Profunctor (Profunctor (..))
 import GHC.Generics (Generic (..), Generic1, K1 (..), M1 (..), U1 (..), type (:*:) (..))
-import Prelude hiding (Traversable)
+import Kindly qualified
+import Prelude hiding (Traversable (..))
 
 --------------------------------------------------------------------------------
 
 class Traversable hkd where
-  sequence :: forall p. (Profunctor p, Monoidal (->) (,) () (,) () (,) () p) => hkd p -> p (hkd First) (hkd Second)
-  default sequence :: forall p. (Profunctor p, Monoidal (->) (,) () (,) () (,) () p, Generic (hkd p), Generic (hkd First), Generic (hkd Second), GTraversable p (Rep (hkd p)) (Rep (hkd First)) (Rep (hkd Second))) => hkd p -> p (hkd First) (hkd Second)
-  sequence = dimap from to . gsequence @p @(Rep (hkd p)) @(Rep (hkd First)) @(Rep (hkd Second)) . from
+  sequence :: forall p. (Kindly.Bifunctor Op (->) p, Monoidal (->) (,) () (,) () (,) () p) => hkd p -> p (hkd First) (hkd Second)
+  default sequence :: forall p. (Kindly.Bifunctor Op (->) p, Monoidal (->) (,) () (,) () (,) () p, Generic (hkd p), Generic (hkd First), Generic (hkd Second), GTraversable p (Rep (hkd p)) (Rep (hkd First)) (Rep (hkd Second))) => hkd p -> p (hkd First) (hkd Second)
+  sequence = Kindly.bimap (Op from) to . gsequence @p @(Rep (hkd p)) @(Rep (hkd First)) @(Rep (hkd Second)) . from
 
 type GTraversable :: (Type -> Type -> Type) -> (Type -> Type) -> (Type -> Type) -> (Type -> Type) -> Constraint
 class GTraversable p f g h where
   gsequence :: f x -> p (g x) (h x)
 
-instance (Profunctor p, GTraversable p f g h) => GTraversable p (M1 _1 _2 f) (M1 _1 _2 g) (M1 _1 _2 h) where
+instance (Kindly.Bifunctor Op (->) p, GTraversable p f g h) => GTraversable p (M1 _1 _2 f) (M1 _1 _2 g) (M1 _1 _2 h) where
   gsequence :: M1 _1 _2 f x -> p (M1 _1 _2 g x) (M1 _1 _2 h x)
-  gsequence (M1 f) = dimap unM1 M1 $ gsequence f
+  gsequence (M1 f) = Kindly.bimap (Op unM1) M1 $ gsequence f
 
-instance (Profunctor p) => GTraversable p (K1 _1 (p a b)) (K1 _1 (First a b)) (K1 _1 (Second a b)) where
+instance (Kindly.Bifunctor Op (->) p) => GTraversable p (K1 _1 (p a b)) (K1 _1 (First a b)) (K1 _1 (Second a b)) where
   gsequence :: K1 _1 (p a b) x -> p (K1 _1 (First a b) x) (K1 _1 (Second a b) x)
-  gsequence (K1 f) = dimap (unFirst . unK1) (K1 . Second) f
+  gsequence (K1 f) = Kindly.bimap (Op $ unFirst . unK1) (K1 . Second) f
 
-instance (Profunctor p, Monoidal (->) (,) () (,) () (,) () p) => GTraversable p U1 U1 U1 where
+instance (Kindly.Bifunctor Op (->) p, Monoidal (->) (,) () (,) () (,) () p) => GTraversable p U1 U1 U1 where
   gsequence :: U1 x -> p (U1 x) (U1 x)
-  gsequence U1 = dimap (const ()) (const U1) $ introduce @_ @_ @() ()
+  gsequence U1 = Kindly.bimap (Op $ const ()) (const U1) $ introduce @_ @_ @() ()
 
-instance (Profunctor p, Monoidal (->) (,) () (,) () (,) () p, GTraversable p f1 g1 h1, GTraversable p f2 g2 h2) => GTraversable p (f1 :*: f2) (g1 :*: g2) (h1 :*: h2) where
+instance (Kindly.Bifunctor Op (->) p, Monoidal (->) (,) () (,) () (,) () p, GTraversable p f1 g1 h1, GTraversable p f2 g2 h2) => GTraversable p (f1 :*: f2) (g1 :*: g2) (h1 :*: h2) where
   gsequence :: (:*:) f1 f2 x -> p ((:*:) g1 g2 x) ((:*:) h1 h2 x)
   gsequence (hkd1 :*: hkd2) =
     let phkd1 = gsequence hkd1
         phkd2 = gsequence hkd2
-     in dimap (\(x :*: y) -> (x, y)) (uncurry (:*:)) $ combine (phkd1, phkd2)
+     in Kindly.bimap (Op $ \(x :*: y) -> (x, y)) (uncurry (:*:)) $ combine (phkd1, phkd2)
 
 --------------------------------------------------------------------------------
 
