@@ -12,8 +12,7 @@ homepage:            http://github.com/solomon-b/monoidal-functors
 build-type:          Simple
 extra-source-files:  CHANGELOG.md
 description:         A typeclass hierarchy for monoidal functors.
-tested-with:   GHC == 9.0.2
-             , GHC == 9.2.8
+tested-with:   GHC == 9.2.8
              , GHC == 9.4.8
              , GHC == 9.6.3
 source-repository head
