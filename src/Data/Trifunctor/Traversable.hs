@@ -14,6 +14,7 @@ where
 
 --------------------------------------------------------------------------------
 
+import Control.Applicative
 import Data.Bifunctor (Bifunctor (..))
 import Data.Functor.Contravariant (Contravariant (..), Op (..))
 import Data.Kind (Constraint, Type)

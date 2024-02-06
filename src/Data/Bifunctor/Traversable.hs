@@ -18,6 +18,7 @@ where
 
 --------------------------------------------------------------------------------
 
+import Control.Applicative
 import Data.Bifunctor (Bifunctor (..))
 import Data.Bifunctor.Monoidal (Monoidal, Semigroupal (..), Unital (..))
 import Data.Functor.Contravariant (Contravariant (..), Op (..))
