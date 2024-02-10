@@ -101,27 +101,27 @@ infixr 9 |**&|
 
 infixr 9 |*+*|
 
-(|*+*|) :: (Semigroupal (->) (,) Either (,) (,) p) => p a b c -> p a' b c' -> p (a, a') (Either b b) (c, c')
+(|*+*|) :: (Semigroupal (->) (,) Either (,) (,) p) => p a b c -> p a' b' c' -> p (a, a') (Either b b') (c, c')
 (|*+*|) = curry combine
 
 infixr 9 |*++|
 
-(|*++|) :: (Semigroupal (->) (,) Either Either (,) p) => p a b c -> p a' b c' -> p (a, a') (Either b b) (Either c c')
+(|*++|) :: (Semigroupal (->) (,) Either Either (,) p) => p a b c -> p a' b' c' -> p (a, a') (Either b b') (Either c c')
 (|*++|) = curry combine
 
 infixr 9 |*+&|
 
-(|*+&|) :: (Semigroupal (->) (,) Either These (,) p) => p a b c -> p a' b c' -> p (a, a') (Either b b) (These c c')
+(|*+&|) :: (Semigroupal (->) (,) Either These (,) p) => p a b c -> p a' b' c' -> p (a, a') (Either b b') (These c c')
 (|*+&|) = curry combine
 
 infixr 9 |*&*|
 
-(|*&*|) :: (Semigroupal (->) (,) These (,) (,) p) => p a b c -> p a' b c' -> p (a, a') (These b b) (c, c')
+(|*&*|) :: (Semigroupal (->) (,) These (,) (,) p) => p a b c -> p a' b' c' -> p (a, a') (These b b') (c, c')
 (|*&*|) = curry combine
 
 infixr 9 |*&+|
 
-(|*&+|) :: (Semigroupal (->) (,) These Either (,) p) => p a b c -> p a' b c' -> p (a, a') (These b b) (Either c c')
+(|*&+|) :: (Semigroupal (->) (,) These Either (,) p) => p a b c -> p a' b' c' -> p (a, a') (These b b') (Either c c')
 (|*&+|) = curry combine
 
 infixr 9 |*&&|
@@ -131,22 +131,22 @@ infixr 9 |*&&|
 
 infixr 9 |+**|
 
-(|+**|) :: (Semigroupal (->) Either (,) (,) (,) p) => p a b c -> p a' b c' -> p (Either a a') (b, b) (c, c')
+(|+**|) :: (Semigroupal (->) Either (,) (,) (,) p) => p a b c -> p a' b' c' -> p (Either a a') (b, b') (c, c')
 (|+**|) = curry combine
 
 infixr 9 |+*+|
 
-(|+*+|) :: (Semigroupal (->) Either (,) Either (,) p) => p a b c -> p a' b c' -> p (Either a a') (b, b) (Either c c')
+(|+*+|) :: (Semigroupal (->) Either (,) Either (,) p) => p a b c -> p a' b' c' -> p (Either a a') (b, b') (Either c c')
 (|+*+|) = curry combine
 
 infixr 9 |+*&|
 
-(|+*&|) :: (Semigroupal (->) Either (,) These (,) p) => p a b c -> p a' b c' -> p (Either a a') (b, b) (These c c')
+(|+*&|) :: (Semigroupal (->) Either (,) These (,) p) => p a b c -> p a' b' c' -> p (Either a a') (b, b') (These c c')
 (|+*&|) = curry combine
 
 infixr 9 |++*|
 
-(|++*|) :: (Semigroupal (->) Either Either (,) (,) p) => p a b c -> p a' b c' -> p (Either a a') (Either b b) (c, c')
+(|++*|) :: (Semigroupal (->) Either Either (,) (,) p) => p a b c -> p a' b' c' -> p (Either a a') (Either b b') (c, c')
 (|++*|) = curry combine
 
 infixr 9 |+++|
@@ -156,17 +156,17 @@ infixr 9 |+++|
 
 infixr 9 |++&|
 
-(|++&|) :: (Semigroupal (->) Either Either These (,) p) => p a b c -> p a' b c' -> p (Either a a') (Either b b) (These c c')
+(|++&|) :: (Semigroupal (->) Either Either These (,) p) => p a b c -> p a' b' c' -> p (Either a a') (Either b b') (These c c')
 (|++&|) = curry combine
 
 infixr 9 |+&*|
 
-(|+&*|) :: (Semigroupal (->) Either These (,) (,) p) => p a b c -> p a' b c' -> p (Either a a') (These b b) (c, c')
+(|+&*|) :: (Semigroupal (->) Either These (,) (,) p) => p a b c -> p a' b' c' -> p (Either a a') (These b b') (c, c')
 (|+&*|) = curry combine
 
 infixr 9 |+&+|
 
-(|+&+|) :: (Semigroupal (->) Either These Either (,) p) => p a b c -> p a' b c' -> p (Either a a') (These b b) (Either c c')
+(|+&+|) :: (Semigroupal (->) Either These Either (,) p) => p a b c -> p a' b' c' -> p (Either a a') (These b b') (Either c c')
 (|+&+|) = curry combine
 
 infixr 9 |+&&|
