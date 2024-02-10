@@ -10,13 +10,18 @@
     let
       ghcVersion = "963";
       compiler = "ghc${ghcVersion}";
-      overlay = import ./overlay.nix;
-      overlays = [ overlay ];
     in
     flake-utils.lib.eachDefaultSystem
       (system:
         let
-          pkgs = import nixpkgs { inherit system overlays; };
+          pkgs = import nixpkgs { inherit system; };
+          hsPkgs = pkgs.haskell.packages.${compiler}.override {
+            overrides = hfinal: hprev: {
+              bifunctors = hfinal.bifunctors_5_6_1;
+              monoidal-functors = (hfinal.callCabal2nix "monoidal-functors" ./. { });
+              semigroupoids = hfinal.semigroupoids_6_0_0_1;
+            };
+        };
         in
         rec {
           devShell = pkgs.mkShell {
@@ -31,11 +36,9 @@
 
           formatter = pkgs.nixpkgs-fmt;
           packages = flake-utils.lib.flattenTree {
-            monoidal-functors = pkgs.haskellPackages.monoidal-functors;
+            monoidal-functors = hsPkgs.monoidal-functors;
           };
 
           defaultPackage = packages.monoidal-functors;
-        }) // {
-      overlays.default = overlay;
-    };
+        });
 }
