@@ -106,7 +106,7 @@ infixr 9 |*+*|
 
 infixr 9 |*++|
 
-(|*++|) :: (Semigroupal (->) (,) Either Either (,) p) => p a b c -> p a' b c' -> p (a, a') (Either b b) (Either c c')
+(|*++|) :: (Semigroupal (->) (,) Either Either (,) p) => p a b c -> p a' b' c' -> p (a, a') (Either b b') (Either c c')
 (|*++|) = curry combine
 
 infixr 9 |*+&|
