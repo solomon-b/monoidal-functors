@@ -12,8 +12,7 @@ homepage:            http://github.com/solomon-b/monoidal-functors
 build-type:          Simple
 extra-source-files:  CHANGELOG.md
 description:         A typeclass hierarchy for monoidal functors.
-tested-with:   GHC == 9.0.2
-             , GHC == 9.2.8
+tested-with:   GHC == 9.2.8
              , GHC == 9.4.8
              , GHC == 9.6.3
 source-repository head
@@ -53,6 +52,7 @@ library
   build-depends:
     base                          >= 4.12 && < 5,
     bifunctors                    >= 5.6.1 && < 6,
+    kindly-functors,
     tagged                        >= 0.8.7 && < 0.9,
     transformers                  >= 0.5.6 && < 0.7,
     comonad                       >= 5.0.8 && < 6,
@@ -72,12 +72,15 @@ library
     Data.Bifunctor.Module
     Data.Bifunctor.Monoidal
     Data.Bifunctor.Monoidal.Specialized
+    Data.Bifunctor.Traversable
     Data.Functor.Invariant
     Data.Functor.Module
     Data.Functor.Monoidal
     Data.Functor.Monoidal.Specialized
+    Data.Functor.Traversable
     Data.Trifunctor.Module
     Data.Trifunctor.Monoidal
+    Data.Trifunctor.Traversable
 
   ghc-options:
     -Wall
