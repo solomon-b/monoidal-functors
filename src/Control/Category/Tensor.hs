@@ -1,14 +1,9 @@
 {-# LANGUAGE MonoLocalBinds #-}
+{-# LANGUAGE ImpredicativeTypes #-}
 
 module Control.Category.Tensor
   ( -- * Iso
     Iso (..),
-
-    -- * GBifunctor
-    GBifunctor (..),
-    (#),
-    grmap,
-    glmap,
 
     -- * Associative
     Associative (..),
@@ -26,12 +21,14 @@ where
 import Control.Applicative (Applicative (..))
 import Control.Arrow (Kleisli (..))
 import Control.Category (Category (..))
-import Data.Biapplicative (Biapplicative (..), Bifunctor (..))
+import Data.Biapplicative (Biapplicative (..))
 import Data.Functor.Contravariant (Op (..))
 import Data.Profunctor (Profunctor (..), Star (..))
 import Data.These (These (..), these)
 import Data.Void (Void, absurd)
 import Prelude hiding (Applicative (..), id, (.))
+import qualified Kindly
+import Kindly (type (~>))
 
 --------------------------------------------------------------------------------
 
@@ -54,82 +51,6 @@ instance (Category cat) => Category (Iso cat) where
 
 --------------------------------------------------------------------------------
 
--- | A Bifunctor @t@ is a 'Functor' whose domain is the product of two
--- categories. 'GBifunctor' is equivalent to the ordinary
--- 'Data.Bifunctor.Bifunctor' class but we replace the implicit '(->)' 'Category' with
--- three distinct higher kinded variables @cat1@, @cat2@, and @cat3@ allowing the user
--- to pickout a functor from \(cat_1 \times cat_2\) to \(cat_3\).
---
--- === Laws
---
--- @
--- 'gbimap' 'id' 'id' ≡ 'id'
--- 'grmap' 'id' ≡ 'id'
--- 'glmap' 'id' ≡ 'id'
---
--- 'gbimap' (f '.' g) (h '.' i) ≡ 'gbimap' f h '.' 'gbimap' g i
--- 'grmap' (f '.' g) ≡ 'grmap' f '.' 'grmap' g
--- 'glmap' (f '.' g) ≡ 'glmap' f '.' 'glmap' g
--- @
-class (Category cat1, Category cat2, Category cat3) => GBifunctor cat1 cat2 cat3 t | t cat3 -> cat1 cat2 where
-  -- | Covariantly map over both variables.
-  --
-  -- @'gbimap' f g ≡ 'glmap' f '.' 'grmap' g@
-  --
-  -- ==== __Examples__
-  -- >>> gbimap @(->) @(->) @(->) @(,) show not (123, False)
-  -- ("123",True)
-  --
-  -- >>> gbimap @(->) @(->) @(->) @Either show not (Right False)
-  -- Right True
-  --
-  -- >>> getOp (gbimap @Op @Op @Op @Either (Op (+ 1)) (Op show)) (Right True)
-  -- Right "True"
-  gbimap :: cat1 a b -> cat2 c d -> cat3 (a `t` c) (b `t` d)
-
--- | Infix operator for 'gbimap'.
-infixr 9 #
-
-(#) :: (GBifunctor cat1 cat2 cat3 t) => cat1 a b -> cat2 c d -> cat3 (a `t` c) (b `t` d)
-(#) = gbimap
-
--- | Covariantally map over the right variable.
-grmap :: (GBifunctor cat1 cat2 cat3 t) => cat2 c d -> cat3 (a `t` c) (a `t` d)
-grmap = (#) id
-
--- | Covariantally map over the left variable.
-glmap :: (GBifunctor cat1 cat2 cat3 t) => cat1 a b -> cat3 (a `t` c) (b `t` c)
-glmap = flip (#) id
-
-instance (GBifunctor (->) (->) (->) t) => GBifunctor Op Op Op t where
-  gbimap :: Op a b -> Op c d -> Op (t a c) (t b d)
-  gbimap (Op f) (Op g) = Op $ gbimap f g
-
-instance (Bifunctor t) => GBifunctor (->) (->) (->) t where
-  gbimap = bimap
-
-instance GBifunctor (Star Maybe) (Star Maybe) (Star Maybe) These where
-  gbimap :: Star Maybe a b -> Star Maybe c d -> Star Maybe (These a c) (These b d)
-  gbimap (Star f) (Star g) =
-    Star $ \case
-      This a -> This <$> f a
-      That c -> That <$> g c
-      These a c -> liftA2 These (f a) (g c)
-
-instance GBifunctor (Kleisli Maybe) (Kleisli Maybe) (Kleisli Maybe) These where
-  gbimap :: Kleisli Maybe a b -> Kleisli Maybe c d -> Kleisli Maybe (These a c) (These b d)
-  gbimap (Kleisli f) (Kleisli g) =
-    Kleisli $ \case
-      This a -> This <$> f a
-      That c -> That <$> g c
-      These a c -> liftA2 These (f a) (g c)
-
-instance (GBifunctor cat cat cat t) => GBifunctor (Iso cat) (Iso cat) (Iso cat) t where
-  gbimap :: Iso cat a b -> Iso cat c d -> Iso cat (t a c) (t b d)
-  gbimap iso1 iso2 = Iso (gbimap (fwd iso1) (fwd iso2)) (gbimap (bwd iso1) (bwd iso2))
-
---------------------------------------------------------------------------------
-
 -- | A bifunctor \(\_\otimes\_: \mathcal{C} \times \mathcal{C} \to \mathcal{C}\) is
 -- 'Associative' if it is equipped with a
 -- <https://ncatlab.org/nlab/show/natural+isomorphism natural isomorphism> of the form
@@ -142,7 +63,7 @@ instance (GBifunctor cat cat cat t) => GBifunctor (Iso cat) (Iso cat) (Iso cat) 
 -- 'fwd' 'assoc' '.' 'bwd' 'assoc' ≡ 'id'
 -- 'bwd' 'assoc' '.' 'fwd' 'assoc' ≡ 'id'
 -- @
-class (Category cat, GBifunctor cat cat cat t) => Associative cat t where
+class (Category cat, Kindly.FunctorOf cat (cat ~> cat) t) => Associative cat t where
   -- | The <https://ncatlab.org/nlab/show/natural+isomorphism natural isomorphism> between left and
   -- right associated nestings of @t@.
   --
@@ -159,8 +80,8 @@ instance (Associative (->) t) => Associative Op t where
   assoc :: Iso Op (a `t` (b `t` c)) ((a `t` b) `t` c)
   assoc =
     Iso
-      { fwd = Op $ bwd assoc,
-        bwd = Op $ fwd assoc
+      { fwd = _, -- Op $ bwd assoc,
+        bwd = _ -- Op $ fwd assoc
       }
 
 instance Associative (->) (,) where
@@ -187,7 +108,7 @@ instance Associative (->) These where
         bwd = these (grmap This) (That . That) (flip $ grmap . flip These)
       }
 
-instance (Monad m, Associative (->) t, GBifunctor (Star m) (Star m) (Star m) t) => Associative (Star m) t where
+instance (Monad m, Associative (->) t, Kindly.Bifunctor (Star m) (Star m) t) => Associative (Star m) t where
   assoc :: Iso (Star m) (a `t` (b `t` c)) ((a `t` b) `t` c)
   assoc =
     Iso
@@ -195,7 +116,7 @@ instance (Monad m, Associative (->) t, GBifunctor (Star m) (Star m) (Star m) t) 
         bwd = (`rmap` id) (bwd assoc)
       }
 
-instance (Monad m, Associative (->) t, GBifunctor (Kleisli m) (Kleisli m) (Kleisli m) t) => Associative (Kleisli m) t where
+instance (Monad m, Associative (->) t, Kindly.Bifunctor (Kleisli m) (Kleisli m) t) => Associative (Kleisli m) t where
   assoc :: Iso (Kleisli m) (a `t` (b `t` c)) ((a `t` b) `t` c)
   assoc =
     Iso
