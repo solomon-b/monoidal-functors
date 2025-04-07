@@ -47,7 +47,7 @@ import Prelude (Either, curry)
 --------------------------------------------------------------------------------
 
 -- | Given monoidal categories \((\mathcal{C}, \otimes, I_{\mathcal{C}})\) and \((\mathcal{D}, \bullet, I_{\mathcal{D}})\).
--- A bifunctor \(F : \mathcal{C_1} \times \mathcal{C_2} \times \mathcal{C_3} \to \mathcal{D}\) is 'Semigroupal' if it supports a
+-- A trifunctor \(F : \mathcal{C_1} \times \mathcal{C_2} \times \mathcal{C_3} \to \mathcal{D}\) is 'Semigroupal' if it supports a
 -- natural transformation \(\phi_{ABC,XYZ} : F\ A\ B\ C \bullet F\ X\ Y\ Z \to F\ (A \otimes X)\ (B \otimes Y)\ (C \otimes Z)\), which we call 'combine'.
 --
 -- === Laws
@@ -222,7 +222,7 @@ infixr 9 |&&&|
 --------------------------------------------------------------------------------
 
 -- | Given monoidal categories \((\mathcal{C}, \otimes, I_{\mathcal{C}})\) and \((\mathcal{D}, \bullet, I_{\mathcal{D}})\).
--- A bifunctor \(F : \mathcal{C_1} \times \mathcal{C_2} \times \mathcal{C_3} \to \mathcal{D}\) is 'Unital' if it supports a morphism
+-- A trifunctor \(F : \mathcal{C_1} \times \mathcal{C_2} \times \mathcal{C_3} \to \mathcal{D}\) is 'Unital' if it supports a morphism
 -- \(\phi : I_{\mathcal{D}} \to F\ I_{\mathcal{C_1}}\ I_{\mathcal{C_2}}\ I_{\mathcal{C_3}}\), which we call 'introduce'.
 class Unital cat i1 i2 i3 o f where
   -- | @introduce@ maps from the identity in \(\mathcal{C_1} \times \mathcal{C_2} \times \mathcal{C_3}\) to the
@@ -232,7 +232,7 @@ class Unital cat i1 i2 i3 o f where
 --------------------------------------------------------------------------------
 
 -- | Given monoidal categories \((\mathcal{C}, \otimes, I_{\mathcal{C}})\) and \((\mathcal{D}, \bullet, I_{\mathcal{D}})\).
--- A bifunctor \(F : \mathcal{C_1} \times \mathcal{C_2} \times \mathcal{C_3} \to \mathcal{D}\) is 'Monoidal' if it maps between
+-- A trifunctor \(F : \mathcal{C_1} \times \mathcal{C_2} \times \mathcal{C_3} \to \mathcal{D}\) is 'Monoidal' if it maps between
 -- \(\mathcal{C_1} \times \mathcal{C_2}\ \times \mathcal{C_3}\) and \(\mathcal{D}\) while preserving their monoidal structure.
 -- Eg., a homomorphism of monoidal categories.
 --
