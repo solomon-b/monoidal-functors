@@ -6,11 +6,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1756404581,
-        "narHash": "sha256-oaaKd4rrqCZOzgyYoGkDYrdK7VvakDDpxVVDXbIr/d4=",
+        "lastModified": 1756409311,
+        "narHash": "sha256-wDa20y6N3Bk+PfwbLdS0q9V8Uo2i0iHll1b+oyoxxj8=",
         "owner": "solomon-b",
         "repo": "cabalPlan2nix",
-        "rev": "1b28871809b90ce5a39c52bceb59ed11be01f3e9",
+        "rev": "ebc032227150dd9d0aeb0aab1f069aa813469006",
         "type": "github"
       },
       "original": {

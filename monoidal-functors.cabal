@@ -55,7 +55,7 @@ library
     bifunctors                    >= 5.6.1 && < 6,
     tagged                        >= 0.8.7 && < 0.9,
     transformers                  >= 0.5.6 && < 0.7,
-    comonad                       >= 5.0.8 && < 6,
+    comonad                       >= 5.0.9 && < 6,
     distributive                  >= 0.6.2 && < 0.7,
     contravariant                 >= 1.5.5 && < 1.6,
     profunctors                   >= 5.6.2 && < 5.7,

@@ -19,7 +19,7 @@
         let
           pkgs = import nixpkgs { inherit system overlays; };
           inherit (pkgs) lib;  # Import lib
-          cabalPlan2nixResult = pkgs.haskell.lib.cabalPlan2nix ./plan.json /home/solomon/Development/Haskell/monoidal-functors;
+          cabalPlan2nixResult = pkgs.haskell.lib.cabalPlan2nix ./plan.json "/home/solomon/Development/Haskell/monoidal-functors";
         in
         rec {
           devShell = pkgs.mkShell {
@@ -35,7 +35,9 @@
           formatter = pkgs.nixpkgs-fmt;
           packages = flake-utils.lib.flattenTree {
             monoidal-functors = pkgs.haskellPackages.monoidal-functors;
-            monoidal-functors-with-deps = (cabalPlan2nixResult.overridePackageSet pkgs.haskellPackages).monoidal-functors;
+            monoidal-functors-with-deps = (pkgs.haskellPackages.override {
+              overrides = cabalPlan2nixResult.overlay;
+            }).monoidal-functors;
           };
 
           defaultPackage = packages.monoidal-functors;
