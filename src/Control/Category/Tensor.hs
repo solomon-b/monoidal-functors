@@ -108,21 +108,47 @@ instance (GBifunctor (->) (->) (->) t) => GBifunctor Op Op Op t where
 instance (Bifunctor t) => GBifunctor (->) (->) (->) t where
   gbimap = bimap
 
-instance GBifunctor (Star Maybe) (Star Maybe) (Star Maybe) These where
-  gbimap :: Star Maybe a b -> Star Maybe c d -> Star Maybe (These a c) (These b d)
+instance (Monad m) => GBifunctor (Star m) (Star m) (Star m) These where
+  gbimap :: Star m a b -> Star m c d -> Star m (These a c) (These b d)
   gbimap (Star f) (Star g) =
     Star $ \case
       This a -> This <$> f a
       That c -> That <$> g c
       These a c -> liftA2 These (f a) (g c)
 
-instance GBifunctor (Kleisli Maybe) (Kleisli Maybe) (Kleisli Maybe) These where
-  gbimap :: Kleisli Maybe a b -> Kleisli Maybe c d -> Kleisli Maybe (These a c) (These b d)
+instance (Monad m) => GBifunctor (Kleisli m) (Kleisli m) (Kleisli m) These where
+  gbimap :: Kleisli m a b -> Kleisli m c d -> Kleisli m (These a c) (These b d)
   gbimap (Kleisli f) (Kleisli g) =
     Kleisli $ \case
       This a -> This <$> f a
       That c -> That <$> g c
       These a c -> liftA2 These (f a) (g c)
+
+instance (Monad m) => GBifunctor (Star m) (Star m) (Star m) (,) where
+  gbimap :: Star m a b -> Star m c d -> Star m (a, c) (b, d)
+  gbimap (Star f) (Star g) =
+    Star $ \(a, c) ->
+      liftA2 (,) (f a) (g c)
+
+instance (Monad m) => GBifunctor (Kleisli m) (Kleisli m) (Kleisli m) (,) where
+  gbimap :: Kleisli m a b -> Kleisli m c d -> Kleisli m (a, c) (b, d)
+  gbimap (Kleisli f) (Kleisli g) =
+    Kleisli $ \(a, c) ->
+      liftA2 (,) (f a) (g c)
+
+instance (Monad m) => GBifunctor (Star m) (Star m) (Star m) Either where
+  gbimap :: Star m a b -> Star m c d -> Star m (Either a c) (Either b d)
+  gbimap (Star f) (Star g) =
+    Star $ \case
+      Left a -> Left <$> f a
+      Right c -> Right <$> g c
+
+instance (Monad m) => GBifunctor (Kleisli m) (Kleisli m) (Kleisli m) Either where
+  gbimap :: Kleisli m a b -> Kleisli m c d -> Kleisli m (Either a c) (Either b d)
+  gbimap (Kleisli f) (Kleisli g) =
+    Kleisli $ \case
+      Left a -> Left <$> f a
+      Right c -> Right <$> g c
 
 instance (GBifunctor cat cat cat t) => GBifunctor (Iso cat) (Iso cat) (Iso cat) t where
   gbimap :: Iso cat a b -> Iso cat c d -> Iso cat (t a c) (t b d)
