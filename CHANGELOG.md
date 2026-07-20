@@ -8,6 +8,7 @@
 * Adds `Unalign` `Semigroupal` instances.
 * Expands GHC support through 9.12; bumps nixpkgs, Cabal, and CI tooling.
 * Adds support for `semialign` 1.4 (retaining 1.3 compatibility via CPP).
+* Replaces the `Makefile` with a `justfile` for local development.
 
 ## 0.2.3.0 -- 2023-08-03
 * Add support for GHC 9.6
