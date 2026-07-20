@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 module Data.Functor.Monoidal
   ( -- * Semigroupal
     Semigroupal (..),
@@ -42,6 +44,9 @@ import Control.Monad.Trans.Writer.Lazy qualified as Lazy
 import Control.Monad.Trans.Writer.Strict (WriterT)
 import Data.Align
 import Data.Functor.Compose (Compose)
+#if MIN_VERSION_semialign(1,4,0)
+import Data.Zip (Unzip)
+#endif
 import Data.Functor.Constant (Constant)
 import Data.Functor.Contravariant (Comparison, Contravariant, Equivalence, Op (..), Predicate)
 import Data.Functor.Contravariant.Compose (ComposeCF, ComposeFC)
@@ -193,7 +198,11 @@ deriving via FromAlternative (f :.: g) instance (Alternative f, Applicative g) =
 deriving via FromAlternative (M1 i c f) instance (Alternative f) => Semigroupal (->) Either (,) (M1 i c f)
 
 newtype FromSemialign f a = FromSemialign (f a)
+#if MIN_VERSION_semialign(1,4,0)
+  deriving newtype (Functor, Unzip, Semialign)
+#else
   deriving newtype (Functor, Semialign)
+#endif
 
 instance (Semialign f) => Semigroupal (->) These (,) (FromSemialign f) where
   combine :: (FromSemialign f x, FromSemialign f x') -> FromSemialign f (These x x')
@@ -328,7 +337,11 @@ deriving via FromDecidable (RWST r w s m) instance (Decidable m) => Semigroupal 
 deriving via FromDecidable (Lazy.RWST r w s m) instance (Decidable m) => Semigroupal (->) Either (,) (Lazy.RWST r w s m)
 
 newtype FromUnalign f a = FromUnalign (f a)
+#if MIN_VERSION_semialign(1,4,0)
+  deriving (Functor, Unzip, Semialign, Unalign)
+#else
   deriving (Functor, Semialign, Unalign)
+#endif
 
 instance (Unalign f) => Semigroupal Op These (,) (FromUnalign f) where
   combine :: Op (FromUnalign f x, FromUnalign f x') (FromUnalign f (These x x'))
@@ -456,7 +469,11 @@ deriving via FromAlternative (f :.: g) instance (Alternative f, Applicative g) =
 deriving via FromAlternative (M1 i c f) instance (Alternative f) => Unital (->) Void () (M1 i c f)
 
 newtype FromAlign f a = FromAlign (f a)
+#if MIN_VERSION_semialign(1,4,0)
+  deriving (Functor, Unzip, Semialign, Align)
+#else
   deriving (Functor, Semialign, Align)
+#endif
 
 instance (Align f) => Unital (->) Void () (FromAlign f) where
   introduce :: (Align f) => () -> FromAlign f Void
