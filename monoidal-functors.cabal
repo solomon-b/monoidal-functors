@@ -15,7 +15,10 @@ description:         A typeclass hierarchy for monoidal functors.
 tested-with:   GHC == 9.0.2
              , GHC == 9.2.8
              , GHC == 9.4.8
-             , GHC == 9.6.3
+             , GHC == 9.6.7
+             , GHC == 9.8.4
+             , GHC == 9.10.3
+             , GHC == 9.12.4
 source-repository head
   type:     git
   location: https://github.com/solomon-b/monoidal-functors
