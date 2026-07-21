@@ -14,9 +14,9 @@
 --
 -- > data Foo a = Foo (Maybe a) [a]
 -- > $(deriveGenericK ''Foo)
--- > deriving via GenericallyK Foo instance Semigroupal (->) (,) (,) Foo
+-- > deriving via FromGeneric Foo instance Semigroupal (->) (,) (,) Foo
 module Data.Functor.Monoidal.Generic
-  ( GenericallyK (..),
+  ( FromGeneric (..),
     GSemigroupalK (..),
   )
 where
@@ -61,19 +61,19 @@ instance (Semigroupal (->) t1 (,) g) => GSemigroupalK t1 (Field (Kon g :@: Var0)
 
 -- | The deriving-via vehicle.
 --
--- > deriving via GenericallyK Foo instance Semigroupal (->) t1 (,) Foo
-newtype GenericallyK f a = GenericallyK (f a)
+-- > deriving via FromGeneric Foo instance Semigroupal (->) t1 (,) Foo
+newtype FromGeneric f a = FromGeneric (f a)
 
 instance
   (GenericK f, GSemigroupalK t1 (RepK f), Associative (->) t1) =>
-  Semigroupal (->) t1 (,) (GenericallyK f)
+  Semigroupal (->) t1 (,) (FromGeneric f)
   where
   combine ::
     forall x x'.
-    (GenericallyK f x, GenericallyK f x') ->
-    GenericallyK f (t1 x x')
-  combine (GenericallyK fx, GenericallyK fx') =
-    GenericallyK
+    (FromGeneric f x, FromGeneric f x') ->
+    FromGeneric f (t1 x x')
+  combine (FromGeneric fx, FromGeneric fx') =
+    FromGeneric
       ( toK @_ @f @(t1 x x' :&&: LoT0)
           (gcombineK (fromK @_ @f @(x :&&: LoT0) fx) (fromK @_ @f @(x' :&&: LoT0) fx'))
       )

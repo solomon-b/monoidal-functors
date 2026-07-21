@@ -16,7 +16,7 @@ module Main (main) where
 import Control.Monad (unless)
 import Data.Functor.Contravariant (Predicate (..))
 import Data.Functor.Monoidal (Semigroupal (..))
-import Data.Functor.Monoidal.Generic (GenericallyK (..))
+import Data.Functor.Monoidal.Generic (FromGeneric (..))
 import Data.These (These (..))
 import Generics.Kind.TH (deriveGenericK)
 import System.Exit (exitFailure)
@@ -26,32 +26,32 @@ data Two a = Two a a deriving (Functor, Show, Eq)
 
 $(deriveGenericK ''Two)
 
-deriving via GenericallyK Two instance Semigroupal (->) (,) (,) Two
+deriving via FromGeneric Two instance Semigroupal (->) (,) (,) Two
 
 -- | Sub-functor fields. Exercises @Field (Kon g :@: Var0)@ with covariant leaves.
 data P a = P (Maybe a) [a] deriving (Functor, Show, Eq)
 
 $(deriveGenericK ''P)
 
-deriving via GenericallyK P instance Semigroupal (->) (,) (,) P
+deriving via FromGeneric P instance Semigroupal (->) (,) (,) P
 
-deriving via GenericallyK P instance Semigroupal (->) Either (,) P
+deriving via FromGeneric P instance Semigroupal (->) Either (,) P
 
-deriving via GenericallyK P instance Semigroupal (->) These (,) P
+deriving via FromGeneric P instance Semigroupal (->) These (,) P
 
 -- | A constant 'Monoid' field. Exercises @Field (Kon c)@.
 data W a = W String (Maybe a) deriving (Functor, Show, Eq)
 
 $(deriveGenericK ''W)
 
-deriving via GenericallyK W instance Semigroupal (->) (,) (,) W
+deriving via FromGeneric W instance Semigroupal (->) (,) (,) W
 
 -- | A contravariant functor. Exercises @Field (Kon Predicate :@: Var0)@.
 data TwoPreds a = TwoPreds (Predicate a) (Predicate a)
 
 $(deriveGenericK ''TwoPreds)
 
-deriving via GenericallyK TwoPreds instance Semigroupal (->) (,) (,) TwoPreds
+deriving via FromGeneric TwoPreds instance Semigroupal (->) (,) (,) TwoPreds
 
 check :: (Eq a, Show a) => String -> a -> a -> IO Bool
 check name got want
