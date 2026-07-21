@@ -17,6 +17,7 @@ import Control.Monad (unless)
 import Data.Functor.Contravariant (Predicate (..))
 import Data.Functor.Monoidal (Semigroupal (..))
 import Data.Functor.Monoidal.Generic (GenericallyK (..))
+import Data.These (These (..))
 import Generics.Kind.TH (deriveGenericK)
 import System.Exit (exitFailure)
 
@@ -33,6 +34,10 @@ data P a = P (Maybe a) [a] deriving (Functor, Show, Eq)
 $(deriveGenericK ''P)
 
 deriving via GenericallyK P instance Semigroupal (->) (,) (,) P
+
+deriving via GenericallyK P instance Semigroupal (->) Either (,) P
+
+deriving via GenericallyK P instance Semigroupal (->) These (,) P
 
 -- | A constant 'Monoid' field. Exercises @Field (Kon c)@.
 data W a = W String (Maybe a) deriving (Functor, Show, Eq)
@@ -80,4 +85,14 @@ main = do
       "TwoPreds (contravariant)"
       (getPredicate f (2, 3), getPredicate f (2, 4), getPredicate g (5 :: Int, 5))
       (True, False, True)
-  unless (and [r1, r2, r3, r4]) exitFailure
+  r5 <-
+    check
+      "P (Either tensor)"
+      (combine @(->) @Either @(,) (P (Just 1) [1, 2], P (Just 3) [4]))
+      (P (Just (Left 1)) [Left 1, Left 2, Right 4] :: P (Either Int Int))
+  r6 <-
+    check
+      "P (These tensor)"
+      (combine @(->) @These @(,) (P (Just 1) [1, 2], P (Just 3) [4]))
+      (P (Just (These 1 3)) [These 1 4, This 2] :: P (These Int Int))
+  unless (and [r1, r2, r3, r4, r5, r6]) exitFailure

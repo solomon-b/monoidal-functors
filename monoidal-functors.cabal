@@ -123,4 +123,5 @@ test-suite generic-deriving
                    , kind-generics
                    , kind-generics-th
                    , monoidal-functors
+                   , these
   default-language: Haskell2010
