@@ -6,6 +6,7 @@
 * Adds `Data.Functor.Monoidal.Specialized` combinators module.
 * Adds `Biapplicative` operations to `Data.Bifunctor.Monoidal.Specialized`.
 * Adds `Unalign` `Semigroupal` instances.
+* Expands GHC support through 9.12; bumps nixpkgs, Cabal, and CI tooling.
 
 ## 0.2.3.0 -- 2023-08-03
 * Add support for GHC 9.6
