@@ -19,14 +19,15 @@
 
 module Main (main) where
 
-import Control.Category.Tensor (Associative (..), GBifunctor (..), Iso (..))
+import Control.Category.Tensor (Associative (..), GBifunctor (..), Iso (..), Tensor (unitl, unitr))
 import Control.Monad (unless)
 import Data.Distributive (Distributive (..))
 import Data.Functor.Contravariant (Contravariant (..), Op (..), Predicate (..))
-import Data.Functor.Monoidal (Semigroupal (..))
+import Data.Functor.Monoidal (Monoidal, Semigroupal (..), Unital (..))
 import Data.Functor.Monoidal.Generic (FromGeneric (..), FromRepresentable (..))
 import Data.Monoid (Sum (..))
 import Data.These (These (..))
+import Data.Void (Void)
 import Generics.Kind.TH (deriveGenericK)
 import Hedgehog (Gen, Group (..), Property, checkSequential, forAll, forAllWith, property, (===))
 import qualified Hedgehog.Gen as Gen
@@ -43,6 +44,10 @@ $(deriveGenericK ''Phantom)
 
 deriving via FromGeneric Phantom instance Semigroupal (->) (,) (,) Phantom
 
+deriving via FromGeneric Phantom instance Unital (->) () () Phantom
+
+deriving via FromGeneric Phantom instance Monoidal (->) (,) () (,) () Phantom
+
 -- | Two bare parameters. Exercises @Field Var0@ and @:*:@, and is
 -- representable, so it also gets the coherent split.
 data Two a = Two a a deriving (Functor, Show, Eq)
@@ -55,6 +60,10 @@ instance Distributive Two where
 deriving via FromGeneric Two instance Semigroupal (->) (,) (,) Two
 
 deriving via FromRepresentable Two instance Semigroupal Op (,) (,) Two
+
+deriving via FromGeneric Two instance Unital (->) () () Two
+
+deriving via FromGeneric Two instance Monoidal (->) (,) () (,) () Two
 
 -- | Sub-functor fields. Exercises @Field (Kon g :@: Var0)@ across three tensors.
 data P a = P (Maybe a) [a] deriving (Functor, Show, Eq)
@@ -69,12 +78,30 @@ deriving via FromGeneric P instance Semigroupal (->) These (,) P
 
 deriving via FromGeneric P instance Semigroupal Op (,) (,) P
 
+deriving via FromGeneric P instance Unital (->) () () P
+
+deriving via FromGeneric P instance Monoidal (->) (,) () (,) () P
+
+deriving via FromGeneric P instance Unital (->) Void () P
+
+deriving via FromGeneric P instance Monoidal (->) Either Void (,) () P
+
 -- | A constant 'Monoid' field. Exercises @Field (Kon c)@.
 data W a = W String (Maybe a) deriving (Functor, Show, Eq)
 
 $(deriveGenericK ''W)
 
 deriving via FromGeneric W instance Semigroupal (->) (,) (,) W
+
+deriving via FromGeneric W instance Unital (->) () () W
+
+deriving via FromGeneric W instance Monoidal (->) (,) () (,) () W
+
+deriving via FromGeneric W instance Semigroupal (->) Either (,) W
+
+deriving via FromGeneric W instance Unital (->) Void () W
+
+deriving via FromGeneric W instance Monoidal (->) Either Void (,) () W
 
 -- | A nested functor field. Exercises @Field (Kon f :@: (Kon g :@: Var0))@.
 data Nest a = Nest (Maybe [a]) deriving (Functor, Show, Eq)
@@ -85,12 +112,26 @@ deriving via FromGeneric Nest instance Semigroupal (->) (,) (,) Nest
 
 deriving via FromGeneric Nest instance Semigroupal Op (,) (,) Nest
 
+deriving via FromGeneric Nest instance Unital (->) () () Nest
+
+deriving via FromGeneric Nest instance Monoidal (->) (,) () (,) () Nest
+
+deriving via FromGeneric Nest instance Semigroupal (->) Either (,) Nest
+
+deriving via FromGeneric Nest instance Unital (->) Void () Nest
+
+deriving via FromGeneric Nest instance Monoidal (->) Either Void (,) () Nest
+
 -- | A record with named fields. Exercises the selector metadata.
 data Rec a = Rec {recFst :: Maybe a, recSnd :: [a]} deriving (Functor, Show, Eq)
 
 $(deriveGenericK ''Rec)
 
 deriving via FromGeneric Rec instance Semigroupal (->) (,) (,) Rec
+
+deriving via FromGeneric Rec instance Unital (->) () () Rec
+
+deriving via FromGeneric Rec instance Monoidal (->) (,) () (,) () Rec
 
 -- | A mixed three-field product. Exercises @Var0@, @Kon g :@: Var0@, and
 -- @Kon c@ together.
@@ -99,6 +140,10 @@ data Mix a = Mix a (Maybe a) (Sum Int) deriving (Functor, Show, Eq)
 $(deriveGenericK ''Mix)
 
 deriving via FromGeneric Mix instance Semigroupal (->) (,) (,) Mix
+
+deriving via FromGeneric Mix instance Unital (->) () () Mix
+
+deriving via FromGeneric Mix instance Monoidal (->) (,) () (,) () Mix
 
 -- | A sum of sub-functor fields. Combine is undefined, so it gets only the
 -- (total) split.
@@ -121,6 +166,10 @@ data TwoPreds a = TwoPreds (Predicate a) (Predicate a)
 $(deriveGenericK ''TwoPreds)
 
 deriving via FromGeneric TwoPreds instance Semigroupal (->) (,) (,) TwoPreds
+
+deriving via FromGeneric TwoPreds instance Unital (->) () () TwoPreds
+
+deriving via FromGeneric TwoPreds instance Monoidal (->) (,) () (,) () TwoPreds
 
 instance Contravariant TwoPreds where
   contramap f (TwoPreds p q) = TwoPreds (contramap f p) (contramap f q)
@@ -211,6 +260,36 @@ naturalityLaw genF = property $ do
       h = (* 2) :: Int -> Int
   fmap (gbimap @(->) @(->) @(->) @t g h) (combine @(->) @t @(,) (x, y))
     === combine @(->) @t @(,) (fmap g x, fmap h y)
+
+-- | The Monoidal left and right unit laws, for any codomain tensor @t1@ paired
+-- with its unit @i1@. @combine@ against the derived unit, followed by the
+-- tensor's unitor, is the identity.
+unitLaw ::
+  forall t1 i1 f.
+  ( Monoidal (->) t1 i1 (,) () f,
+    Tensor (->) t1 i1,
+    Functor f,
+    forall a. (Eq a) => Eq (f a),
+    forall a. (Show a) => Show (f a)
+  ) =>
+  (forall a. Gen a -> Gen (f a)) ->
+  Property
+unitLaw genF = property $ do
+  fa <- forAll (genF genInt)
+  fmap (fwd (unitl @(->) @t1)) (combine @(->) @t1 @(,) (introduce @(->) @i1 @() (), fa)) === fa
+  fmap (fwd (unitr @(->) @t1)) (combine @(->) @t1 @(,) (fa, introduce @(->) @i1 @() ())) === fa
+
+-- | The contravariant unit laws for 'TwoPreds', observed extensionally. For a
+-- contravariant functor the unitor is applied through 'contramap' in the
+-- opposite direction.
+contraUnit :: Property
+contraUnit = property $ do
+  x <- forAllWith (const "<opaque>") genTwoPreds
+  a <- forAll genInt
+  let l = contramap (bwd (unitl @(->) @(,))) (combine @(->) @(,) @(,) (introduce @(->) @() @() (), x))
+      r = contramap (bwd (unitr @(->) @(,))) (combine @(->) @(,) @(,) (x, introduce @(->) @() @() ()))
+  obsTwoPreds l a === obsTwoPreds x a
+  obsTwoPreds r a === obsTwoPreds x a
 
 -- | The standalone split is the functorial unzip.
 splitLaw ::
@@ -305,6 +384,16 @@ main = do
       "Nest (nested combine)"
       (combine @(->) @(,) @(,) (Nest (Just [1, 2]), Nest (Just [3, 4])))
       (Nest (Just [(1, 3), (1, 4), (2, 3), (2, 4)]) :: Nest (Int, Int))
+  u4 <-
+    check
+      "P (introduce unit)"
+      (introduce @(->) @() @() () :: P ())
+      (P (Just ()) [()])
+  u5 <-
+    check
+      "P (introduce Void unit)"
+      (introduce @(->) @Void @() () :: P Void)
+      (P Nothing [])
   props <-
     checkSequential $
       Group
@@ -321,6 +410,17 @@ main = do
           ("naturality (,) P", naturalityLaw @(,) genP),
           ("naturality Either P", naturalityLaw @Either genP),
           ("naturality These P", naturalityLaw @These genP),
+          ("unit (,) Phantom", unitLaw @(,) @() genPhantom),
+          ("unit (,) Two", unitLaw @(,) @() genTwo),
+          ("unit (,) P", unitLaw @(,) @() genP),
+          ("unit (,) W", unitLaw @(,) @() genW),
+          ("unit (,) Nest", unitLaw @(,) @() genNest),
+          ("unit (,) Rec", unitLaw @(,) @() genRec),
+          ("unit (,) Mix", unitLaw @(,) @() genMix),
+          ("unit Either P", unitLaw @Either @Void genP),
+          ("unit Either W", unitLaw @Either @Void genW),
+          ("unit Either Nest", unitLaw @Either @Void genNest),
+          ("contravariant unit TwoPreds", contraUnit),
           ("split unzip P", splitLaw @P genP),
           ("split unzip Nest", splitLaw @Nest genNest),
           ("split unzip S", splitLaw @S genS),
@@ -330,4 +430,4 @@ main = do
           ("contravariant divide TwoPreds", contravariantTwoPreds),
           ("contravariant assoc TwoPreds", contraAssoc genTwoPreds obsTwoPreds)
         ]
-  unless (and [u1, u2, u3] && props) exitFailure
+  unless (and [u1, u2, u3, u4, u5] && props) exitFailure

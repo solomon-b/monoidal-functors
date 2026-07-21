@@ -20,13 +20,14 @@ module Data.Functor.Monoidal.Generic
     FromRepresentable (..),
     GSemigroupalK (..),
     GCosemigroupalK (..),
+    GUnitalK (..),
   )
 where
 
-import Control.Category.Tensor (Associative)
+import Control.Category.Tensor (Associative, Tensor)
 import Data.Distributive (Distributive)
 import Data.Functor.Contravariant (Op (..))
-import Data.Functor.Monoidal (Semigroupal (..))
+import Data.Functor.Monoidal (Monoidal, Semigroupal (..), Unital (..))
 import Generics.Kind
 import Prelude
 
@@ -171,3 +172,62 @@ instance
   where
   combine :: Op (FromRepresentable f x, FromRepresentable f x') (FromRepresentable f (x, x'))
   combine = Op (\(FromRepresentable fxx) -> let (a, b) = gsplit fxx in (FromRepresentable a, FromRepresentable b))
+
+--------------------------------------------------------------------------------
+-- Unital and Monoidal
+
+-- | @introduce@ over a @kind-generics@ 'RepK', building the unit-filled
+-- structure at a codomain unit @i1@. This is @()@ for the product tensor
+-- (Applicative and Divisible) and @Void@ for @Either@ and @These@ (Alternative
+-- and Decidable).
+class GUnitalK i1 rep where
+  gintroduceK :: rep (i1 :&&: LoT0)
+
+instance GUnitalK i1 U1 where
+  gintroduceK = U1
+
+instance (GUnitalK i1 f) => GUnitalK i1 (M1 i c f) where
+  gintroduceK = M1 gintroduceK
+
+instance (GUnitalK i1 f, GUnitalK i1 g) => GUnitalK i1 (f :*: g) where
+  gintroduceK = gintroduceK :*: gintroduceK
+
+-- | A bare parameter can only be introduced at the product unit @()@, the one
+-- unit object with a canonical inhabitant. There is no value of @Void@ to place
+-- here, so a type with a bare-parameter field has no @Either@/@These@ unit.
+instance GUnitalK () (Field Var0) where
+  gintroduceK = Field ()
+
+-- | A constant field is the 'Monoid' identity, at any unit.
+instance (Monoid c) => GUnitalK i1 (Field (Kon c)) where
+  gintroduceK = Field mempty
+
+-- | A sub-functor delegates to its own 'Unital' instance at the same unit.
+instance (Unital (->) i1 () g) => GUnitalK i1 (Field (Kon g :@: Var0)) where
+  gintroduceK = Field (introduce @(->) @i1 @() ())
+
+-- | A nested field @f (g i1)@: the outer functor at the product unit, the inner
+-- at @i1@, mirroring the nested @combine@.
+instance
+  (Functor f, Unital (->) () () f, Unital (->) i1 () g) =>
+  GUnitalK i1 (Field (Kon f :@: (Kon g :@: Var0)))
+  where
+  gintroduceK =
+    Field (fmap (const (introduce @(->) @i1 @() ())) (introduce @(->) @() @() ()))
+
+-- | The unit vehicle, at any codomain unit @i1@:
+--
+-- > deriving via FromGeneric Foo instance Unital (->) () () Foo
+-- > deriving via FromGeneric Foo instance Unital (->) Void () Foo
+instance (GenericK f, GUnitalK i1 (RepK f)) => Unital (->) i1 () (FromGeneric f) where
+  introduce :: () -> FromGeneric f i1
+  introduce () = FromGeneric (toK @_ @f @(i1 :&&: LoT0) gintroduceK)
+
+-- | @Monoidal@ falls out of 'Semigroupal' plus 'Unital', for any codomain
+-- tensor @t1@ paired with its unit @i1@:
+--
+-- > deriving via FromGeneric Foo instance Monoidal (->) (,) () (,) () Foo
+-- > deriving via FromGeneric Foo instance Monoidal (->) Either Void (,) () Foo
+instance
+  (GenericK f, GSemigroupalK t1 (RepK f), GUnitalK i1 (RepK f), Tensor (->) t1 i1) =>
+  Monoidal (->) t1 i1 (,) () (FromGeneric f)
