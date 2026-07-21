@@ -24,15 +24,17 @@
               cabal-install
               haskell.compiler.${compiler}
               haskell.packages.${compiler}.haskell-language-server
+              just
               nixpkgs-fmt
               ormolu
             ];
           };
 
           formatter = pkgs.nixpkgs-fmt;
-          packages = flake-utils.lib.flattenTree {
-            monoidal-functors = pkgs.haskellPackages.monoidal-functors;
-          } // {
+          packages = flake-utils.lib.flattenTree
+            {
+              monoidal-functors = pkgs.haskellPackages.monoidal-functors;
+            } // {
             default = pkgs.haskellPackages.monoidal-functors;
           };
         }) // {
