@@ -121,6 +121,7 @@ test-suite generic-deriving
   build-depends:     base
                    , contravariant
                    , distributive
+                   , hedgehog
                    , kind-generics
                    , kind-generics-th
                    , monoidal-functors

@@ -1,9 +1,15 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
@@ -13,23 +19,44 @@
 
 module Main (main) where
 
+import Control.Category.Tensor (Associative (..), GBifunctor (..), Iso (..))
 import Control.Monad (unless)
 import Data.Distributive (Distributive (..))
-import Data.Functor.Contravariant (Op (..), Predicate (..))
+import Data.Functor.Contravariant (Contravariant (..), Op (..), Predicate (..))
 import Data.Functor.Monoidal (Semigroupal (..))
 import Data.Functor.Monoidal.Generic (FromGeneric (..), FromRepresentable (..))
+import Data.Monoid (Sum (..))
 import Data.These (These (..))
 import Generics.Kind.TH (deriveGenericK)
+import Hedgehog (Gen, Group (..), Property, checkSequential, forAll, forAllWith, property, (===))
+import qualified Hedgehog.Gen as Gen
+import qualified Hedgehog.Range as Range
 import System.Exit (exitFailure)
 
--- | A bare parameter. Exercises @Field Var0@.
+--------------------------------------------------------------------------------
+-- Test types, one per rep shape
+
+-- | A nullary constructor. Exercises @U1@.
+data Phantom a = Phantom deriving (Functor, Show, Eq)
+
+$(deriveGenericK ''Phantom)
+
+deriving via FromGeneric Phantom instance Semigroupal (->) (,) (,) Phantom
+
+-- | Two bare parameters. Exercises @Field Var0@ and @:*:@, and is
+-- representable, so it also gets the coherent split.
 data Two a = Two a a deriving (Functor, Show, Eq)
 
 $(deriveGenericK ''Two)
 
+instance Distributive Two where
+  distribute w = Two (fmap (\(Two a _) -> a) w) (fmap (\(Two _ b) -> b) w)
+
 deriving via FromGeneric Two instance Semigroupal (->) (,) (,) Two
 
--- | Sub-functor fields. Exercises @Field (Kon g :@: Var0)@ with covariant leaves.
+deriving via FromRepresentable Two instance Semigroupal Op (,) (,) Two
+
+-- | Sub-functor fields. Exercises @Field (Kon g :@: Var0)@ across three tensors.
 data P a = P (Maybe a) [a] deriving (Functor, Show, Eq)
 
 $(deriveGenericK ''P)
@@ -40,6 +67,8 @@ deriving via FromGeneric P instance Semigroupal (->) Either (,) P
 
 deriving via FromGeneric P instance Semigroupal (->) These (,) P
 
+deriving via FromGeneric P instance Semigroupal Op (,) (,) P
+
 -- | A constant 'Monoid' field. Exercises @Field (Kon c)@.
 data W a = W String (Maybe a) deriving (Functor, Show, Eq)
 
@@ -47,34 +76,212 @@ $(deriveGenericK ''W)
 
 deriving via FromGeneric W instance Semigroupal (->) (,) (,) W
 
--- | A contravariant functor. Exercises @Field (Kon Predicate :@: Var0)@.
-data TwoPreds a = TwoPreds (Predicate a) (Predicate a)
+-- | A nested functor field. Exercises @Field (Kon f :@: (Kon g :@: Var0))@.
+data Nest a = Nest (Maybe [a]) deriving (Functor, Show, Eq)
 
-$(deriveGenericK ''TwoPreds)
+$(deriveGenericK ''Nest)
 
-deriving via FromGeneric TwoPreds instance Semigroupal (->) (,) (,) TwoPreds
+deriving via FromGeneric Nest instance Semigroupal (->) (,) (,) Nest
 
--- Op / split ------------------------------------------------------------------
+deriving via FromGeneric Nest instance Semigroupal Op (,) (,) Nest
 
--- | A product functor also gets the standalone (unzip) split.
-deriving via FromGeneric P instance Semigroupal Op (,) (,) P
+-- | A record with named fields. Exercises the selector metadata.
+data Rec a = Rec {recFst :: Maybe a, recSnd :: [a]} deriving (Functor, Show, Eq)
 
--- | A sum-shaped functor. The split is total even though combine would not be.
+$(deriveGenericK ''Rec)
+
+deriving via FromGeneric Rec instance Semigroupal (->) (,) (,) Rec
+
+-- | A mixed three-field product. Exercises @Var0@, @Kon g :@: Var0@, and
+-- @Kon c@ together.
+data Mix a = Mix a (Maybe a) (Sum Int) deriving (Functor, Show, Eq)
+
+$(deriveGenericK ''Mix)
+
+deriving via FromGeneric Mix instance Semigroupal (->) (,) (,) Mix
+
+-- | A sum of sub-functor fields. Combine is undefined, so it gets only the
+-- (total) split.
 data S a = SL (Maybe a) | SR [a] deriving (Functor, Show, Eq)
 
 $(deriveGenericK ''S)
 
 deriving via FromGeneric S instance Semigroupal Op (,) (,) S
 
--- | A representable functor for the coherent split, gated on 'Distributive'.
-data Pair2 a = Pair2 a a deriving (Functor, Show, Eq)
+-- | A three-constructor sum mixing bare parameters and a nullary constructor.
+data Sum3 a = A a | B a a | C deriving (Functor, Show, Eq)
 
-$(deriveGenericK ''Pair2)
+$(deriveGenericK ''Sum3)
 
-instance Distributive Pair2 where
-  distribute w = Pair2 (fmap (\(Pair2 a _) -> a) w) (fmap (\(Pair2 _ b) -> b) w)
+deriving via FromGeneric Sum3 instance Semigroupal Op (,) (,) Sum3
 
-deriving via FromRepresentable Pair2 instance Semigroupal Op (,) (,) Pair2
+-- | A contravariant functor. Exercises the @Divisible@ leaf.
+data TwoPreds a = TwoPreds (Predicate a) (Predicate a)
+
+$(deriveGenericK ''TwoPreds)
+
+deriving via FromGeneric TwoPreds instance Semigroupal (->) (,) (,) TwoPreds
+
+instance Contravariant TwoPreds where
+  contramap f (TwoPreds p q) = TwoPreds (contramap f p) (contramap f q)
+
+--------------------------------------------------------------------------------
+-- Generators
+
+genInt :: Gen Int
+genInt = Gen.int (Range.linear (-100) 100)
+
+genPhantom :: Gen a -> Gen (Phantom a)
+genPhantom _ = pure Phantom
+
+genTwo :: Gen a -> Gen (Two a)
+genTwo g = Two <$> g <*> g
+
+genP :: Gen a -> Gen (P a)
+genP g = P <$> Gen.maybe g <*> Gen.list (Range.linear 0 4) g
+
+genW :: Gen a -> Gen (W a)
+genW g = W <$> Gen.string (Range.linear 0 3) Gen.alpha <*> Gen.maybe g
+
+genNest :: Gen a -> Gen (Nest a)
+genNest g = Nest <$> Gen.maybe (Gen.list (Range.linear 0 3) g)
+
+genRec :: Gen a -> Gen (Rec a)
+genRec g = Rec <$> Gen.maybe g <*> Gen.list (Range.linear 0 4) g
+
+genMix :: Gen a -> Gen (Mix a)
+genMix g = Mix <$> g <*> Gen.maybe g <*> (Sum <$> genInt)
+
+genS :: Gen a -> Gen (S a)
+genS g = Gen.choice [SL <$> Gen.maybe g, SR <$> Gen.list (Range.linear 0 4) g]
+
+genSum3 :: Gen a -> Gen (Sum3 a)
+genSum3 g = Gen.choice [A <$> g, B <$> g <*> g, pure C]
+
+genPair :: Gen a -> Gen (a, a)
+genPair g = (,) <$> g <*> g
+
+genTwoPreds :: Gen (TwoPreds Int)
+genTwoPreds = TwoPreds <$> genPredInt <*> genPredInt
+  where
+    genPredInt = (\n -> Predicate (> n)) <$> genInt
+
+--------------------------------------------------------------------------------
+-- Property laws
+
+-- | Semigroupal associativity, for any codomain tensor @t@. @combine@ commutes
+-- with the tensor's associator.
+generalAssoc ::
+  forall t f.
+  ( Semigroupal (->) t (,) f,
+    Associative (->) t,
+    Functor f,
+    forall a. (Eq a) => Eq (f a),
+    forall a. (Show a) => Show (f a),
+    forall a b. (Eq a, Eq b) => Eq (t a b),
+    forall a b. (Show a, Show b) => Show (t a b)
+  ) =>
+  (forall a. Gen a -> Gen (f a)) ->
+  Property
+generalAssoc genF = property $ do
+  x <- forAll (genF genInt)
+  y <- forAll (genF genInt)
+  z <- forAll (genF genInt)
+  fmap (bwd (assoc @(->) @t)) (combine @(->) @t @(,) (combine @(->) @t @(,) (x, y), z))
+    === combine @(->) @t @(,) (x, combine @(->) @t @(,) (y, z))
+
+-- | Naturality of @combine@ in both arguments, for any codomain tensor. This is
+-- a free theorem, so it is checked as a guard against machinery bugs.
+naturalityLaw ::
+  forall t f.
+  ( Semigroupal (->) t (,) f,
+    Associative (->) t,
+    Functor f,
+    forall a. (Eq a) => Eq (f a),
+    forall a. (Show a) => Show (f a),
+    forall a b. (Eq a, Eq b) => Eq (t a b),
+    forall a b. (Show a, Show b) => Show (t a b)
+  ) =>
+  (forall a. Gen a -> Gen (f a)) ->
+  Property
+naturalityLaw genF = property $ do
+  x <- forAll (genF genInt)
+  y <- forAll (genF genInt)
+  let g = (+ 1) :: Int -> Int
+      h = (* 2) :: Int -> Int
+  fmap (gbimap @(->) @(->) @(->) @t g h) (combine @(->) @t @(,) (x, y))
+    === combine @(->) @t @(,) (fmap g x, fmap h y)
+
+-- | The standalone split is the functorial unzip.
+splitLaw ::
+  forall f.
+  ( Semigroupal Op (,) (,) f,
+    Functor f,
+    forall a. (Eq a) => Eq (f a),
+    forall a. (Show a) => Show (f a)
+  ) =>
+  (forall a. Gen a -> Gen (f a)) ->
+  Property
+splitLaw genF = property $ do
+  s <- forAll (genF (genPair genInt))
+  getOp (combine @Op @(,) @(,)) s === (fmap fst s, fmap snd s)
+
+-- | The derived combine agrees with the field-wise applicative combine.
+referenceP :: Property
+referenceP = property $ do
+  P ma la <- forAll (genP genInt)
+  P mb lb <- forAll (genP genInt)
+  combine @(->) @(,) @(,) (P ma la, P mb lb)
+    === P (liftA2 (,) ma mb) (liftA2 (,) la lb)
+
+-- | For a representable functor the split inverts combine and vice versa.
+coherenceTwo :: Property
+coherenceTwo = property $ do
+  x <- forAll (genTwo genInt)
+  y <- forAll (genTwo genInt)
+  xy <- forAll (genTwo (genPair genInt))
+  getOp (combine @Op @(,) @(,)) (combine @(->) @(,) @(,) (x, y)) === (x, y)
+  combine @(->) @(,) @(,) (getOp (combine @Op @(,) @(,)) xy) === xy
+
+-- | The contravariant combine divides its input across the two predicates.
+contravariantTwoPreds :: Property
+contravariantTwoPreds = property $ do
+  n1 <- forAll genInt
+  n2 <- forAll genInt
+  n3 <- forAll genInt
+  n4 <- forAll genInt
+  let TwoPreds f g =
+        combine @(->) @(,) @(,)
+          ( TwoPreds (Predicate (> n1)) (Predicate (> n2)),
+            TwoPreds (Predicate (> n3)) (Predicate (> n4))
+          )
+  a <- forAll genInt
+  b <- forAll genInt
+  getPredicate f (a, b) === (a > n1 && b > n3)
+  getPredicate g (a, b) === (a > n2 && b > n4)
+
+-- | Contravariant associativity. @combine@ commutes with the associator via
+-- 'contramap', checked extensionally by observing on a generated input.
+contraAssoc ::
+  forall f r.
+  (Semigroupal (->) (,) (,) f, Contravariant f, Eq r, Show r) =>
+  Gen (f Int) ->
+  (forall a. f a -> a -> r) ->
+  Property
+contraAssoc genFInt obs = property $ do
+  x <- forAllWith (const "<opaque>") genFInt
+  y <- forAllWith (const "<opaque>") genFInt
+  z <- forAllWith (const "<opaque>") genFInt
+  i <- forAll ((,) <$> genInt <*> genPair genInt)
+  let lhs = contramap (fwd (assoc @(->) @(,))) (combine @(->) @(,) @(,) (combine @(->) @(,) @(,) (x, y), z))
+      rhs = combine @(->) @(,) @(,) (x, combine @(->) @(,) @(,) (y, z))
+  obs lhs i === obs rhs i
+
+obsTwoPreds :: TwoPreds a -> a -> (Bool, Bool)
+obsTwoPreds (TwoPreds p q) a = (getPredicate p a, getPredicate q a)
+
+--------------------------------------------------------------------------------
+-- Concrete checks for the tensors the property laws do not cover
 
 check :: (Eq a, Show a) => String -> a -> a -> IO Bool
 check name got want
@@ -83,54 +290,43 @@ check name got want
 
 main :: IO ()
 main = do
-  r1 <-
-    check
-      "Two (bare parameter)"
-      (combine @(->) @(,) @(,) (Two 1 2, Two 3 4))
-      (Two (1, 3) (2, 4) :: Two (Int, Int))
-  r2 <-
-    check
-      "P (sub-functors)"
-      (combine @(->) @(,) @(,) (P (Just 1) [1, 2], P (Just 2) [3, 4]))
-      (P (Just (1, 2)) [(1, 3), (1, 4), (2, 3), (2, 4)] :: P (Int, Int))
-  r3 <-
-    check
-      "W (Monoid constant)"
-      (combine @(->) @(,) @(,) (W "a" (Just 1), W "b" (Just 2)))
-      (W "ab" (Just (1, 2)) :: W (Int, Int))
-  r4 <- do
-    let TwoPreds f g =
-          combine @(->) @(,) @(,)
-            ( TwoPreds (Predicate even) (Predicate (> 0)),
-              TwoPreds (Predicate odd) (Predicate (< 10))
-            )
-    check
-      "TwoPreds (contravariant)"
-      (getPredicate f (2, 3), getPredicate f (2, 4), getPredicate g (5 :: Int, 5))
-      (True, False, True)
-  r5 <-
+  u1 <-
     check
       "P (Either tensor)"
       (combine @(->) @Either @(,) (P (Just 1) [1, 2], P (Just 3) [4]))
       (P (Just (Left 1)) [Left 1, Left 2, Right 4] :: P (Either Int Int))
-  r6 <-
+  u2 <-
     check
       "P (These tensor)"
       (combine @(->) @These @(,) (P (Just 1) [1, 2], P (Just 3) [4]))
       (P (Just (These 1 3)) [These 1 4, This 2] :: P (These Int Int))
-  r7 <-
+  u3 <-
     check
-      "P (Op split, standalone)"
-      (getOp (combine @Op @(,) @(,)) (P (Just (1, 2)) [(3, 4), (5, 6)]))
-      ((P (Just 1) [3, 5], P (Just 2) [4, 6]) :: (P Int, P Int))
-  r8 <-
-    check
-      "S (Op split on a sum, total)"
-      (getOp (combine @Op @(,) @(,)) (SL (Just (1, 2))))
-      ((SL (Just 1), SL (Just 2)) :: (S Int, S Int))
-  r9 <-
-    check
-      "Pair2 (Op split, representable)"
-      (getOp (combine @Op @(,) @(,)) (Pair2 (1, 2) (3, 4)))
-      ((Pair2 1 3, Pair2 2 4) :: (Pair2 Int, Pair2 Int))
-  unless (and [r1, r2, r3, r4, r5, r6, r7, r8, r9]) exitFailure
+      "Nest (nested combine)"
+      (combine @(->) @(,) @(,) (Nest (Just [1, 2]), Nest (Just [3, 4])))
+      (Nest (Just [(1, 3), (1, 4), (2, 3), (2, 4)]) :: Nest (Int, Int))
+  props <-
+    checkSequential $
+      Group
+        "generic-deriving laws"
+        [ ("assoc (,) Phantom", generalAssoc @(,) genPhantom),
+          ("assoc (,) Two", generalAssoc @(,) genTwo),
+          ("assoc (,) P", generalAssoc @(,) genP),
+          ("assoc (,) W", generalAssoc @(,) genW),
+          ("assoc (,) Nest", generalAssoc @(,) genNest),
+          ("assoc (,) Rec", generalAssoc @(,) genRec),
+          ("assoc (,) Mix", generalAssoc @(,) genMix),
+          ("assoc Either P", generalAssoc @Either genP),
+          ("naturality (,) P", naturalityLaw @(,) genP),
+          ("naturality Either P", naturalityLaw @Either genP),
+          ("naturality These P", naturalityLaw @These genP),
+          ("split unzip P", splitLaw @P genP),
+          ("split unzip Nest", splitLaw @Nest genNest),
+          ("split unzip S", splitLaw @S genS),
+          ("split unzip Sum3", splitLaw @Sum3 genSum3),
+          ("reference P", referenceP),
+          ("representable coherence Two", coherenceTwo),
+          ("contravariant divide TwoPreds", contravariantTwoPreds),
+          ("contravariant assoc TwoPreds", contraAssoc genTwoPreds obsTwoPreds)
+        ]
+  unless (and [u1, u2, u3] && props) exitFailure
