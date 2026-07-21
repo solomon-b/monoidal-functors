@@ -61,7 +61,16 @@ instance (Monoid c) => GSemigroupalK t1 (Field (Kon c)) where
 -- 'Semigroupal' instance at tensor @t1@. This holds whether @g@ is covariant
 -- (Applicative, Alternative, Semialign) or contravariant (Divisible, Decidable).
 instance (Semigroupal (->) t1 (,) g) => GSemigroupalK t1 (Field (Kon g :@: Var0)) where
-  gcombineK (Field gx) (Field gx') = Field (combine @(->) @t1 @(,) (gx, gx'))
+  gcombineK (Field a) (Field b) = Field (combine @(->) @t1 @(,) (a, b))
+
+-- | A nested field @f (g a)@. Product-combine the outer functor, then map the
+-- inner combine over it.
+instance
+  (Semigroupal (->) (,) (,) f, Functor f, Semigroupal (->) t1 (,) g) =>
+  GSemigroupalK t1 (Field (Kon f :@: (Kon g :@: Var0)))
+  where
+  gcombineK (Field a) (Field b) =
+    Field (fmap (combine @(->) @t1 @(,)) (combine @(->) @(,) @(,) (a, b)))
 
 -- | The deriving-via vehicle.
 --
@@ -121,6 +130,10 @@ instance GCosemigroupalK (Field (Kon c)) where
 -- total for any 'Functor' and gives the standalone split.
 instance (Functor g) => GCosemigroupalK (Field (Kon g :@: Var0)) where
   gcosplitK (Field gxx) = (Field (fmap fst gxx), Field (fmap snd gxx))
+
+-- | A nested field @f (g a)@ splits with a double @fmap@.
+instance (Functor f, Functor g) => GCosemigroupalK (Field (Kon f :@: (Kon g :@: Var0))) where
+  gcosplitK (Field fgxx) = (Field (fmap (fmap fst) fgxx), Field (fmap (fmap snd) fgxx))
 
 -- | The generic split, shared by both vehicles below.
 gsplit ::
