@@ -317,6 +317,7 @@ main = do
           ("assoc (,) Rec", generalAssoc @(,) genRec),
           ("assoc (,) Mix", generalAssoc @(,) genMix),
           ("assoc Either P", generalAssoc @Either genP),
+          ("assoc These P", generalAssoc @These genP),
           ("naturality (,) P", naturalityLaw @(,) genP),
           ("naturality Either P", naturalityLaw @Either genP),
           ("naturality These P", naturalityLaw @These genP),

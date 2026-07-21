@@ -181,11 +181,22 @@ instance Associative (->) Either where
 
 instance Associative (->) These where
   assoc :: Iso (->) (These a (These b c)) (These (These a b) c)
-  assoc =
-    Iso
-      { fwd = these (This . This) (glmap That) (glmap . These),
-        bwd = these (grmap This) (That . That) (flip $ grmap . flip These)
-      }
+  assoc = Iso fwdThese bwdThese
+    where
+      fwdThese (This a) = This (This a)
+      fwdThese (That (This b)) = This (That b)
+      fwdThese (That (That c)) = That c
+      fwdThese (That (These b c)) = These (That b) c
+      fwdThese (These a (This b)) = This (These a b)
+      fwdThese (These a (That c)) = These (This a) c
+      fwdThese (These a (These b c)) = These (These a b) c
+      bwdThese (This (This a)) = This a
+      bwdThese (This (That b)) = That (This b)
+      bwdThese (This (These a b)) = These a (This b)
+      bwdThese (That c) = That (That c)
+      bwdThese (These (This a) c) = These a (That c)
+      bwdThese (These (That b) c) = That (These b c)
+      bwdThese (These (These a b) c) = These a (These b c)
 
 instance (Monad m, Associative (->) t, GBifunctor (Star m) (Star m) (Star m) t) => Associative (Star m) t where
   assoc :: Iso (Star m) (a `t` (b `t` c)) ((a `t` b) `t` c)
