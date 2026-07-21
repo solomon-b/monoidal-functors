@@ -73,6 +73,17 @@ instance
   gcombineK (Field a) (Field b) =
     Field (fmap (combine @(->) @t1 @(,)) (combine @(->) @(,) @(,) (a, b)))
 
+-- | A bare function field @x -> r@, the shape of primitive contravariants like
+-- 'Data.Functor.Contravariant.Predicate' and @'Op' r@. @kind-generics@
+-- represents it as an application of @(->)@, and it delegates to the @'Op' r@
+-- instance at the same tensor (Divisible at @(,)@, Decidable at @Either@).
+instance
+  (Semigroupal (->) t1 (,) (Op r)) =>
+  GSemigroupalK t1 (Field ((Kon (->) :@: Var0) :@: Kon r))
+  where
+  gcombineK (Field h1) (Field h2) =
+    Field (getOp (combine @(->) @t1 @(,) (Op h1, Op h2)))
+
 -- | The deriving-via vehicle.
 --
 -- > deriving via FromGeneric Foo instance Semigroupal (->) t1 (,) Foo
@@ -214,6 +225,14 @@ instance
   where
   gintroduceK =
     Field (fmap (const (introduce @(->) @i1 @() ())) (introduce @(->) @() @() ()))
+
+-- | A bare function field's unit delegates to @'Op' r@ (@conquer@ at @()@,
+-- @lose@ at @Void@).
+instance
+  (Unital (->) i1 () (Op r)) =>
+  GUnitalK i1 (Field ((Kon (->) :@: Var0) :@: Kon r))
+  where
+  gintroduceK = Field (getOp (introduce @(->) @i1 @() ()))
 
 -- | The unit vehicle, at any codomain unit @i1@:
 --

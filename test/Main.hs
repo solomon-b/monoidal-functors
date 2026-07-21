@@ -174,6 +174,31 @@ deriving via FromGeneric TwoPreds instance Monoidal (->) (,) () (,) () TwoPreds
 instance Contravariant TwoPreds where
   contramap f (TwoPreds p q) = TwoPreds (contramap f p) (contramap f q)
 
+-- | A bare function field @a -> r@, with no named contravariant wrapper.
+-- Exercises the function atom directly; the 'Monoid' codomain gives it the
+-- @Op r@ (Divisible/Decidable) instances.
+newtype Sink a = Sink (a -> [String])
+
+$(deriveGenericK ''Sink)
+
+deriving via FromGeneric Sink instance Semigroupal (->) (,) (,) Sink
+
+deriving via FromGeneric Sink instance Semigroupal (->) Either (,) Sink
+
+deriving via FromGeneric Sink instance Unital (->) () () Sink
+
+deriving via FromGeneric Sink instance Unital (->) Void () Sink
+
+deriving via FromGeneric Sink instance Monoidal (->) (,) () (,) () Sink
+
+deriving via FromGeneric Sink instance Monoidal (->) Either Void (,) () Sink
+
+instance Contravariant Sink where
+  contramap f (Sink g) = Sink (g . f)
+
+runSink :: Sink a -> a -> [String]
+runSink (Sink f) = f
+
 --------------------------------------------------------------------------------
 -- Generators
 
@@ -359,6 +384,38 @@ contraAssoc genFInt obs = property $ do
 obsTwoPreds :: TwoPreds a -> a -> (Bool, Bool)
 obsTwoPreds (TwoPreds p q) a = (getPredicate p a, getPredicate q a)
 
+-- | The function atom divides its input across the two sinks at the product
+-- tensor.
+sinkDivide :: Property
+sinkDivide = property $ do
+  m <- forAll genInt
+  n <- forAll genInt
+  a <- forAll genInt
+  b <- forAll genInt
+  runSink (combine @(->) @(,) @(,) (Sink (\x -> [show (x + m)]), Sink (\x -> [show (x + n)]))) (a, b)
+    === [show (a + m), show (b + n)]
+
+-- | At the Either tensor the function atom chooses.
+sinkChoose :: Property
+sinkChoose = property $ do
+  m <- forAll genInt
+  n <- forAll genInt
+  a <- forAll genInt
+  let s = combine @(->) @Either @(,) (Sink (\x -> [show (x + m)]), Sink (\x -> [show (x + n)]))
+  runSink s (Left a) === [show (a + m)]
+  runSink s (Right a) === [show (a + n)]
+
+-- | The contravariant unit law for the function atom, observed extensionally.
+sinkUnit :: Property
+sinkUnit = property $ do
+  m <- forAll genInt
+  a <- forAll genInt
+  let orig = Sink (\x -> [show (x + m)])
+      l = contramap (bwd (unitl @(->) @(,))) (combine @(->) @(,) @(,) (introduce @(->) @() @() (), orig))
+      r = contramap (bwd (unitr @(->) @(,))) (combine @(->) @(,) @(,) (orig, introduce @(->) @() @() ()))
+  runSink l a === runSink orig a
+  runSink r a === runSink orig a
+
 --------------------------------------------------------------------------------
 -- Concrete checks for the tensors the property laws do not cover
 
@@ -428,6 +485,9 @@ main = do
           ("reference P", referenceP),
           ("representable coherence Two", coherenceTwo),
           ("contravariant divide TwoPreds", contravariantTwoPreds),
-          ("contravariant assoc TwoPreds", contraAssoc genTwoPreds obsTwoPreds)
+          ("contravariant assoc TwoPreds", contraAssoc genTwoPreds obsTwoPreds),
+          ("function atom divide Sink", sinkDivide),
+          ("function atom choose Sink", sinkChoose),
+          ("function atom unit Sink", sinkUnit)
         ]
   unless (and [u1, u2, u3, u4, u5] && props) exitFailure
