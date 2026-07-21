@@ -14,9 +14,10 @@
 module Main (main) where
 
 import Control.Monad (unless)
-import Data.Functor.Contravariant (Predicate (..))
+import Data.Distributive (Distributive (..))
+import Data.Functor.Contravariant (Op (..), Predicate (..))
 import Data.Functor.Monoidal (Semigroupal (..))
-import Data.Functor.Monoidal.Generic (FromGeneric (..))
+import Data.Functor.Monoidal.Generic (FromGeneric (..), FromRepresentable (..))
 import Data.These (These (..))
 import Generics.Kind.TH (deriveGenericK)
 import System.Exit (exitFailure)
@@ -52,6 +53,28 @@ data TwoPreds a = TwoPreds (Predicate a) (Predicate a)
 $(deriveGenericK ''TwoPreds)
 
 deriving via FromGeneric TwoPreds instance Semigroupal (->) (,) (,) TwoPreds
+
+-- Op / split ------------------------------------------------------------------
+
+-- | A product functor also gets the standalone (unzip) split.
+deriving via FromGeneric P instance Semigroupal Op (,) (,) P
+
+-- | A sum-shaped functor. The split is total even though combine would not be.
+data S a = SL (Maybe a) | SR [a] deriving (Functor, Show, Eq)
+
+$(deriveGenericK ''S)
+
+deriving via FromGeneric S instance Semigroupal Op (,) (,) S
+
+-- | A representable functor for the coherent split, gated on 'Distributive'.
+data Pair2 a = Pair2 a a deriving (Functor, Show, Eq)
+
+$(deriveGenericK ''Pair2)
+
+instance Distributive Pair2 where
+  distribute w = Pair2 (fmap (\(Pair2 a _) -> a) w) (fmap (\(Pair2 _ b) -> b) w)
+
+deriving via FromRepresentable Pair2 instance Semigroupal Op (,) (,) Pair2
 
 check :: (Eq a, Show a) => String -> a -> a -> IO Bool
 check name got want
@@ -95,4 +118,19 @@ main = do
       "P (These tensor)"
       (combine @(->) @These @(,) (P (Just 1) [1, 2], P (Just 3) [4]))
       (P (Just (These 1 3)) [These 1 4, This 2] :: P (These Int Int))
-  unless (and [r1, r2, r3, r4, r5, r6]) exitFailure
+  r7 <-
+    check
+      "P (Op split, standalone)"
+      (getOp (combine @Op @(,) @(,)) (P (Just (1, 2)) [(3, 4), (5, 6)]))
+      ((P (Just 1) [3, 5], P (Just 2) [4, 6]) :: (P Int, P Int))
+  r8 <-
+    check
+      "S (Op split on a sum, total)"
+      (getOp (combine @Op @(,) @(,)) (SL (Just (1, 2))))
+      ((SL (Just 1), SL (Just 2)) :: (S Int, S Int))
+  r9 <-
+    check
+      "Pair2 (Op split, representable)"
+      (getOp (combine @Op @(,) @(,)) (Pair2 (1, 2) (3, 4)))
+      ((Pair2 1 3, Pair2 2 4) :: (Pair2 Int, Pair2 Int))
+  unless (and [r1, r2, r3, r4, r5, r6, r7, r8, r9]) exitFailure

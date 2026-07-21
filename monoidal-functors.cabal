@@ -120,6 +120,7 @@ test-suite generic-deriving
   main-is:           Main.hs
   build-depends:     base
                    , contravariant
+                   , distributive
                    , kind-generics
                    , kind-generics-th
                    , monoidal-functors

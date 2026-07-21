@@ -17,11 +17,15 @@
 -- > deriving via FromGeneric Foo instance Semigroupal (->) (,) (,) Foo
 module Data.Functor.Monoidal.Generic
   ( FromGeneric (..),
+    FromRepresentable (..),
     GSemigroupalK (..),
+    GCosemigroupalK (..),
   )
 where
 
 import Control.Category.Tensor (Associative)
+import Data.Distributive (Distributive)
+import Data.Functor.Contravariant (Op (..))
 import Data.Functor.Monoidal (Semigroupal (..))
 import Generics.Kind
 import Prelude
@@ -77,3 +81,80 @@ instance
       ( toK @_ @f @(t1 x x' :&&: LoT0)
           (gcombineK (fromK @_ @f @(x :&&: LoT0) fx) (fromK @_ @f @(x' :&&: LoT0) fx'))
       )
+
+--------------------------------------------------------------------------------
+-- Split (Op), the comonoidal direction for the product tensor
+
+-- | @combine@ over @Op@ for the product tensor. This splits one structure into
+-- two, @rep ((x, x') :&&: LoT0) -> (rep (x :&&: LoT0), rep (x' :&&: LoT0))@.
+class GCosemigroupalK rep where
+  gcosplitK :: rep ((x, x') :&&: LoT0) -> (rep (x :&&: LoT0), rep (x' :&&: LoT0))
+
+instance GCosemigroupalK U1 where
+  gcosplitK U1 = (U1, U1)
+
+instance (GCosemigroupalK f) => GCosemigroupalK (M1 i c f) where
+  gcosplitK (M1 a) = let (l, r) = gcosplitK a in (M1 l, M1 r)
+
+instance (GCosemigroupalK f, GCosemigroupalK g) => GCosemigroupalK (f :*: g) where
+  gcosplitK (a :*: b) =
+    let (al, ar) = gcosplitK a
+        (bl, br) = gcosplitK b
+     in (al :*: bl, ar :*: br)
+
+-- | Splitting a sum is total. The single input constructor determines matched
+-- outputs, so @:+:@ has none of the mismatched-constructor trouble that blocks
+-- the combine direction.
+instance (GCosemigroupalK f, GCosemigroupalK g) => GCosemigroupalK (f :+: g) where
+  gcosplitK (L1 a) = let (l, r) = gcosplitK a in (L1 l, L1 r)
+  gcosplitK (R1 b) = let (l, r) = gcosplitK b in (R1 l, R1 r)
+
+-- | The bare parameter splits the pair.
+instance GCosemigroupalK (Field Var0) where
+  gcosplitK (Field (x, x')) = (Field x, Field x')
+
+-- | A constant field is duplicated.
+instance GCosemigroupalK (Field (Kon c)) where
+  gcosplitK (Field c) = (Field c, Field c)
+
+-- | A sub-functor uses the functorial unzip @fmap fst@ and @fmap snd@. This is
+-- total for any 'Functor' and gives the standalone split.
+instance (Functor g) => GCosemigroupalK (Field (Kon g :@: Var0)) where
+  gcosplitK (Field gxx) = (Field (fmap fst gxx), Field (fmap snd gxx))
+
+-- | The generic split, shared by both vehicles below.
+gsplit ::
+  forall f x x'.
+  (GenericK f, GCosemigroupalK (RepK f)) =>
+  f (x, x') ->
+  (f x, f x')
+gsplit fxx =
+  let (l, r) = gcosplitK (fromK @_ @f @((x, x') :&&: LoT0) fxx)
+   in (toK @_ @f @(x :&&: LoT0) l, toK @_ @f @(x' :&&: LoT0) r)
+
+-- | The standalone split.
+--
+-- > deriving via FromGeneric Foo instance Semigroupal Op (,) (,) Foo
+--
+-- This has unzip semantics and is total, even on sums. It does not always
+-- invert the cartesian @combine@.
+instance
+  (GenericK f, GCosemigroupalK (RepK f)) =>
+  Semigroupal Op (,) (,) (FromGeneric f)
+  where
+  combine :: Op (FromGeneric f x, FromGeneric f x') (FromGeneric f (x, x'))
+  combine = Op (\(FromGeneric fxx) -> let (a, b) = gsplit fxx in (FromGeneric a, FromGeneric b))
+
+-- | The coherent split, gated on 'Distributive'. A split inverts the cartesian
+-- @combine@ exactly when the functor is representable, so this vehicle compiles
+-- only for representable functors.
+--
+-- > deriving via FromRepresentable Foo instance Semigroupal Op (,) (,) Foo
+newtype FromRepresentable f a = FromRepresentable (f a)
+
+instance
+  (GenericK f, GCosemigroupalK (RepK f), Distributive f) =>
+  Semigroupal Op (,) (,) (FromRepresentable f)
+  where
+  combine :: Op (FromRepresentable f x, FromRepresentable f x') (FromRepresentable f (x, x'))
+  combine = Op (\(FromRepresentable fxx) -> let (a, b) = gsplit fxx in (FromRepresentable a, FromRepresentable b))
