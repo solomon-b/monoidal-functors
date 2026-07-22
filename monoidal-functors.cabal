@@ -105,7 +105,10 @@ library laws
   import:            common-extensions
   visibility:        public
   hs-source-dirs:    laws
-  exposed-modules:   Data.Functor.Monoidal.Laws
+  exposed-modules:   Control.Category.Cartesian.Laws
+                     Control.Category.Tensor.Laws
+                     Data.Functor.Monoidal.Laws
+  other-modules:     Control.Category.Laws.Internal
   build-depends:
     base,
     monoidal-functors,
@@ -135,7 +138,10 @@ test-suite spec
   type:              exitcode-stdio-1.0
   hs-source-dirs:    test
   main-is:           Main.hs
-  other-modules:     Data.Functor.Monoidal.GenericSpec
+  other-modules:     Control.Category.CartesianSpec
+                     Control.Category.LawsSupport
+                     Control.Category.TensorSpec
+                     Data.Functor.Monoidal.GenericSpec
                      Data.Functor.Monoidal.LawsSpec
   build-depends:
     base,
@@ -147,6 +153,7 @@ test-suite spec
     kind-generics-th,
     monoidal-functors,
     monoidal-functors:laws,
+    profunctors,
     these,
     transformers,
   default-language: Haskell2010
