@@ -1,25 +1,28 @@
 -- | Self-test: run the exported 'Laws' against known-good library instances,
 -- both covariant ('Maybe', @[]@) and contravariant ('Predicate'), so the
 -- sublibrary's law statements are exercised end-to-end.
-module Main (main) where
+module Data.Functor.Monoidal.LawsSpec (tests) where
 
-import Control.Monad (unless)
+--------------------------------------------------------------------------------
+
 import Data.Functor.Contravariant (Op (..), Predicate (..))
 import Data.Functor.Monoidal (Semigroupal (..))
 import Data.Functor.Monoidal.Laws
   ( contravariantMonoidalLaws,
     monoidalLaws,
     opSemigroupalLaws,
+    representableSplitLaws,
     semigroupalLaws,
     unitalLaws,
   )
 import Data.Void (Void)
 import Hedgehog (Gen)
 import Hedgehog.Classes (lawsCheck)
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
-import System.Exit (exitFailure)
+import Hedgehog.Gen qualified as Gen
+import Hedgehog.Range qualified as Range
 import Prelude
+
+--------------------------------------------------------------------------------
 
 genInt :: Gen Int
 genInt = Gen.int (Range.linear (-100) 100)
@@ -51,16 +54,21 @@ genEitherT ga gb = Gen.choice [Left <$> ga, Right <$> gb]
 
 data Pair a = Pair a a deriving (Functor, Show, Eq)
 
+instance Semigroupal (->) (,) (,) Pair where
+  combine (Pair a b, Pair c d) = Pair (a, c) (b, d)
+
 instance Semigroupal Op (,) (,) Pair where
   combine = Op (\(Pair (a, b) (c, d)) -> (Pair a c, Pair b d))
 
 genPairF :: Gen a -> Gen (Pair a)
 genPairF g = Pair <$> g <*> g
 
-main :: IO ()
-main = do
-  oks <-
-    sequence
+--------------------------------------------------------------------------------
+
+tests :: IO Bool
+tests =
+  and
+    <$> sequence
       [ -- Covariant.
         lawsCheck (monoidalLaws @(,) @() genMaybe),
         lawsCheck (monoidalLaws @(,) @() genList),
@@ -71,6 +79,6 @@ main = do
         lawsCheck (contravariantMonoidalLaws @(,) @() genPredicate genPairT obsPredicate),
         lawsCheck (contravariantMonoidalLaws @Either @Void genPredicate genEitherT obsPredicate),
         -- Op (comonoidal) split.
-        lawsCheck (opSemigroupalLaws genPairF)
+        lawsCheck (opSemigroupalLaws genPairF),
+        lawsCheck (representableSplitLaws genPairF)
       ]
-  unless (and oks) exitFailure
