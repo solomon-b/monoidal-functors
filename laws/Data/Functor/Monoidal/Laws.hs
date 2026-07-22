@@ -1,10 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeOperators #-}
 
 -- | Reusable @hedgehog-classes@ 'Laws' for this library's monoidal-functor
 -- classes, so a consumer can law-test their own 'Semigroupal' \/ 'Unital' \/
@@ -46,17 +40,22 @@ module Data.Functor.Monoidal.Laws
 
     -- * The Op (comonoidal) laxator
     opSemigroupalLaws,
+    representableSplitLaws,
   )
 where
+
+--------------------------------------------------------------------------------
 
 import Control.Category.Tensor (Associative (..), GBifunctor (gbimap), Iso (..), Tensor (..))
 import Data.Functor.Contravariant (Contravariant (..), Op (..))
 import Data.Functor.Monoidal (Monoidal, Semigroupal (..), Unital (..))
 import Hedgehog (Gen, Property, forAll, forAllWith, property, (===))
 import Hedgehog.Classes (Laws (..))
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
+import Hedgehog.Gen qualified as Gen
+import Hedgehog.Range qualified as Range
 import Prelude
+
+--------------------------------------------------------------------------------
 
 -- | The element type the coherence squares are witnessed at.
 genInt :: Gen Int
@@ -64,6 +63,8 @@ genInt = Gen.int (Range.linear (-100) 100)
 
 genPair :: Gen a -> Gen b -> Gen (a, b)
 genPair ga gb = (,) <$> ga <*> gb
+
+--------------------------------------------------------------------------------
 
 -- | 'combine' laws: it commutes with the codomain tensor's associator
 -- (associativity) and with maps into it (naturality of the laxator).
@@ -125,6 +126,8 @@ semigroupalAssoc genF = property $ do
   fmap (bwd (assoc @(->) @t1)) (combine @(->) @t1 @(,) (combine @(->) @t1 @(,) (x, y), z))
     === combine @(->) @t1 @(,) (x, combine @(->) @t1 @(,) (y, z))
 
+--------------------------------------------------------------------------------
+
 -- | Left and right unit laws: 'introduce' is a unit for 'combine', up to the
 -- codomain tensor's unitors.
 unitalLaws ::
@@ -175,6 +178,8 @@ unitalRight genF = property $ do
   fa <- forAll (genF genInt)
   fmap (fwd (unitr @(->) @t1)) (combine @(->) @t1 @(,) (fa, introduce @(->) @i1 @() ())) === fa
 
+--------------------------------------------------------------------------------
+
 -- | Every 'semigroupalLaws' and 'unitalLaws' property together, for a full
 -- 'Monoidal' instance.
 monoidalLaws ::
@@ -194,6 +199,8 @@ monoidalLaws genF =
     ( lawsProperties (semigroupalLaws @t1 genF)
         <> lawsProperties (unitalLaws @t1 @i1 genF)
     )
+
+--------------------------------------------------------------------------------
 
 -- | Laws for the /Op/ (comonoidal) laxator @'combine' \@'Op'@ — the product
 -- split @f (a, b) -> (f a, f b)@ that @FromGeneric@ \/ @FromRepresentable@
@@ -251,6 +258,59 @@ opConaturality genF = property $ do
       split = getOp (combine @Op @(,) @(,))
       (fa, fb) = split w
   split (fmap (gbimap @(->) @(->) @(->) @(,) g h) w) === (fmap g fa, fmap h fb)
+
+--------------------------------------------------------------------------------
+
+-- | Coherence between the covariant @'combine'@ and the @'Op'@ split: they are
+-- mutually inverse. This holds precisely when the split coherently inverts the
+-- product @combine@ — i.e. for representable functors (those deriving via
+-- @FromRepresentable@). It is /not/ satisfied by the standalone @FromGeneric@
+-- unzip on a non-representable functor, whose cartesian @combine@ the unzip does
+-- not invert.
+representableSplitLaws ::
+  forall f.
+  ( Semigroupal (->) (,) (,) f,
+    Semigroupal Op (,) (,) f,
+    forall x. (Eq x) => Eq (f x),
+    forall x. (Show x) => Show (f x)
+  ) =>
+  (forall x. Gen x -> Gen (f x)) ->
+  Laws
+representableSplitLaws genF =
+  Laws
+    "Semigroupal (Op) coherence"
+    [ ("split . combine", splitAfterCombine genF),
+      ("combine . split", combineAfterSplit genF)
+    ]
+
+splitAfterCombine ::
+  forall f.
+  ( Semigroupal (->) (,) (,) f,
+    Semigroupal Op (,) (,) f,
+    forall x. (Eq x) => Eq (f x),
+    forall x. (Show x) => Show (f x)
+  ) =>
+  (forall x. Gen x -> Gen (f x)) ->
+  Property
+splitAfterCombine genF = property $ do
+  x <- forAll (genF genInt)
+  y <- forAll (genF genInt)
+  getOp (combine @Op @(,) @(,)) (combine @(->) @(,) @(,) (x, y)) === (x, y)
+
+combineAfterSplit ::
+  forall f.
+  ( Semigroupal (->) (,) (,) f,
+    Semigroupal Op (,) (,) f,
+    forall x. (Eq x) => Eq (f x),
+    forall x. (Show x) => Show (f x)
+  ) =>
+  (forall x. Gen x -> Gen (f x)) ->
+  Property
+combineAfterSplit genF = property $ do
+  xy <- forAll (genF (genPair genInt genInt))
+  combine @(->) @(,) @(,) (getOp (combine @Op @(,) @(,)) xy) === xy
+
+--------------------------------------------------------------------------------
 
 -- | 'combine' laws for a /contravariant/ functor: associativity and naturality
 -- of the laxator. Since contravariant functors (@Divisible@, @Decidable@)
