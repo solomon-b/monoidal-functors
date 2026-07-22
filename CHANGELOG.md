@@ -1,6 +1,7 @@
 # Revision history for monoidal-functors
 
 ## Upcoming
+* Adds `Data.Functor.Monoidal.Generic` for deriving `Semigroupal`, `Unital`, and `Monoidal` instances via `kind-generics`. `FromGeneric` covers both covariant (Applicative/Alternative) and contravariant (Divisible/Decidable) functors across the `(,)`, `Either`, and `These` tensors; `FromRepresentable` additionally derives the coherent `Op` split for representable functors.
 * Adds `Bifunctor.Monoidal` instances for `Biapplicative`.
 * Adds infix operators for `Semigroupal`.
 * Adds `Data.Functor.Monoidal.Specialized` combinators module.
