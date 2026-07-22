@@ -28,7 +28,7 @@ where
 --------------------------------------------------------------------------------
 
 import Control.Applicative
-import Control.Applicative.Backwards (Backwards)
+import Control.Applicative.Backwards (Backwards (..))
 import Control.Arrow (ArrowMonad, ArrowPlus, ArrowZero, Kleisli)
 import Control.Category.Tensor
 import Control.Comonad.Identity (IdentityT)
@@ -47,22 +47,22 @@ import Data.Functor.Compose (Compose)
 #if MIN_VERSION_semialign(1,4,0)
 import Data.Zip (Unzip)
 #endif
-import Data.Functor.Constant (Constant)
+import Data.Functor.Constant (Constant (..))
 import Data.Functor.Contravariant (Comparison, Contravariant, Equivalence, Op (..), Predicate)
 import Data.Functor.Contravariant.Compose (ComposeCF, ComposeFC)
 import Data.Functor.Contravariant.Divisible (Decidable, Divisible, chosen, conquered, divided, lost)
 import Data.Functor.Identity
-import Data.Functor.Product (Product)
-import Data.Functor.Reverse (Reverse)
+import Data.Functor.Product (Product (Pair))
+import Data.Functor.Reverse (Reverse (..))
 import Data.Kind (Type)
 import Data.List.NonEmpty (NonEmpty)
-import Data.Monoid (Alt, Ap)
-import Data.Proxy (Proxy)
+import Data.Monoid (Alt (..), Ap)
+import Data.Proxy (Proxy (..))
 import Data.Tagged (Tagged)
 import Data.These
 import Data.Void
 import GHC.Conc (STM)
-import GHC.Generics (M1, Rec1, U1, type (:*:), type (:.:))
+import GHC.Generics (M1 (..), Rec1 (..), U1 (..), type (:*:) (..), type (:.:))
 import Text.ParserCombinators.ReadP (ReadP)
 import Text.ParserCombinators.ReadPrec (ReadPrec)
 import Prelude
@@ -138,15 +138,21 @@ deriving via FromApplicative (Either e) instance Semigroupal (->) (,) (,) (Eithe
 
 deriving via FromApplicative IO instance Semigroupal (->) (,) (,) IO
 
-deriving via FromApplicative (Product f g) instance (Applicative f, Applicative g) => Semigroupal (->) (,) (,) (Product f g)
+-- | A single variance-agnostic instance for 'Product': @combine@ is
+-- componentwise, delegating to each component's own 'Semigroupal'. This
+-- subsumes the former @FromApplicative@ \/ @FromAlternative@ \/ @FromSemialign@
+-- instances (product, coproduct, and these tensors) and additionally covers the
+-- contravariant components (Divisible \/ Decidable), which previously overlapped.
+instance (Semigroupal (->) t1 (,) f, Semigroupal (->) t1 (,) g) => Semigroupal (->) t1 (,) (Product f g) where
+  combine :: forall x x'. (Product f g x, Product f g x') -> Product f g (t1 x x')
+  combine (Pair fx gx, Pair fx' gx') =
+    Pair (combine @(->) @t1 @(,) (fx, fx')) (combine @(->) @t1 @(,) (gx, gx'))
 
 deriving via (FromApplicative ((,) x1)) instance (Monoid x1) => Semigroupal (->) (,) (,) ((,) x1)
 
 deriving via (FromApplicative ((,,) x1 x2)) instance (Monoid x1, Monoid x2) => Semigroupal (->) (,) (,) ((,,) x1 x2)
 
 deriving via (FromApplicative ((,,,) x1 x2 x3)) instance (Monoid x1, Monoid x2, Monoid x3) => Semigroupal (->) (,) (,) ((,,,) x1 x2 x3)
-
-deriving via FromApplicative (Proxy :: Type -> Type) instance Semigroupal (->) (,) (,) (Proxy :: Type -> Type)
 
 newtype FromAlternative f a = FromAlternative (f a)
   deriving newtype (Functor, Applicative, Alternative)
@@ -173,29 +179,49 @@ deriving via FromAlternative (WrappedMonad m) instance (MonadPlus m) => Semigrou
 
 deriving via FromAlternative (ArrowMonad a) instance (ArrowPlus a) => Semigroupal (->) Either (,) (ArrowMonad a)
 
-deriving via FromAlternative (Proxy :: Type -> Type) instance Semigroupal (->) Either (,) (Proxy :: Type -> Type)
-
-deriving via FromAlternative (U1 :: Type -> Type) instance Semigroupal (->) Either (,) (U1 :: Type -> Type)
-
 deriving via FromAlternative (WrappedArrow a b) instance (ArrowZero a, ArrowPlus a) => Semigroupal (->) Either (,) (WrappedArrow a b)
 
 deriving via FromAlternative (Kleisli m a) instance (Alternative m) => Semigroupal (->) Either (,) (Kleisli m a)
 
 deriving via FromAlternative (Ap f) instance (Alternative f) => Semigroupal (->) Either (,) (Ap f)
 
-deriving via FromAlternative (Alt f) instance (Alternative f) => Semigroupal (->) Either (,) (Alt f)
+-- | A transparent newtype wrapper inherits its component's 'Semigroupal' at
+-- every tensor and both variances, by coercion.
+deriving newtype instance (Semigroupal (->) t1 (,) f) => Semigroupal (->) t1 (,) (Rec1 f)
 
-deriving via FromAlternative (Rec1 f) instance (Alternative f) => Semigroupal (->) Either (,) (Rec1 f)
+deriving newtype instance (Semigroupal (->) t1 (,) f) => Semigroupal (->) t1 (,) (M1 i c f)
 
-deriving via FromAlternative (Product f g) instance (Alternative f, Alternative g) => Semigroupal (->) Either (,) (Product f g)
+deriving newtype instance (Semigroupal (->) t1 (,) f) => Semigroupal (->) t1 (,) (Alt f)
 
-deriving via FromAlternative (f :*: g) instance (Alternative f, Alternative g) => Semigroupal (->) Either (,) (f :*: g)
+deriving newtype instance (Semigroupal (->) t1 (,) f) => Semigroupal (->) t1 (,) (Reverse f)
+
+deriving newtype instance (Semigroupal (->) t1 (,) f) => Semigroupal (->) t1 (,) (Backwards f)
+
+-- | Componentwise, like 'Product': the generic product @f ':*:' g@ is
+-- 'Semigroupal' at any tensor its components share, both variances.
+instance (Semigroupal (->) t1 (,) f, Semigroupal (->) t1 (,) g) => Semigroupal (->) t1 (,) (f :*: g) where
+  combine :: forall x x'. ((f :*: g) x, (f :*: g) x') -> (f :*: g) (t1 x x')
+  combine (fx :*: gx, fx' :*: gx') =
+    combine @(->) @t1 @(,) (fx, fx') :*: combine @(->) @t1 @(,) (gx, gx')
+
+-- | Phantom (constant) functors are both covariant and contravariant at once;
+-- @combine@ ignores the parameter, so one instance serves every tensor and both
+-- variances. For 'Const' \/ 'Constant' it is the underlying 'Semigroup'.
+instance (Associative (->) t1) => Semigroupal (->) t1 (,) (Proxy :: Type -> Type) where
+  combine _ = Proxy
+
+instance (Associative (->) t1) => Semigroupal (->) t1 (,) (U1 :: Type -> Type) where
+  combine _ = U1
+
+instance (Semigroup c, Associative (->) t1) => Semigroupal (->) t1 (,) (Const c :: Type -> Type) where
+  combine (Const a, Const b) = Const (a <> b)
+
+instance (Semigroup c, Associative (->) t1) => Semigroupal (->) t1 (,) (Constant c :: Type -> Type) where
+  combine (Constant a, Constant b) = Constant (a <> b)
 
 deriving via FromAlternative (f `Compose` g) instance (Alternative f, Applicative g) => Semigroupal (->) Either (,) (f `Compose` g)
 
 deriving via FromAlternative (f :.: g) instance (Alternative f, Applicative g) => Semigroupal (->) Either (,) (f :.: g)
-
-deriving via FromAlternative (M1 i c f) instance (Alternative f) => Semigroupal (->) Either (,) (M1 i c f)
 
 newtype FromSemialign f a = FromSemialign (f a)
 #if MIN_VERSION_semialign(1,4,0)
@@ -218,11 +244,7 @@ deriving via FromSemialign Maybe instance Semigroupal (->) These (,) Maybe
 
 deriving via FromSemialign Identity instance Semigroupal (->) These (,) Identity
 
-deriving via FromSemialign (Proxy :: Type -> Type) instance Semigroupal (->) These (,) (Proxy :: Type -> Type)
-
 deriving via FromSemialign (Tagged b) instance Semigroupal (->) These (,) (Tagged b)
-
-deriving via FromSemialign (Product f g) instance (Semialign f, Semialign g) => Semigroupal (->) These (,) (Product f g)
 
 deriving via FromSemialign (f `Compose` g) instance (Semialign f, Semialign g) => Semigroupal (->) These (,) (f `Compose` g)
 
@@ -239,22 +261,9 @@ deriving via FromDivisible Comparison instance Semigroupal (->) (,) (,) Comparis
 
 deriving via FromDivisible Equivalence instance Semigroupal (->) (,) (,) Equivalence
 
-deriving via FromDivisible (U1 :: Type -> Type) instance Semigroupal (->) (,) (,) (U1 :: Type -> Type)
-
 deriving via FromDivisible (Op r) instance (Monoid r) => Semigroupal (->) (,) (,) (Op r)
 
--- deriving via FromDivisible (Proxy :: Type -> Type) instance Semigroupal (->) (,) (,) (Proxy :: Type -> Type)
 deriving via FromDivisible (MaybeT m) instance (Divisible m) => Semigroupal (->) (,) (,) (MaybeT m)
-
-deriving via FromDivisible (Rec1 m) instance (Divisible m) => Semigroupal (->) (,) (,) (Rec1 m)
-
-deriving via FromDivisible (Const m) instance (Monoid m) => Semigroupal (->) (,) (,) (Const m :: Type -> Type)
-
-deriving via FromDivisible (Alt f) instance (Divisible f) => Semigroupal (->) (,) (,) (Alt f)
-
-deriving via FromDivisible (Reverse f) instance (Divisible f) => Semigroupal (->) (,) (,) (Reverse f)
-
-deriving via FromDivisible (Constant m) instance (Monoid m) => Semigroupal (->) (,) (,) (Constant m :: Type -> Type)
 
 deriving via FromDivisible (WriterT w m) instance (Divisible m) => Semigroupal (->) (,) (,) (WriterT w m)
 
@@ -270,16 +279,9 @@ deriving via FromDivisible (IdentityT m) instance (Divisible m) => Semigroupal (
 
 deriving via FromDivisible (ExceptT e m) instance (Divisible m) => Semigroupal (->) (,) (,) (ExceptT e m)
 
-deriving via FromDivisible (Backwards f) instance (Divisible f) => Semigroupal (->) (,) (,) (Backwards f)
-
 deriving via FromDivisible (ComposeCF f g) instance (Divisible f, Applicative g) => Semigroupal (->) (,) (,) (ComposeCF f g)
 
 deriving via FromDivisible (ComposeFC f g) instance (Divisible g, Applicative f) => Semigroupal (->) (,) (,) (ComposeFC f g)
-
-deriving via FromDivisible (f :*: g) instance (Divisible f, Divisible g) => Semigroupal (->) (,) (,) (f :*: g)
-
--- deriving via FromDivisible (Product f g)           instance (Divisible f, Divisible g) => Semigroupal (->) (,) (,) (Product f g)
-deriving via FromDivisible (M1 i c f) instance (Divisible f) => Semigroupal (->) (,) (,) (M1 i c f)
 
 deriving via FromDivisible (f :.: g) instance (Applicative f, Divisible g) => Semigroupal (->) (,) (,) (f :.: g)
 
@@ -301,15 +303,9 @@ deriving via FromDecidable Comparison instance Semigroupal (->) Either (,) Compa
 
 deriving via FromDecidable Equivalence instance Semigroupal (->) Either (,) Equivalence
 
--- deriving via FromDecidable (U1 :: Type -> Type)    instance Semigroupal (->) Either (,) (U1 :: Type -> Type)
 deriving via FromDecidable (Op r) instance (Monoid r) => Semigroupal (->) Either (,) (Op r)
 
--- deriving via FromDecidable (Proxy :: Type -> Type) instance Semigroupal (->) Either (,) (Proxy :: Type -> Type)
 deriving via FromDecidable (MaybeT m) instance (Decidable m) => Semigroupal (->) Either (,) (MaybeT m)
-
--- deriving via FromDecidable (Rec1 m)                instance Decidable m => Semigroupal (->) Either (,) (Rec1 m)
--- deriving via FromDecidable (Alt f)                 instance Decidable f => Semigroupal (->) Either (,) (Alt f)
-deriving via FromDecidable (Reverse f) instance (Decidable f) => Semigroupal (->) Either (,) (Reverse f)
 
 deriving via FromDecidable (WriterT w m) instance (Decidable m) => Semigroupal (->) Either (,) (WriterT w m)
 
@@ -323,13 +319,8 @@ deriving via FromDecidable (ReaderT r m) instance (Decidable m) => Semigroupal (
 
 deriving via FromDecidable (IdentityT m) instance (Decidable m) => Semigroupal (->) Either (,) (IdentityT m)
 
-deriving via FromDecidable (Backwards f) instance (Decidable f) => Semigroupal (->) Either (,) (Backwards f)
-
 deriving via FromDecidable (ComposeFC f g) instance (Decidable g, Applicative f) => Semigroupal (->) Either (,) (ComposeFC f g)
 
--- deriving via FromDecidable (f :*: g)               instance (Decidable f, Decidable g) => Semigroupal (->) Either (,) (f :*: g)
--- deriving via FromDecidable (Product f g)           instance (Decidable f, Decidable g) => Semigroupal (->) Either (,) (Product f g)
--- deriving via FromDecidable (M1 i c f)              instance Decidable f => Semigroupal (->) Either (,) (M1 i c f)
 -- deriving via FromDecidable (f :.: g)               instance (Applicative f, Decidable g) => Semigroupal (->) Either (,) (f :.: g)
 -- deriving via FromDecidable (Compose f g)           instance (Applicative f, Decidable g) => Semigroupal (->) Either (,) (Compose f g)
 deriving via FromDecidable (RWST r w s m) instance (Decidable m) => Semigroupal (->) Either (,) (RWST r w s m)
@@ -414,7 +405,12 @@ deriving via FromApplicative (Either e) instance Unital (->) () () (Either e)
 
 deriving via FromApplicative IO instance Unital (->) () () IO
 
-deriving via FromApplicative (Product f g) instance (Applicative f, Applicative g) => Unital (->) () () (Product f g)
+-- | Componentwise 'introduce', delegating to each component's 'Unital'. Covers
+-- both the product unit @()@ and the coproduct unit @Void@, covariant and
+-- contravariant alike.
+instance (Unital (->) i1 () f, Unital (->) i1 () g) => Unital (->) i1 () (Product f g) where
+  introduce :: () -> Product f g i1
+  introduce () = Pair (introduce @(->) @i1 @() ()) (introduce @(->) @i1 @() ())
 
 deriving via (FromApplicative ((,) x1)) instance (Monoid x1) => Unital (->) () () ((,) x1)
 
@@ -444,29 +440,41 @@ deriving via FromAlternative (WrappedMonad m) instance (MonadPlus m) => Unital (
 
 deriving via FromAlternative (ArrowMonad a) instance (ArrowPlus a) => Unital (->) Void () (ArrowMonad a)
 
-deriving via FromAlternative (Proxy :: Type -> Type) instance Unital (->) Void () (Proxy :: Type -> Type)
-
-deriving via FromAlternative (U1 :: Type -> Type) instance Unital (->) Void () (U1 :: Type -> Type)
-
 deriving via FromAlternative (WrappedArrow a b) instance (ArrowZero a, ArrowPlus a) => Unital (->) Void () (WrappedArrow a b)
 
 deriving via FromAlternative (Kleisli m a) instance (Alternative m) => Unital (->) Void () (Kleisli m a)
 
 deriving via FromAlternative (Ap f) instance (Alternative f) => Unital (->) Void () (Ap f)
 
-deriving via FromAlternative (Alt f) instance (Alternative f) => Unital (->) Void () (Alt f)
+deriving newtype instance (Unital (->) i1 () f) => Unital (->) i1 () (Rec1 f)
 
-deriving via FromAlternative (Rec1 f) instance (Alternative f) => Unital (->) Void () (Rec1 f)
+deriving newtype instance (Unital (->) i1 () f) => Unital (->) i1 () (M1 i c f)
 
-deriving via FromAlternative (Product f g) instance (Alternative f, Alternative g) => Unital (->) Void () (Product f g)
+deriving newtype instance (Unital (->) i1 () f) => Unital (->) i1 () (Alt f)
 
-deriving via FromAlternative (f :*: g) instance (Alternative f, Alternative g) => Unital (->) Void () (f :*: g)
+deriving newtype instance (Unital (->) i1 () f) => Unital (->) i1 () (Reverse f)
+
+deriving newtype instance (Unital (->) i1 () f) => Unital (->) i1 () (Backwards f)
+
+instance (Unital (->) i1 () f, Unital (->) i1 () g) => Unital (->) i1 () (f :*: g) where
+  introduce :: () -> (f :*: g) i1
+  introduce () = introduce @(->) @i1 @() () :*: introduce @(->) @i1 @() ()
+
+instance Unital (->) i1 () (Proxy :: Type -> Type) where
+  introduce _ = Proxy
+
+instance Unital (->) i1 () (U1 :: Type -> Type) where
+  introduce _ = U1
+
+instance (Monoid c) => Unital (->) i1 () (Const c :: Type -> Type) where
+  introduce _ = Const mempty
+
+instance (Monoid c) => Unital (->) i1 () (Constant c :: Type -> Type) where
+  introduce _ = Constant mempty
 
 deriving via FromAlternative (f `Compose` g) instance (Alternative f, Applicative g) => Unital (->) Void () (f `Compose` g)
 
 deriving via FromAlternative (f :.: g) instance (Alternative f, Applicative g) => Unital (->) Void () (f :.: g)
-
-deriving via FromAlternative (M1 i c f) instance (Alternative f) => Unital (->) Void () (M1 i c f)
 
 newtype FromAlign f a = FromAlign (f a)
 #if MIN_VERSION_semialign(1,4,0)
@@ -483,11 +491,7 @@ instance (Align f) => Unital (->) Void () (FromAlign f) where
 
 -- deriving via FromAlign Maybe instance Unital (->) Void () Maybe
 
--- deriving via FromAlign (Proxy :: Type -> Type) instance Unital (->) Void () (Proxy :: Type -> Type)
-
 -- deriving via FromAlign ZipList instance Unital (->) Void () ZipList
-
--- deriving via FromAlign (Product f g) instance (Align f, Align g) => Unital (->) Void () (Product (FromAlign f) (FromAlign g))
 
 -- deriving via FromAlign (Compose f g) instance (Align f, Semialign g) => Unital (->) Void () (Compose f g)
 
@@ -501,22 +505,9 @@ deriving via FromDivisible Comparison instance Unital (->) () () Comparison
 
 deriving via FromDivisible Equivalence instance Unital (->) () () Equivalence
 
-deriving via FromDivisible (U1 :: Type -> Type) instance Unital (->) () () (U1 :: Type -> Type)
-
 deriving via FromDivisible (Op r) instance (Monoid r) => Unital (->) () () (Op r)
 
--- deriving via FromDivisible (Proxy :: Type -> Type) instance Unital (->) () () (Proxy :: Type -> Type)
 deriving via FromDivisible (MaybeT m) instance (Divisible m) => Unital (->) () () (MaybeT m)
-
-deriving via FromDivisible (Rec1 m) instance (Divisible m) => Unital (->) () () (Rec1 m)
-
-deriving via FromDivisible (Const m) instance (Monoid m) => Unital (->) () () (Const m :: Type -> Type)
-
-deriving via FromDivisible (Alt f) instance (Divisible f) => Unital (->) () () (Alt f)
-
-deriving via FromDivisible (Reverse f) instance (Divisible f) => Unital (->) () () (Reverse f)
-
-deriving via FromDivisible (Constant m) instance (Monoid m) => Unital (->) () () (Constant m :: Type -> Type)
 
 deriving via FromDivisible (WriterT w m) instance (Divisible m) => Unital (->) () () (WriterT w m)
 
@@ -532,16 +523,9 @@ deriving via FromDivisible (IdentityT m) instance (Divisible m) => Unital (->) (
 
 deriving via FromDivisible (ExceptT e m) instance (Divisible m) => Unital (->) () () (ExceptT e m)
 
-deriving via FromDivisible (Backwards f) instance (Divisible f) => Unital (->) () () (Backwards f)
-
 deriving via FromDivisible (ComposeCF f g) instance (Divisible f, Applicative g) => Unital (->) () () (ComposeCF f g)
 
 deriving via FromDivisible (ComposeFC f g) instance (Divisible g, Applicative f) => Unital (->) () () (ComposeFC f g)
-
-deriving via FromDivisible (f :*: g) instance (Divisible f, Divisible g) => Unital (->) () () (f :*: g)
-
--- deriving via FromDivisible (Product f g)           instance (Divisible f, Divisible g) => Unital (->) () () (Product f g)
-deriving via FromDivisible (M1 i c f) instance (Divisible f) => Unital (->) () () (M1 i c f)
 
 deriving via FromDivisible (f :.: g) instance (Applicative f, Divisible g) => Unital (->) () () (f :.: g)
 
@@ -560,15 +544,9 @@ deriving via FromDecidable Comparison instance Unital (->) Void () Comparison
 
 deriving via FromDecidable Equivalence instance Unital (->) Void () Equivalence
 
--- deriving via FromDecidable (U1 :: Type -> Type)    instance Unital (->) Void () (U1 :: Type -> Type)
 deriving via FromDecidable (Op r) instance (Monoid r) => Unital (->) Void () (Op r)
 
--- deriving via FromDecidable (Proxy :: Type -> Type) instance Unital (->) Void () (Proxy :: Type -> Type)
 deriving via FromDecidable (MaybeT m) instance (Decidable m) => Unital (->) Void () (MaybeT m)
-
--- deriving via FromDecidable (Rec1 m)                instance Decidable m => Unital (->) Void () (Rec1 m)
--- deriving via FromDecidable (Alt f)                 instance Decidable f => Unital (->) Void () (Alt f)
-deriving via FromDecidable (Reverse f) instance (Decidable f) => Unital (->) Void () (Reverse f)
 
 deriving via FromDecidable (WriterT w m) instance (Decidable m) => Unital (->) Void () (WriterT w m)
 
@@ -582,13 +560,8 @@ deriving via FromDecidable (ReaderT r m) instance (Decidable m) => Unital (->) V
 
 deriving via FromDecidable (IdentityT m) instance (Decidable m) => Unital (->) Void () (IdentityT m)
 
-deriving via FromDecidable (Backwards f) instance (Decidable f) => Unital (->) Void () (Backwards f)
-
 deriving via FromDecidable (ComposeFC f g) instance (Decidable g, Applicative f) => Unital (->) Void () (ComposeFC f g)
 
--- deriving via FromDecidable (f :*: g)               instance (Decidable f, Decidable g) => Unital (->) Void () (f :*: g)
--- deriving via FromDecidable (Product f g)           instance (Decidable f, Decidable g) => Unital (->) Void () (Product f g)
--- deriving via FromDecidable (M1 i c f)              instance Decidable f => Unital (->) Void () (M1 i c f)
 -- deriving via FromDecidable (f :.: g)               instance (Applicative f, Decidable g) => Unital (->) Void () (f :.: g)
 -- deriving via FromDecidable (Compose f g)           instance (Applicative f, Decidable g) => Unital (->) Void () (Compose f g)
 deriving via FromDecidable (RWST r w s m) instance (Decidable m) => Unital (->) Void () (RWST r w s m)
@@ -659,7 +632,7 @@ deriving via FromApplicative (Either e) instance Monoidal (->) (,) () (,) () (Ei
 
 deriving via FromApplicative IO instance Monoidal (->) (,) () (,) () IO
 
-deriving via FromApplicative (Product f g) instance (Applicative f, Applicative g) => Monoidal (->) (,) () (,) () (Product f g)
+instance (Semigroupal (->) t1 (,) f, Semigroupal (->) t1 (,) g, Unital (->) i1 () f, Unital (->) i1 () g, Tensor (->) t1 i1) => Monoidal (->) t1 i1 (,) () (Product f g)
 
 deriving via (FromApplicative ((,) x1)) instance (Monoid x1) => Monoidal (->) (,) () (,) () ((,) x1)
 
@@ -687,29 +660,35 @@ deriving via FromAlternative (WrappedMonad m) instance (MonadPlus m) => Monoidal
 
 deriving via FromAlternative (ArrowMonad a) instance (ArrowPlus a) => Monoidal (->) Either Void (,) () (ArrowMonad a)
 
-deriving via FromAlternative (Proxy :: Type -> Type) instance Monoidal (->) Either Void (,) () (Proxy :: Type -> Type)
-
-deriving via FromAlternative (U1 :: Type -> Type) instance Monoidal (->) Either Void (,) () (U1 :: Type -> Type)
-
 deriving via FromAlternative (WrappedArrow a b) instance (ArrowZero a, ArrowPlus a) => Monoidal (->) Either Void (,) () (WrappedArrow a b)
 
 deriving via FromAlternative (Kleisli m a) instance (Alternative m) => Monoidal (->) Either Void (,) () (Kleisli m a)
 
 deriving via FromAlternative (Ap f) instance (Alternative f) => Monoidal (->) Either Void (,) () (Ap f)
 
-deriving via FromAlternative (Alt f) instance (Alternative f) => Monoidal (->) Either Void (,) () (Alt f)
+instance (Semigroupal (->) t1 (,) f, Unital (->) i1 () f, Tensor (->) t1 i1) => Monoidal (->) t1 i1 (,) () (Rec1 f)
 
-deriving via FromAlternative (Rec1 f) instance (Alternative f) => Monoidal (->) Either Void (,) () (Rec1 f)
+instance (Semigroupal (->) t1 (,) f, Unital (->) i1 () f, Tensor (->) t1 i1) => Monoidal (->) t1 i1 (,) () (M1 i c f)
 
-deriving via FromAlternative (Product f g) instance (Alternative f, Alternative g) => Monoidal (->) Either Void (,) () (Product f g)
+instance (Semigroupal (->) t1 (,) f, Unital (->) i1 () f, Tensor (->) t1 i1) => Monoidal (->) t1 i1 (,) () (Alt f)
 
-deriving via FromAlternative (f :*: g) instance (Alternative f, Alternative g) => Monoidal (->) Either Void (,) () (f :*: g)
+instance (Semigroupal (->) t1 (,) f, Unital (->) i1 () f, Tensor (->) t1 i1) => Monoidal (->) t1 i1 (,) () (Reverse f)
+
+instance (Semigroupal (->) t1 (,) f, Unital (->) i1 () f, Tensor (->) t1 i1) => Monoidal (->) t1 i1 (,) () (Backwards f)
+
+instance (Semigroupal (->) t1 (,) f, Semigroupal (->) t1 (,) g, Unital (->) i1 () f, Unital (->) i1 () g, Tensor (->) t1 i1) => Monoidal (->) t1 i1 (,) () (f :*: g)
+
+instance (Tensor (->) t1 i1) => Monoidal (->) t1 i1 (,) () (Proxy :: Type -> Type)
+
+instance (Tensor (->) t1 i1) => Monoidal (->) t1 i1 (,) () (U1 :: Type -> Type)
+
+instance (Monoid c, Tensor (->) t1 i1) => Monoidal (->) t1 i1 (,) () (Const c :: Type -> Type)
+
+instance (Monoid c, Tensor (->) t1 i1) => Monoidal (->) t1 i1 (,) () (Constant c :: Type -> Type)
 
 deriving via FromAlternative (f `Compose` g) instance (Alternative f, Applicative g) => Monoidal (->) Either Void (,) () (f `Compose` g)
 
 deriving via FromAlternative (f :.: g) instance (Alternative f, Applicative g) => Monoidal (->) Either Void (,) () (f :.: g)
-
-deriving via FromAlternative (M1 i c f) instance (Alternative f) => Monoidal (->) Either Void (,) () (M1 i c f)
 
 deriving via FromDivisible Predicate instance Monoidal (->) (,) () (,) () Predicate
 
@@ -717,22 +696,9 @@ deriving via FromDivisible Comparison instance Monoidal (->) (,) () (,) () Compa
 
 deriving via FromDivisible Equivalence instance Monoidal (->) (,) () (,) () Equivalence
 
-deriving via FromDivisible (U1 :: Type -> Type) instance Monoidal (->) (,) () (,) () (U1 :: Type -> Type)
-
 deriving via FromDivisible (Op r) instance (Monoid r) => Monoidal (->) (,) () (,) () (Op r)
 
--- deriving via FromDivisible (Proxy :: Type -> Type) instance Monoidal (->) (,) () (,) () (Proxy :: Type -> Type)
 deriving via FromDivisible (MaybeT m) instance (Divisible m) => Monoidal (->) (,) () (,) () (MaybeT m)
-
-deriving via FromDivisible (Rec1 m) instance (Divisible m) => Monoidal (->) (,) () (,) () (Rec1 m)
-
-deriving via FromDivisible (Const m) instance (Monoid m) => Monoidal (->) (,) () (,) () (Const m :: Type -> Type)
-
-deriving via FromDivisible (Alt f) instance (Divisible f) => Monoidal (->) (,) () (,) () (Alt f)
-
-deriving via FromDivisible (Reverse f) instance (Divisible f) => Monoidal (->) (,) () (,) () (Reverse f)
-
-deriving via FromDivisible (Constant m) instance (Monoid m) => Monoidal (->) (,) () (,) () (Constant m :: Type -> Type)
 
 deriving via FromDivisible (WriterT w m) instance (Divisible m) => Monoidal (->) (,) () (,) () (WriterT w m)
 
@@ -748,16 +714,9 @@ deriving via FromDivisible (IdentityT m) instance (Divisible m) => Monoidal (->)
 
 deriving via FromDivisible (ExceptT e m) instance (Divisible m) => Monoidal (->) (,) () (,) () (ExceptT e m)
 
-deriving via FromDivisible (Backwards f) instance (Divisible f) => Monoidal (->) (,) () (,) () (Backwards f)
-
 deriving via FromDivisible (ComposeCF f g) instance (Divisible f, Applicative g) => Monoidal (->) (,) () (,) () (ComposeCF f g)
 
 deriving via FromDivisible (ComposeFC f g) instance (Divisible g, Applicative f) => Monoidal (->) (,) () (,) () (ComposeFC f g)
-
-deriving via FromDivisible (f :*: g) instance (Divisible f, Divisible g) => Monoidal (->) (,) () (,) () (f :*: g)
-
--- deriving via FromDivisible (Product f g)           instance (Divisible f, Divisible g) => Monoidal (->) (,) () (,) () (Product f g)
-deriving via FromDivisible (M1 i c f) instance (Divisible f) => Monoidal (->) (,) () (,) () (M1 i c f)
 
 deriving via FromDivisible (f :.: g) instance (Applicative f, Divisible g) => Monoidal (->) (,) () (,) () (f :.: g)
 
@@ -772,15 +731,9 @@ deriving via FromDecidable Comparison instance Monoidal (->) Either Void (,) () 
 
 deriving via FromDecidable Equivalence instance Monoidal (->) Either Void (,) () Equivalence
 
--- deriving via FromDecidable (U1 :: Type -> Type)    instance Monoidal (->) Either Void (,) () (U1 :: Type -> Type)
 deriving via FromDecidable (Op r) instance (Monoid r) => Monoidal (->) Either Void (,) () (Op r)
 
--- deriving via FromDecidable (Proxy :: Type -> Type) instance Monoidal (->) Either Void (,) () (Proxy :: Type -> Type)
 deriving via FromDecidable (MaybeT m) instance (Decidable m) => Monoidal (->) Either Void (,) () (MaybeT m)
-
--- deriving via FromDecidable (Rec1 m)                instance Decidable m => Monoidal (->) Either Void (,) () (Rec1 m)
--- deriving via FromDecidable (Alt f)                 instance Decidable f => Monoidal (->) Either Void (,) () (Alt f)
-deriving via FromDecidable (Reverse f) instance (Decidable f) => Monoidal (->) Either Void (,) () (Reverse f)
 
 deriving via FromDecidable (WriterT w m) instance (Decidable m) => Monoidal (->) Either Void (,) () (WriterT w m)
 
@@ -794,13 +747,8 @@ deriving via FromDecidable (ReaderT r m) instance (Decidable m) => Monoidal (->)
 
 deriving via FromDecidable (IdentityT m) instance (Decidable m) => Monoidal (->) Either Void (,) () (IdentityT m)
 
-deriving via FromDecidable (Backwards f) instance (Decidable f) => Monoidal (->) Either Void (,) () (Backwards f)
-
 deriving via FromDecidable (ComposeFC f g) instance (Decidable g, Applicative f) => Monoidal (->) Either Void (,) () (ComposeFC f g)
 
--- deriving via FromDecidable (f :*: g)               instance (Decidable f, Decidable g) => Monoidal (->) Either Void (,) () (f :*: g)
--- deriving via FromDecidable (Product f g)           instance (Decidable f, Decidable g) => Monoidal (->) Either Void (,) () (Product f g)
--- deriving via FromDecidable (M1 i c f)              instance Decidable f => Monoidal (->) Either Void (,) () (M1 i c f)
 -- deriving via FromDecidable (f :.: g)               instance (Applicative f, Decidable g) => Monoidal (->) Either Void (,) () (f :.: g)
 -- deriving via FromDecidable (Compose f g)           instance (Applicative f, Decidable g) => Monoidal (->) Either Void (,) () (Compose f g)
 deriving via FromDecidable (RWST r w s m) instance (Decidable m) => Monoidal (->) Either Void (,) () (RWST r w s m)

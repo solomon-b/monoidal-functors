@@ -275,12 +275,12 @@ infixr 9 |**|
 
 infixr 9 |*+|
 
-(|*+|) :: (Semigroupal (->) (,) Either  (,) p) => p a b -> p a' b' -> p (a, a') (Either b b')
+(|*+|) :: (Semigroupal (->) (,) Either (,) p) => p a b -> p a' b' -> p (a, a') (Either b b')
 (|*+|) = curry combine
 
 infixr 9 |*&|
 
-(|*&|) :: (Semigroupal (->) (,) These  (,) p) => p a b -> p a' b' -> p (a, a') (These b b')
+(|*&|) :: (Semigroupal (->) (,) These (,) p) => p a b -> p a' b' -> p (a, a') (These b b')
 (|*&|) = curry combine
 
 infixr 9 |++|
