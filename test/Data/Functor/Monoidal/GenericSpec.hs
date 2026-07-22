@@ -9,6 +9,7 @@ module Data.Functor.Monoidal.GenericSpec (tests) where
 
 --------------------------------------------------------------------------------
 
+import Control.Applicative (liftA2)
 import Data.Distributive (Distributive (..))
 import Data.Functor.Contravariant (Contravariant (..), Op (..), Predicate (..))
 import Data.Functor.Monoidal (Monoidal, Semigroupal (..), Unital (..))
