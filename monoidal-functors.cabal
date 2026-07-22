@@ -1,4 +1,4 @@
-cabal-version:       2.4
+cabal-version:       3.0
 name:                monoidal-functors
 category:            Control, Categories
 version:             0.2.3.0
@@ -97,7 +97,20 @@ library
   hs-source-dirs: src
 
   default-language: Haskell2010
-  
+
+--------------------------------------------------------------------------------
+
+library laws
+  import:            common-extensions
+  visibility:        public
+  hs-source-dirs:    laws
+  exposed-modules:   Data.Functor.Monoidal.Laws
+  build-depends:     base
+                   , monoidal-functors
+                   , hedgehog
+                   , hedgehog-classes
+  default-language:  Haskell2010
+
 --------------------------------------------------------------------------------
 
 executable co-log
@@ -127,3 +140,17 @@ test-suite generic-deriving
                    , monoidal-functors
                    , these
   default-language: Haskell2010
+
+--------------------------------------------------------------------------------
+
+test-suite laws-selftest
+  import:            common-extensions
+  type:              exitcode-stdio-1.0
+  hs-source-dirs:    laws-test
+  main-is:           Main.hs
+  build-depends:     base
+                   , monoidal-functors
+                   , monoidal-functors:laws
+                   , hedgehog
+                   , hedgehog-classes
+  default-language:  Haskell2010
