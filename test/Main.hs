@@ -19,6 +19,7 @@
 
 module Main (main) where
 
+import Control.Applicative (liftA2)
 import Control.Category.Tensor (Associative (..), GBifunctor (..), Iso (..), Tensor (unitl, unitr))
 import Control.Monad (unless)
 import Data.Distributive (Distributive (..))
