@@ -1,4 +1,4 @@
-cabal-version:       2.4
+cabal-version:       3.0
 name:                monoidal-functors
 category:            Control, Categories
 version:             0.2.3.0
@@ -12,13 +12,14 @@ homepage:            http://github.com/solomon-b/monoidal-functors
 build-type:          Simple
 extra-source-files:  CHANGELOG.md
 description:         A typeclass hierarchy for monoidal functors.
-tested-with:   GHC == 9.0.2
-             , GHC == 9.2.8
-             , GHC == 9.4.8
-             , GHC == 9.6.7
-             , GHC == 9.8.4
-             , GHC == 9.10.3
-             , GHC == 9.12.4
+tested-with:
+    GHC == 9.0.2,
+    GHC == 9.2.8,
+    GHC == 9.4.8,
+    GHC == 9.6.7,
+    GHC == 9.8.4,
+    GHC == 9.10.3,
+    GHC == 9.12.4,
 source-repository head
   type:     git
   location: https://github.com/solomon-b/monoidal-functors
@@ -97,33 +98,54 @@ library
   hs-source-dirs: src
 
   default-language: Haskell2010
-  
+
+--------------------------------------------------------------------------------
+
+library laws
+  import:            common-extensions
+  visibility:        public
+  hs-source-dirs:    laws
+  exposed-modules:   Data.Functor.Monoidal.Laws
+  build-depends:
+    base,
+    monoidal-functors,
+    hedgehog,
+    hedgehog-classes,
+  default-language:  Haskell2010
+
 --------------------------------------------------------------------------------
 
 executable co-log
   import: common-extensions
   hs-source-dirs:    examples/co-log
   main-is:           Main.hs
-  build-depends:     base
-                   , bifunctors
-                   , contravariant
-                   , distributive
-                   , monoidal-functors
-                   , mtl
+  build-depends:
+    base,
+    bifunctors,
+    contravariant,
+    distributive,
+    monoidal-functors,
+    mtl,
   default-language: Haskell2010
 
 --------------------------------------------------------------------------------
 
-test-suite generic-deriving
+test-suite spec
+  import:            common-extensions
   type:              exitcode-stdio-1.0
   hs-source-dirs:    test
   main-is:           Main.hs
-  build-depends:     base
-                   , contravariant
-                   , distributive
-                   , hedgehog
-                   , kind-generics
-                   , kind-generics-th
-                   , monoidal-functors
-                   , these
+  other-modules:     Data.Functor.Monoidal.GenericSpec
+                     Data.Functor.Monoidal.LawsSpec
+  build-depends:
+    base,
+    contravariant,
+    distributive,
+    hedgehog,
+    hedgehog-classes,
+    kind-generics,
+    kind-generics-th,
+    monoidal-functors,
+    monoidal-functors:laws,
+    these,
   default-language: Haskell2010

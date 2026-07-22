@@ -52,7 +52,7 @@ jobs:
             ${{ runner.os }}-${{ matrix.ghc }}-      
 
       - name: Build
-        run: cabal build
+        run: cabal build all
 
       - name: Test
         run: cabal test all
