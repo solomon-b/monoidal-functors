@@ -26,27 +26,30 @@ where
 
 --------------------------------------------------------------------------------
 
-import Control.Applicative (Alternative (..), Applicative (..), Const, pure, (<$>))
+import Control.Applicative (Alternative (..), Applicative (..), pure, (<$>))
 import Control.Arrow (Kleisli (..))
 import Control.Category (Category (..))
 import Control.Category.Cartesian (Cocartesian (..))
-import Control.Category.Tensor (Associative, Iso (..), Tensor (..))
+import Control.Category.Tensor (Associative, Iso (..), Tensor (..), gbimap)
 import Control.Monad (Functor (..), Monad)
 import Data.Biapplicative (Biapplicative (..), Bifunctor (..))
-import Data.Bifunctor.Biap (Biap)
-import Data.Bifunctor.Biff (Biff)
-import Data.Bifunctor.Clown (Clown)
-import Data.Bifunctor.Flip (Flip)
+import Data.Bifunctor.Biap (Biap (..))
+import Data.Bifunctor.Biff (Biff (..))
+import Data.Bifunctor.Clown (Clown (..))
+import Data.Bifunctor.Flip (Flip (..))
 import Data.Bifunctor.Joker (Joker (..))
-import Data.Bifunctor.Product (Product)
-import Data.Bifunctor.Tannen (Tannen)
-import Data.Bifunctor.Wrapped (WrappedBifunctor)
+import Data.Functor.Monoidal qualified as F
+import Data.Bifunctor.Product (Product (..))
+import Data.Bifunctor.Tannen (Tannen (..))
+import Data.Bifunctor.Wrapped (WrappedBifunctor (..))
 import Data.Either (Either, either)
 import Data.Function (const, ($))
+import Data.Functor.Const (Const (..))
+import Data.Functor.Contravariant (Op (..))
 import Data.Profunctor (Forget (..), Profunctor (..), Star (..), Strong (..))
-import Data.Semigroup (Arg)
+import Data.Semigroup (Arg (..))
 import Data.Semigroupoid (Semigroupoid (..))
-import Data.Tagged (Tagged)
+import Data.Tagged (Tagged (..))
 import Data.These (These (..), these)
 import Data.Tuple (fst, snd, uncurry)
 import Data.Void (Void, absurd)
@@ -99,6 +102,151 @@ instance (Biapplicative p) => Semigroupal (->) (,) (,) (,) (FromBiapplicative p)
   combine = uncurry $ biliftA2 (,) (,)
 
 deriving via FromBiapplicative (,) instance Semigroupal (->) (,) (,) (,) (,)
+
+-- Colax (Op) splits. The split @f (t1 x x') (t2 y y') -> to (f x y) (f x' y')@,
+-- dual to the covariant @combine@.
+
+-- | The product transpose, inverse to the covariant @(,)@ combine.
+instance Semigroupal Op (,) (,) (,) (,) where
+  combine :: Op ((x, y), (x', y')) ((x, x'), (y, y'))
+  combine = Op (\((x, x'), (y, y')) -> ((x, y), (x', y')))
+
+-- | The coproduct rearrangement, inverse to the covariant @Either@ combine.
+instance Semigroupal Op Either Either Either Either where
+  combine :: Op (Either (Either x y) (Either x' y')) (Either (Either x x') (Either y y'))
+  combine = Op $ \case
+    Left (Left x) -> Left (Left x)
+    Left (Right x') -> Right (Left x')
+    Right (Left y) -> Left (Right y)
+    Right (Right y') -> Right (Right y')
+
+-- | Tuples transpose the parameter pairs and duplicate the leading @Monoid@ tags.
+-- The split needs no @Monoid@ (it duplicates rather than combines).
+instance Semigroupal Op (,) (,) (,) ((,,) x) where
+  combine :: Op ((x, a, b), (x, a', b')) (x, (a, a'), (b, b'))
+  combine = Op (\(x, (a, a'), (b, b')) -> ((x, a, b), (x, a', b')))
+
+instance Semigroupal Op (,) (,) (,) ((,,,) x y) where
+  combine :: Op ((x, y, a, b), (x, y, a', b')) (x, y, (a, a'), (b, b'))
+  combine = Op (\(x, y, (a, a'), (b, b')) -> ((x, y, a, b), (x, y, a', b')))
+
+instance Semigroupal Op (,) (,) (,) ((,,,,) x y z) where
+  combine :: Op ((x, y, z, a, b), (x, y, z, a', b')) (x, y, z, (a, a'), (b, b'))
+  combine = Op (\(x, y, z, (a, a'), (b, b')) -> ((x, y, z, a, b), (x, y, z, a', b')))
+
+instance Semigroupal Op (,) (,) (,) ((,,,,,) x y z w) where
+  combine :: Op ((x, y, z, w, a, b), (x, y, z, w, a', b')) (x, y, z, w, (a, a'), (b, b'))
+  combine = Op (\(x, y, z, w, (a, a'), (b, b')) -> ((x, y, z, w, a, b), (x, y, z, w, a', b')))
+
+instance Semigroupal Op (,) (,) (,) ((,,,,,,) x y z w v) where
+  combine :: Op ((x, y, z, w, v, a, b), (x, y, z, w, v, a', b')) (x, y, z, w, v, (a, a'), (b, b'))
+  combine = Op (\(x, y, z, w, v, (a, a'), (b, b')) -> ((x, y, z, w, v, a, b), (x, y, z, w, v, a', b')))
+
+-- | 'Arg' is a pair with a key-only 'Eq'. Its split transposes like a tuple.
+instance Semigroupal Op (,) (,) (,) Arg where
+  combine :: Op (Arg a b, Arg a' b') (Arg (a, a') (b, b'))
+  combine = Op (\(Arg (a, a') (b, b')) -> (Arg a b, Arg a' b'))
+
+-- | Phantom in one parameter, so the split projects the other and discards the
+-- phantom nesting. 'Const' carries its content in the first parameter, 'Tagged'
+-- in the second.
+instance Semigroupal Op (,) (,) (,) Const where
+  combine :: Op (Const a b, Const a' b') (Const (a, a') (b, b'))
+  combine = Op (\(Const (a, a')) -> (Const a, Const a'))
+
+instance Semigroupal Op (,) (,) (,) Tagged where
+  combine :: Op (Tagged a b, Tagged a' b') (Tagged (a, a') (b, b'))
+  combine = Op (\(Tagged (b, b')) -> (Tagged b, Tagged b'))
+
+-- | Componentwise, at the product split. Each component splits and the results
+-- transpose into a pair of products. @Associative@ \/ @Bifunctor@ on the tensors
+-- are the 'Semigroupal' superclasses, listed so GHC can use @combine@ here.
+instance
+  ( Semigroupal Op t1 t2 (,) f,
+    Semigroupal Op t1 t2 (,) g,
+    Associative (->) t1,
+    Associative (->) t2,
+    Bifunctor t1,
+    Bifunctor t2
+  ) =>
+  Semigroupal Op t1 t2 (,) (Product f g)
+  where
+  combine :: Op (Product f g a b, Product f g a' b') (Product f g (t1 a a') (t2 b b'))
+  combine = Op $ \(Pair fab gab) ->
+    let (fa, fa') = getOp (combine @Op @t1 @t2 @(,)) fab
+        (ga, ga') = getOp (combine @Op @t1 @t2 @(,)) gab
+     in (Pair fa ga, Pair fa' ga')
+
+-- | 'Joker' and 'Clown' carry a functor on one parameter and are phantom in the
+-- other, so their split delegates to the functor colax split of
+-- "Data.Functor.Monoidal". 'Joker' acts on the second parameter, 'Clown' on the
+-- first.
+instance (F.Semigroupal Op t2 to f, Associative (->) t1, Bifunctor to) => Semigroupal Op t1 t2 to (Joker f) where
+  combine :: Op (to (Joker f a b) (Joker f a' b')) (Joker f (t1 a a') (t2 b b'))
+  combine = Op $ \(Joker fbb') -> gbimap Joker Joker (getOp (F.combine @Op @t2 @to) fbb')
+
+instance (F.Semigroupal Op t1 to f, Associative (->) t2, Bifunctor to) => Semigroupal Op t1 t2 to (Clown f) where
+  combine :: Op (to (Clown f a b) (Clown f a' b')) (Clown f (t1 a a') (t2 b b'))
+  combine = Op $ \(Clown faa') -> gbimap Clown Clown (getOp (F.combine @Op @t1 @to) faa')
+
+-- | 'Forget' is a function out of its first parameter, phantom in the second.
+-- The split is the co-pairing, inverse to the covariant @Forget@ @combine@
+-- (@either@). The generic colax law cannot exercise it (the split consumes a
+-- profunctor at structured contravariant-argument types, which the rank-2 @Gen@
+-- interface cannot generate input-dependently), so it is covered by ad-hoc tests
+-- at fixed 'Either' types in the test suite (both inverse laws, coassociativity,
+-- and conaturality).
+instance Semigroupal Op Either Either (,) (Forget (f r)) where
+  combine :: Op (Forget (f r) x y, Forget (f r) x' y') (Forget (f r) (Either x x') (Either y y'))
+  combine = Op (\(Forget h) -> (Forget (h . Left), Forget (h . Right)))
+
+-- NOTE: The function-like bifunctors @('->')@, @'Star' f@, and @'Kleisli' f@ have
+-- no lawful colax dual. Their split would have to turn one function out of a
+-- combined input into two functions out of the parts, which needs projections or
+-- base points that do not exist naturally. Only 'Forget' splits, because its
+-- codomain @f r@ does not depend on the (contravariant) argument.
+
+-- | Transparent newtype wrappers delegate to the wrapped bifunctor's split.
+instance (Semigroupal Op t1 t2 to p, Associative (->) t1, Associative (->) t2, Bifunctor to) => Semigroupal Op t1 t2 to (Biap p) where
+  combine :: Op (to (Biap p a b) (Biap p a' b')) (Biap p (t1 a a') (t2 b b'))
+  combine = Op $ \(Biap pv) -> gbimap Biap Biap (getOp (combine @Op @t1 @t2 @to) pv)
+
+instance (Semigroupal Op t1 t2 to p, Associative (->) t1, Associative (->) t2, Bifunctor to) => Semigroupal Op t1 t2 to (WrappedBifunctor p) where
+  combine :: Op (to (WrappedBifunctor p a b) (WrappedBifunctor p a' b')) (WrappedBifunctor p (t1 a a') (t2 b b'))
+  combine = Op $ \(WrapBifunctor pv) -> gbimap WrapBifunctor WrapBifunctor (getOp (combine @Op @t1 @t2 @to) pv)
+
+-- | 'Flip' swaps the parameters, so its split is the wrapped bifunctor's split at
+-- the swapped tensors.
+instance (Semigroupal Op t2 t1 to p, Associative (->) t1, Associative (->) t2, Bifunctor to) => Semigroupal Op t1 t2 to (Flip p) where
+  combine :: Op (to (Flip p a b) (Flip p a' b')) (Flip p (t1 a a') (t2 b b'))
+  combine = Op $ \(Flip pv) -> gbimap Flip Flip (getOp (combine @Op @t2 @t1 @to) pv)
+
+-- | 'Tannen' wraps a bifunctor in a functor. Map the bifunctor split under the
+-- functor, then use the functor colax split to pull the tensor out.
+instance (F.Semigroupal Op to to f, Semigroupal Op t1 t2 to p, Functor f, Associative (->) t1, Associative (->) t2, Bifunctor to) => Semigroupal Op t1 t2 to (Tannen f p) where
+  combine :: Op (to (Tannen f p a b) (Tannen f p a' b')) (Tannen f p (t1 a a') (t2 b b'))
+  combine = Op $ \(Tannen fp) -> gbimap Tannen Tannen (getOp (F.combine @Op @to @to) (fmap (getOp (combine @Op @t1 @t2 @to)) fp))
+
+-- | 'Biff' applies a functor to each parameter before the bifunctor. Each
+-- parameter's functor splits into the codomain tensor @to@, then the bifunctor
+-- splits at @Op to to to@. Fixing the intermediate tensors to @to@ keeps them
+-- determined by the instance head.
+instance
+  ( F.Semigroupal Op t1 to f,
+    F.Semigroupal Op t2 to g,
+    Semigroupal Op to to to p,
+    Functor f,
+    Functor g,
+    Bifunctor p,
+    Associative (->) t1,
+    Associative (->) t2,
+    Bifunctor to
+  ) =>
+  Semigroupal Op t1 t2 to (Biff p f g)
+  where
+  combine :: Op (to (Biff p f g a b) (Biff p f g a' b')) (Biff p f g (t1 a a') (t2 b b'))
+  combine = Op $ \(Biff pv) ->
+    gbimap Biff Biff (getOp (combine @Op @to @to @to) (bimap (getOp (F.combine @Op @t1 @to)) (getOp (F.combine @Op @t2 @to)) pv))
 
 deriving via FromBiapplicative ((,,) x) instance (Monoid x) => Semigroupal (->) (,) (,) (,) ((,,) x)
 

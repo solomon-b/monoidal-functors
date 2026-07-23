@@ -148,6 +148,7 @@ test-suite spec
                      Data.Functor.Monoidal.LawsSpec
   build-depends:
     base,
+    bifunctors,
     contravariant,
     distributive,
     hedgehog,
@@ -157,6 +158,7 @@ test-suite spec
     monoidal-functors,
     monoidal-functors:laws,
     profunctors,
+    tagged,
     these,
     transformers,
   default-language: Haskell2010
