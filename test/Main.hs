@@ -5,6 +5,7 @@ module Main (main) where
 import Control.Category.CartesianSpec qualified as CartesianSpec
 import Control.Category.TensorSpec qualified as TensorSpec
 import Control.Monad (unless)
+import Data.Bifunctor.Monoidal.LawsSpec qualified as BifunctorLawsSpec
 import Data.Functor.Monoidal.GenericSpec qualified as GenericSpec
 import Data.Functor.Monoidal.LawsSpec qualified as LawsSpec
 import System.Exit (exitFailure)
@@ -18,8 +19,10 @@ main = do
   tensor <- TensorSpec.tests
   putStrLn "=== Control.Category.Cartesian laws ==="
   cartesian <- CartesianSpec.tests
+  putStrLn "=== bifunctor monoidal laws ==="
+  bifunctor <- BifunctorLawsSpec.tests
   putStrLn "=== generic deriving ==="
   generic <- GenericSpec.tests
   putStrLn "=== laws sublibrary self-test ==="
   laws <- LawsSpec.tests
-  unless (tensor && cartesian && generic && laws) exitFailure
+  unless (tensor && cartesian && bifunctor && generic && laws) exitFailure
