@@ -138,11 +138,11 @@ deriving via FromApplicative (Either e) instance Semigroupal (->) (,) (,) (Eithe
 
 deriving via FromApplicative IO instance Semigroupal (->) (,) (,) IO
 
--- | A single variance-agnostic instance for 'Product': @combine@ is
--- componentwise, delegating to each component's own 'Semigroupal'. This
--- subsumes the former @FromApplicative@ \/ @FromAlternative@ \/ @FromSemialign@
--- instances (product, coproduct, and these tensors) and additionally covers the
--- contravariant components (Divisible \/ Decidable), which previously overlapped.
+-- | A single variance-agnostic 'Product' instance. @combine@ is componentwise,
+-- delegating to each component's own 'Semigroupal'. It subsumes the former
+-- @FromApplicative@ \/ @FromAlternative@ \/ @FromSemialign@ instances (product,
+-- coproduct, and these tensors) and covers the contravariant components
+-- (Divisible \/ Decidable), which previously overlapped.
 instance (Semigroupal (->) t1 (,) f, Semigroupal (->) t1 (,) g) => Semigroupal (->) t1 (,) (Product f g) where
   combine :: forall x x'. (Product f g x, Product f g x') -> Product f g (t1 x x')
   combine (Pair fx gx, Pair fx' gx') =
@@ -197,14 +197,14 @@ deriving newtype instance (Semigroupal (->) t1 (,) f) => Semigroupal (->) t1 (,)
 
 deriving newtype instance (Semigroupal (->) t1 (,) f) => Semigroupal (->) t1 (,) (Backwards f)
 
--- | Componentwise, like 'Product': the generic product @f ':*:' g@ is
+-- | Componentwise, like 'Product'. The generic product @f ':*:' g@ is
 -- 'Semigroupal' at any tensor its components share, both variances.
 instance (Semigroupal (->) t1 (,) f, Semigroupal (->) t1 (,) g) => Semigroupal (->) t1 (,) (f :*: g) where
   combine :: forall x x'. ((f :*: g) x, (f :*: g) x') -> (f :*: g) (t1 x x')
   combine (fx :*: gx, fx' :*: gx') =
     combine @(->) @t1 @(,) (fx, fx') :*: combine @(->) @t1 @(,) (gx, gx')
 
--- | Phantom (constant) functors are both covariant and contravariant at once;
+-- | Phantom (constant) functors are both covariant and contravariant at once.
 -- @combine@ ignores the parameter, so one instance serves every tensor and both
 -- variances. For 'Const' \/ 'Constant' it is the underlying 'Semigroup'.
 instance (Associative (->) t1) => Semigroupal (->) t1 (,) (Proxy :: Type -> Type) where

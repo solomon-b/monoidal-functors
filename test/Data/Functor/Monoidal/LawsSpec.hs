@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Self-test: run the exported 'Laws' against known-good library instances,
--- both covariant ('Maybe', @[]@) and contravariant ('Predicate'), so the
--- sublibrary's law statements are exercised end-to-end. This includes the
--- variance-agnostic 'Data.Functor.Product.Product' instance, law-checked at
--- /both/ variances from the single delegating instance: @Product Maybe []@
--- covariantly and @Product Predicate Predicate@ contravariantly.
+-- | Run the exported 'Laws' against known-good library instances, both
+-- covariant ('Maybe', @[]@) and contravariant ('Predicate'). This exercises the
+-- sublibrary's law statements end-to-end. It includes the variance-agnostic
+-- 'Data.Functor.Product.Product' instance, law-checked at both variances from
+-- the single delegating instance. @Product Maybe []@ is covariant and @Product
+-- Predicate Predicate@ is contravariant.
 module Data.Functor.Monoidal.LawsSpec (tests) where
 
 --------------------------------------------------------------------------------
@@ -13,6 +13,7 @@ module Data.Functor.Monoidal.LawsSpec (tests) where
 import Data.Functor.Const (Const (..))
 import Data.Functor.Contravariant (Op (..), Predicate (..))
 import Data.Functor.Monoidal (Semigroupal (..))
+import Data.Functor.Identity (Identity (..))
 import Data.Functor.Monoidal.Laws
   ( contravariantMonoidalLaws,
     monoidalLaws,
@@ -26,6 +27,7 @@ import Data.Functor.Product qualified as Product
 import Data.Functor.Reverse (Reverse (..))
 import Data.Monoid (Sum (..))
 import Data.String (fromString)
+import Data.These (These (..))
 import Data.Void (Void)
 import GHC.Generics ((:*:) (..))
 import Hedgehog (Gen, Group (..), Property, PropertyName, checkSequential)
@@ -47,7 +49,7 @@ genMaybe = Gen.maybe
 genList :: Gen a -> Gen [a]
 genList = Gen.list (Range.linear 0 4)
 
--- Contravariant witness: 'Predicate' is Divisible (at @(,)@) and Decidable (at
+-- Contravariant witness. 'Predicate' is Divisible (at @(,)@) and Decidable (at
 -- @Either@). It has no 'Eq' \/ 'Show', so it is observed by running it.
 
 genPredicate :: Gen (Predicate Int)
@@ -75,9 +77,19 @@ instance Semigroupal Op (,) (,) Pair where
 genPairF :: Gen a -> Gen (Pair a)
 genPairF g = Pair <$> g <*> g
 
--- Product witnesses: the single variance-agnostic 'Product' instance, exercised
--- at both variances. Covariant when its components are ('Maybe', @[]@), compared
--- with 'Eq'; contravariant when they are ('Predicate'), observed through @obs@.
+-- Op witnesses at the other splits. @Semigroupal Op These (,) Maybe@ (the These
+-- split, over 'genMaybe') and @Semigroupal Op Either Either Identity@.
+
+genThese :: Gen a -> Gen b -> Gen (These a b)
+genThese ga gb = Gen.choice [This <$> ga, That <$> gb, These <$> ga <*> gb]
+
+genIdentity :: Gen a -> Gen (Identity a)
+genIdentity = fmap Identity
+
+-- Product witnesses. The single variance-agnostic 'Product' instance, exercised
+-- at both variances. It is covariant when its components are ('Maybe', @[]@),
+-- compared with 'Eq'. It is contravariant when they are ('Predicate'), observed
+-- through @obs@.
 
 genProductCov :: Gen a -> Gen (Product Maybe [] a)
 genProductCov g = Product.Pair <$> genMaybe g <*> genList g
@@ -99,7 +111,7 @@ genGenProdCon = (:*:) <$> genPredicate <*> genPredicate
 obsGenProdCon :: (Predicate :*: Predicate) a -> a -> (Bool, Bool)
 obsGenProdCon (p :*: q) a = (obsPredicate p a, obsPredicate q a)
 
--- Phantom 'Const': one instance for every tensor and both variances, combine is
+-- Phantom 'Const'. One instance for every tensor and both variances. Combine is
 -- the underlying 'Semigroup'. Compared with 'Eq'.
 
 genConst :: Gen a -> Gen (Const (Sum Int) a)
@@ -136,7 +148,7 @@ tests = do
             labeled "Maybe Either" (monoidalLaws @Either @Void genMaybe),
             labeled "List Either" (semigroupalLaws @Either genList),
             labeled "List (,)" (unitalLaws @(,) @() genList),
-            -- Product, covariant components: one delegating instance, both tensors.
+            -- Product with covariant components. One delegating instance, both tensors.
             labeled "Product (,)" (monoidalLaws @(,) @() genProductCov),
             labeled "Product Either" (monoidalLaws @Either @Void genProductCov),
             -- Generic product ':*:', phantom 'Const', and transparent wrapper 'Reverse'.
@@ -153,15 +165,18 @@ tests = do
           [ -- Contravariant.
             labeled "Predicate (,)" (contravariantMonoidalLaws @(,) @() genPredicate genPairT obsPredicate),
             labeled "Predicate Either" (contravariantMonoidalLaws @Either @Void genPredicate genEitherT obsPredicate),
-            -- Product, contravariant components: the same instance, other variance.
+            -- Product with contravariant components. The same instance, other variance.
             labeled "Product (,)" (contravariantMonoidalLaws @(,) @() genProductCon genPairT obsProductCon),
             labeled "Product Either" (contravariantMonoidalLaws @Either @Void genProductCon genEitherT obsProductCon),
             -- Generic product ':*:' and transparent wrapper 'Reverse', contravariant.
             labeled ":*: (,)" (contravariantMonoidalLaws @(,) @() genGenProdCon genPairT obsGenProdCon),
             labeled ":*: Either" (contravariantMonoidalLaws @Either @Void genGenProdCon genEitherT obsGenProdCon),
             labeled "Reverse (,)" (contravariantMonoidalLaws @(,) @() genReverseCon genPairT obsReverseCon),
-            -- Op (comonoidal) split.
-            labeled "Pair" (opSemigroupalLaws genPairF),
+            -- Op split, general in both tensors. '(,)' unzip (Pair), These unalign
+            -- (Maybe), Either coproduct split (Identity).
+            labeled "Pair (,)" (opSemigroupalLaws @(,) @(,) genPairF genPairT),
+            labeled "Maybe These" (opSemigroupalLaws @These @(,) genMaybe genThese),
+            labeled "Identity Either" (opSemigroupalLaws @Either @Either genIdentity genEitherT),
             labeled "Pair" (representableSplitLaws genPairF)
           ]
   pure (and [cov, con])

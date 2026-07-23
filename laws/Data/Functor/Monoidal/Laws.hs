@@ -10,23 +10,26 @@
 -- > main :: IO Bool
 -- > main = lawsCheck (monoidalLaws @(,) @() genMyFunctor)
 --
--- Each law is stated at category @(->)@ over the product domain tensor @(,)@,
--- general in the codomain tensor @t1@ (and, for the unit laws, its unit @i1@),
--- so one function covers whichever tensor an instance uses — @(,)@ (Applicative
--- \/ Divisible), @Either@ (Alternative \/ Decidable), or @These@ (Semialign).
+-- The 'Semigroupal' associativity and naturality laws are stated once, point-free
+-- and parametric in the category @cat@ ('assocSquare', 'natSquare'). At
+-- @cat = (->)@ they give the covariant laws, at @cat = 'Op'@ the colax (split)
+-- laws. 'checkCov' and 'checkOp' run the two directions.
 --
--- Both variances and both directions are supported. The 'semigroupalLaws' \/
--- 'unitalLaws' \/ 'monoidalLaws' family is for /covariant/ functors ('Functor'),
--- which are compared directly with 'Eq'. The @contravariant*@ family is for
--- /contravariant/ functors ('Data.Functor.Contravariant.Contravariant', e.g.
--- @Divisible@ \/ @Decidable@), which generally have no 'Eq' \/ 'Show'; those
--- laws are checked extensionally by observing the two sides on a generated
--- input through a caller-supplied @obs :: forall a. f a -> a -> r@. Finally
--- 'opSemigroupalLaws' covers the @'Op'@ (comonoidal) direction — the product
--- split @f (a, b) -> (f a, f b)@.
+-- 'semigroupalLaws' \/ 'unitalLaws' \/ 'monoidalLaws' cover the covariant family,
+-- general in the codomain tensor @t1@ (and, for units, its unit @i1@). One
+-- function handles @(,)@ (Applicative \/ Divisible), @Either@ (Alternative \/
+-- Decidable), and @These@ (Semialign). 'opSemigroupalLaws' covers the @'Op'@
+-- family, general in @t1@ and the split tensor @t0@. It handles the unzip
+-- @f (a, b) -> (f a, f b)@ (@t0 = (,)@), the @Unalign@ split
+-- @f ('Data.These.These' a b) -> (f a, f b)@, and
+-- @f ('Either' a b) -> 'Either' (f a) (f b)@ (@t0 = 'Either'@).
 --
--- The rank-2 generator @forall x. 'Gen' x -> 'Gen' (f x)@ lets a covariant law
--- instantiate @f@ at the several element types the coherence square needs.
+-- The @contravariant*@ family covers contravariant functors (@Divisible@ \/
+-- @Decidable@), which lack 'Eq' \/ 'Show'. Each is observed on a generated input
+-- through a caller-supplied @obs :: forall a. f a -> a -> r@.
+--
+-- The rank-2 generator @forall x. 'Gen' x -> 'Gen' (f x)@ instantiates @f@ at the
+-- element types each square needs.
 module Data.Functor.Monoidal.Laws
   ( -- * Covariant functors
     semigroupalLaws,
@@ -46,14 +49,15 @@ where
 
 --------------------------------------------------------------------------------
 
-import Control.Category.Tensor (Associative (..), GBifunctor (gbimap), Iso (..), Tensor (..))
+import Control.Category ((.))
+import Control.Category.Tensor (Associative (..), GBifunctor (gbimap), Iso (..), Tensor (..), glmap, grmap)
 import Data.Functor.Contravariant (Contravariant (..), Op (..))
 import Data.Functor.Monoidal (Monoidal, Semigroupal (..), Unital (..))
 import Hedgehog (Gen, Property, forAll, forAllWith, property, (===))
 import Hedgehog.Classes (Laws (..))
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
-import Prelude
+import Prelude hiding ((.))
 
 --------------------------------------------------------------------------------
 
@@ -65,8 +69,85 @@ genPair :: Gen a -> Gen b -> Gen (a, b)
 genPair ga gb = (,) <$> ga <*> gb
 
 --------------------------------------------------------------------------------
+-- Cat-parametric coherence squares.
+--
+-- The associativity and naturality squares are stated once at an abstract
+-- category @cat@. At @cat = (->)@ they are the covariant laws. At @cat = 'Op'@
+-- they are the colax (split) laws, since @'bwd' ('assoc' \@'Op') = 'Op' ('fwd'
+-- 'assoc')@. 'checkCov' and 'checkOp' run the two directions.
 
--- | 'combine' laws: it commutes with the codomain tensor's associator
+-- | The two parallel @cat@-morphisms a coherence law asserts equal.
+data Square cat s t = Square (cat s t) (cat s t)
+
+-- | Lift a @cat@-morphism through @f@. @'fmap'@ at @(->)@, @'fmap'@ under
+-- arrow-reversal at @'Op'@.
+class MapF cat f where
+  mapF :: cat a b -> cat (f a) (f b)
+
+instance (Functor f) => MapF (->) f where
+  mapF = fmap
+
+instance (Functor f) => MapF Op f where
+  mapF (Op g) = Op (fmap g)
+
+-- | Associativity of the laxator. @'combine'@ commutes with the domain and
+-- codomain associators. This is the coherence square documented on 'Semigroupal'.
+assocSquare ::
+  forall cat t1 t0 f a b c.
+  ( Semigroupal cat t1 t0 f,
+    Associative cat t0,
+    Associative cat t1,
+    MapF cat f
+  ) =>
+  Square cat (t0 (t0 (f a) (f b)) (f c)) (f (t1 a (t1 b c)))
+assocSquare =
+  Square
+    (combine @cat @t1 @t0 . grmap (combine @cat @t1 @t0) . bwd (assoc @cat @t0))
+    (mapF (bwd (assoc @cat @t1)) . combine @cat @t1 @t0 . glmap (combine @cat @t1 @t0))
+
+-- | Naturality of the laxator. @'combine'@ commutes with maps into either tensor.
+natSquare ::
+  forall cat t1 t0 f a a' b b'.
+  ( Semigroupal cat t1 t0 f,
+    Associative cat t0,
+    Associative cat t1,
+    MapF cat f
+  ) =>
+  cat a a' ->
+  cat b b' ->
+  Square cat (t0 (f a) (f b)) (f (t1 a' b'))
+natSquare g h =
+  Square
+    (mapF (gbimap @cat @cat @cat @t1 g h) . combine @cat @t1 @t0)
+    (combine @cat @t1 @t0 . gbimap @cat @cat @cat @t0 (mapF g) (mapF h))
+
+-- | Run a covariant square. Apply each side to a generated source, compare with
+-- 'Eq'.
+checkCov ::
+  forall s t.
+  (Eq t, Show s, Show t) =>
+  Gen s ->
+  Square (->) s t ->
+  Property
+checkCov gen (Square l r) = property $ do
+  s <- forAll gen
+  l s === r s
+
+-- | Run an @'Op'@ square. Each side unwraps to a split @t -> s@. Generate the
+-- input at @t@, compare the outputs at @s@.
+checkOp ::
+  forall s t.
+  (Eq s, Show s, Show t) =>
+  Gen t ->
+  Square Op s t ->
+  Property
+checkOp gen (Square (Op l) (Op r)) = property $ do
+  t <- forAll gen
+  l t === r t
+
+--------------------------------------------------------------------------------
+
+-- | 'combine' laws. It commutes with the codomain tensor's associator
 -- (associativity) and with maps into it (naturality of the laxator).
 semigroupalLaws ::
   forall t1 f.
@@ -99,13 +180,10 @@ semigroupalNaturality ::
   ) =>
   (forall x. Gen x -> Gen (f x)) ->
   Property
-semigroupalNaturality genF = property $ do
-  x <- forAll (genF genInt)
-  y <- forAll (genF genInt)
-  let g = (+ 1) :: Int -> Int
-      h = (* 2) :: Int -> Int
-  fmap (gbimap @(->) @(->) @(->) @t1 g h) (combine @(->) @t1 @(,) (x, y))
-    === combine @(->) @t1 @(,) (fmap g x, fmap h y)
+semigroupalNaturality genF =
+  checkCov
+    (genPair (genF genInt) (genF genInt))
+    (natSquare @(->) @t1 @(,) ((+ 1) :: Int -> Int) ((* 2) :: Int -> Int))
 
 semigroupalAssoc ::
   forall t1 f.
@@ -119,16 +197,14 @@ semigroupalAssoc ::
   ) =>
   (forall x. Gen x -> Gen (f x)) ->
   Property
-semigroupalAssoc genF = property $ do
-  x <- forAll (genF genInt)
-  y <- forAll (genF genInt)
-  z <- forAll (genF genInt)
-  fmap (bwd (assoc @(->) @t1)) (combine @(->) @t1 @(,) (combine @(->) @t1 @(,) (x, y), z))
-    === combine @(->) @t1 @(,) (x, combine @(->) @t1 @(,) (y, z))
+semigroupalAssoc genF =
+  checkCov
+    (genPair (genPair (genF genInt) (genF genInt)) (genF genInt))
+    (assocSquare @(->) @t1 @(,))
 
 --------------------------------------------------------------------------------
 
--- | Left and right unit laws: 'introduce' is a unit for 'combine', up to the
+-- | Left and right unit laws. 'introduce' is a unit for 'combine', up to the
 -- codomain tensor's unitors.
 unitalLaws ::
   forall t1 i1 f.
@@ -202,71 +278,77 @@ monoidalLaws genF =
 
 --------------------------------------------------------------------------------
 
--- | Laws for the /Op/ (comonoidal) laxator @'combine' \@'Op'@ — the product
--- split @f (a, b) -> (f a, f b)@ that @FromGeneric@ \/ @FromRepresentable@
--- derive. Dual to 'semigroupalLaws': the split is coassociative and natural.
--- Covariant functors only, since the split is an @fmap@-based unzip.
+-- | Laws for the /Op/ (comonoidal) laxator @'combine' \@'Op'@, the split
+-- @f (a \`t1\` b) -> t0 (f a) (f b)@. General in the codomain tensor @t1@ and the
+-- split tensor @t0@. It builds the same 'assocSquare' \/ 'natSquare' as
+-- 'semigroupalLaws' and runs them through 'checkOp'. One function covers every
+-- shipped @'Op'@ 'Semigroupal' instance. The unzip @f (a, b) -> (f a, f b)@
+-- (@t0 = (,)@), the @Unalign@ split @f ('Data.These.These' a b) -> (f a, f b)@,
+-- and @f ('Either' a b) -> 'Either' (f a) (f b)@ (@t0 = 'Either'@). @genT@ builds
+-- the @t1@-shaped payloads the split consumes. Covariant functors only.
 opSemigroupalLaws ::
-  forall f.
-  ( Semigroupal Op (,) (,) f,
+  forall t1 t0 f.
+  ( Semigroupal Op t1 t0 f,
     Functor f,
     forall x. (Eq x) => Eq (f x),
-    forall x. (Show x) => Show (f x)
+    forall x. (Show x) => Show (f x),
+    forall a b. (Eq a, Eq b) => Eq (t0 a b),
+    forall a b. (Show a, Show b) => Show (t0 a b),
+    forall a b. (Show a, Show b) => Show (t1 a b)
   ) =>
   (forall x. Gen x -> Gen (f x)) ->
+  (forall a b. Gen a -> Gen b -> Gen (t1 a b)) ->
   Laws
-opSemigroupalLaws genF =
+opSemigroupalLaws genF genT =
   Laws
     "Semigroupal (Op)"
-    [ ("Coassociativity", opCoassoc genF),
-      ("Conaturality", opConaturality genF)
+    [ ("Coassociativity", opCoassoc @t1 @t0 genF genT),
+      ("Conaturality", opConaturality @t1 @t0 genF genT)
     ]
 
 opCoassoc ::
-  forall f.
-  ( Semigroupal Op (,) (,) f,
+  forall t1 t0 f.
+  ( Semigroupal Op t1 t0 f,
     Functor f,
     forall x. (Eq x) => Eq (f x),
-    forall x. (Show x) => Show (f x)
+    forall x. (Show x) => Show (f x),
+    forall a b. (Eq a, Eq b) => Eq (t0 a b),
+    forall a b. (Show a, Show b) => Show (t0 a b),
+    forall a b. (Show a, Show b) => Show (t1 a b)
   ) =>
   (forall x. Gen x -> Gen (f x)) ->
+  (forall a b. Gen a -> Gen b -> Gen (t1 a b)) ->
   Property
-opCoassoc genF = property $ do
-  w <- forAll (genF (genPair genInt (genPair genInt genInt)))
-  let split :: forall x y. f (x, y) -> (f x, f y)
-      split = getOp (combine @Op @(,) @(,))
-      (fa, fbc) = split w
-      (fb, fc) = split fbc
-      (fab, fc') = split (fmap (fwd (assoc @(->) @(,))) w)
-      (fa', fb') = split fab
-  ((fa, fb), fc) === ((fa', fb'), fc')
+opCoassoc genF genT =
+  checkOp
+    (genF (genT genInt (genT genInt genInt)))
+    (assocSquare @Op @t1 @t0)
 
 opConaturality ::
-  forall f.
-  ( Semigroupal Op (,) (,) f,
+  forall t1 t0 f.
+  ( Semigroupal Op t1 t0 f,
     Functor f,
     forall x. (Eq x) => Eq (f x),
-    forall x. (Show x) => Show (f x)
+    forall x. (Show x) => Show (f x),
+    forall a b. (Eq a, Eq b) => Eq (t0 a b),
+    forall a b. (Show a, Show b) => Show (t0 a b),
+    forall a b. (Show a, Show b) => Show (t1 a b)
   ) =>
   (forall x. Gen x -> Gen (f x)) ->
+  (forall a b. Gen a -> Gen b -> Gen (t1 a b)) ->
   Property
-opConaturality genF = property $ do
-  w <- forAll (genF (genPair genInt genInt))
-  let g = (+ 1) :: Int -> Int
-      h = (* 2) :: Int -> Int
-      split :: forall x y. f (x, y) -> (f x, f y)
-      split = getOp (combine @Op @(,) @(,))
-      (fa, fb) = split w
-  split (fmap (gbimap @(->) @(->) @(->) @(,) g h) w) === (fmap g fa, fmap h fb)
+opConaturality genF genT =
+  checkOp
+    (genF (genT genInt genInt))
+    (natSquare @Op @t1 @t0 (Op ((+ 1) :: Int -> Int)) (Op ((* 2) :: Int -> Int)))
 
 --------------------------------------------------------------------------------
 
--- | Coherence between the covariant @'combine'@ and the @'Op'@ split: they are
--- mutually inverse. This holds precisely when the split coherently inverts the
--- product @combine@ — i.e. for representable functors (those deriving via
--- @FromRepresentable@). It is /not/ satisfied by the standalone @FromGeneric@
--- unzip on a non-representable functor, whose cartesian @combine@ the unzip does
--- not invert.
+-- | Coherence between the covariant @'combine'@ and the @'Op'@ split. They are
+-- mutually inverse. This holds when the split inverts the product @combine@, for
+-- representable functors (those deriving via @FromRepresentable@). It is /not/
+-- satisfied by the standalone @FromGeneric@ unzip on a non-representable functor,
+-- whose cartesian @combine@ the unzip does not invert.
 representableSplitLaws ::
   forall f.
   ( Semigroupal (->) (,) (,) f,
@@ -312,13 +394,13 @@ combineAfterSplit genF = property $ do
 
 --------------------------------------------------------------------------------
 
--- | 'combine' laws for a /contravariant/ functor: associativity and naturality
+-- | 'combine' laws for a /contravariant/ functor. Associativity and naturality
 -- of the laxator. Since contravariant functors (@Divisible@, @Decidable@)
 -- generally are not 'Eq' \/ 'Show', the two sides are observed through @obs@ on
--- a generated element of the codomain tensor. @genT@ is a tensor builder — e.g.
+-- a generated element of the codomain tensor. @genT@ is a tensor builder, such as
 -- @\\ga gb -> (,) '<$>' ga '<*>' gb@ for @(,)@, or
--- @\\ga gb -> 'Gen.choice' [Left '<$>' ga, Right '<$>' gb]@ for @Either@ — from
--- which the associativity and naturality observation points are assembled.
+-- @\\ga gb -> 'Gen.choice' [Left '<$>' ga, Right '<$>' gb]@ for @Either@. It
+-- assembles the associativity and naturality observation points.
 contravariantSemigroupalLaws ::
   forall t1 f r.
   ( Semigroupal (->) t1 (,) f,

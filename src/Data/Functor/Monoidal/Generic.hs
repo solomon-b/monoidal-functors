@@ -75,7 +75,7 @@ instance
 
 -- | A bare function field @x -> r@, the shape of primitive contravariants like
 -- 'Data.Functor.Contravariant.Predicate' and @'Op' r@. @kind-generics@
--- represents it as an application of @(->)@, and it delegates to the @'Op' r@
+-- represents it as an application of @(->)@. It delegates to the @'Op' r@
 -- instance at the same tensor (Divisible at @(,)@, Decidable at @Either@).
 instance
   (Semigroupal (->) t1 (,) (Op r)) =>
@@ -106,8 +106,9 @@ instance
 --------------------------------------------------------------------------------
 -- Split (Op), the comonoidal direction for the product tensor
 
--- | @combine@ over @Op@ for the product tensor. This splits one structure into
--- two, @rep ((x, x') :&&: LoT0) -> (rep (x :&&: LoT0), rep (x' :&&: LoT0))@.
+-- | @combine@ over @Op@ for the product tensor. Splits one structure into two.
+--
+-- @rep ((x, x') :&&: LoT0) -> (rep (x :&&: LoT0), rep (x' :&&: LoT0))@
 class GCosemigroupalK rep where
   gcosplitK :: rep ((x, x') :&&: LoT0) -> (rep (x :&&: LoT0), rep (x' :&&: LoT0))
 
@@ -124,7 +125,7 @@ instance (GCosemigroupalK f, GCosemigroupalK g) => GCosemigroupalK (f :*: g) whe
      in (al :*: bl, ar :*: br)
 
 -- | Splitting a sum is total. The single input constructor determines matched
--- outputs, so @:+:@ has none of the mismatched-constructor trouble that blocks
+-- outputs. @:+:@ has none of the mismatched-constructor trouble that blocks
 -- the combine direction.
 instance (GCosemigroupalK f, GCosemigroupalK g) => GCosemigroupalK (f :+: g) where
   gcosplitK (L1 a) = let (l, r) = gcosplitK a in (L1 l, L1 r)
@@ -171,7 +172,7 @@ instance
   combine = Op (\(FromGeneric fxx) -> let (a, b) = gsplit fxx in (FromGeneric a, FromGeneric b))
 
 -- | The coherent split, gated on 'Distributive'. A split inverts the cartesian
--- @combine@ exactly when the functor is representable, so this vehicle compiles
+-- @combine@ when the functor is representable. This vehicle compiles
 -- only for representable functors.
 --
 -- > deriving via FromRepresentable Foo instance Semigroupal Op (,) (,) Foo
@@ -205,7 +206,7 @@ instance (GUnitalK i1 f, GUnitalK i1 g) => GUnitalK i1 (f :*: g) where
 
 -- | A bare parameter can only be introduced at the product unit @()@, the one
 -- unit object with a canonical inhabitant. There is no value of @Void@ to place
--- here, so a type with a bare-parameter field has no @Either@/@These@ unit.
+-- here. A type with a bare-parameter field has no @Either@/@These@ unit.
 instance GUnitalK () (Field Var0) where
   gintroduceK = Field ()
 
@@ -217,7 +218,7 @@ instance (Monoid c) => GUnitalK i1 (Field (Kon c)) where
 instance (Unital (->) i1 () g) => GUnitalK i1 (Field (Kon g :@: Var0)) where
   gintroduceK = Field (introduce @(->) @i1 @() ())
 
--- | A nested field @f (g i1)@: the outer functor at the product unit, the inner
+-- | A nested field @f (g i1)@. The outer functor at the product unit, the inner
 -- at @i1@, mirroring the nested @combine@.
 instance
   (Functor f, Unital (->) () () f, Unital (->) i1 () g) =>
@@ -242,7 +243,7 @@ instance (GenericK f, GUnitalK i1 (RepK f)) => Unital (->) i1 () (FromGeneric f)
   introduce :: () -> FromGeneric f i1
   introduce () = FromGeneric (toK @_ @f @(i1 :&&: LoT0) gintroduceK)
 
--- | @Monoidal@ falls out of 'Semigroupal' plus 'Unital', for any codomain
+-- | @Monoidal@ from 'Semigroupal' plus 'Unital', for any codomain
 -- tensor @t1@ paired with its unit @i1@:
 --
 -- > deriving via FromGeneric Foo instance Monoidal (->) (,) () (,) () Foo

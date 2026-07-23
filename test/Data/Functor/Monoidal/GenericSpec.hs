@@ -46,8 +46,8 @@ deriving via FromGeneric Phantom instance Unital (->) () () Phantom
 
 deriving via FromGeneric Phantom instance Monoidal (->) (,) () (,) () Phantom
 
--- | Two bare parameters. Exercises @Field Var0@ and @:*:@, and is
--- representable, so it also gets the coherent split.
+-- | Two bare parameters. Exercises @Field Var0@ and @:*:@. Representable, so it
+-- also has the coherent split.
 data Two a = Two a a deriving (Functor, Show, Eq)
 
 $(deriveGenericK ''Two)
@@ -143,8 +143,8 @@ deriving via FromGeneric Mix instance Unital (->) () () Mix
 
 deriving via FromGeneric Mix instance Monoidal (->) (,) () (,) () Mix
 
--- | A sum of sub-functor fields. Combine is undefined, so it gets only the
--- (total) split.
+-- | A sum of sub-functor fields. Combine is undefined. Has only the (total)
+-- split.
 data S a = SL (Maybe a) | SR [a] deriving (Functor, Show, Eq)
 
 $(deriveGenericK ''S)
@@ -173,7 +173,7 @@ instance Contravariant TwoPreds where
   contramap f (TwoPreds p q) = TwoPreds (contramap f p) (contramap f q)
 
 -- | A bare function field @a -> r@, with no named contravariant wrapper.
--- Exercises the function atom directly; the 'Monoid' codomain gives it the
+-- Exercises the function atom directly. The 'Monoid' codomain gives it the
 -- @Op r@ (Divisible/Decidable) instances.
 newtype Sink a = Sink (a -> [String])
 
@@ -378,12 +378,12 @@ tests = do
             labeled "TwoPreds (,)" (contravariantMonoidalLaws @(,) @() genTwoPreds genPairT obsTwoPreds),
             labeled "Sink (,)" (contravariantMonoidalLaws @(,) @() genSink genPairT runSink),
             labeled "Sink Either" (contravariantMonoidalLaws @Either @Void genSink genEitherT runSink),
-            -- Op (comonoidal) split.
-            labeled "Two Op" (opSemigroupalLaws genTwo),
-            labeled "P Op" (opSemigroupalLaws genP),
-            labeled "Nest Op" (opSemigroupalLaws genNest),
-            labeled "S Op" (opSemigroupalLaws genS),
-            labeled "Sum3 Op" (opSemigroupalLaws genSum3),
+            -- Op (comonoidal) split, at the '(,)' unzip these generic functors derive.
+            labeled "Two Op" (opSemigroupalLaws @(,) @(,) genTwo genPairT),
+            labeled "P Op" (opSemigroupalLaws @(,) @(,) genP genPairT),
+            labeled "Nest Op" (opSemigroupalLaws @(,) @(,) genNest genPairT),
+            labeled "S Op" (opSemigroupalLaws @(,) @(,) genS genPairT),
+            labeled "Sum3 Op" (opSemigroupalLaws @(,) @(,) genSum3 genPairT),
             -- Op split / combine coherence, for the representable Two.
             labeled "Two" (representableSplitLaws genTwo)
           ]

@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Self-test: run the exported "Control.Category.Cartesian.Laws" 'Laws' against
+-- | Self-test. Runs the exported "Control.Category.Cartesian.Laws" 'Laws' against
 -- the instances the library ships for 'Semicartesian', 'Semicocartesian',
 -- 'Cartesian', and 'Cocartesian'.
 --
 -- The diagonal/codiagonal coassociativity laws are non-endomorphic, so they are
 -- observed forward at @('->')@ only. The projection/inclusion unit laws are
--- endomorphic, so they are additionally checked at 'Op' (whose 'Cartesian' /
--- 'Cocartesian' instances are the duals of the @('->')@ ones).
+-- endomorphic, so they are additionally checked at 'Op'. The 'Cartesian' and
+-- 'Cocartesian' instances for 'Op' are the duals of the @('->')@ ones.
 module Control.Category.CartesianSpec (tests) where
 
 --------------------------------------------------------------------------------

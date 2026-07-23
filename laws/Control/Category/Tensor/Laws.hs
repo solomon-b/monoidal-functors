@@ -1,7 +1,7 @@
 -- | Reusable @hedgehog-classes@ 'Laws' for the structures in
--- "Control.Category.Tensor" — 'GBifunctor', 'Iso', 'Associative', 'Tensor', and
--- 'Symmetric' — so a consumer can law-test their own instances the same way they
--- test 'Monoid' or 'Applicative':
+-- "Control.Category.Tensor" ('GBifunctor', 'Iso', 'Associative', 'Tensor', and
+-- 'Symmetric'). A consumer can law-test their own instances the same way they
+-- test 'Monoid' or 'Applicative'.
 --
 -- > import Control.Category.Tensor.Laws (associativeLaws)
 -- > import Hedgehog.Classes (lawsCheck)
@@ -11,11 +11,11 @@
 --
 -- Each law is checked extensionally through a caller-supplied observer (see
 -- 'Control.Category.Laws.Internal.agree'). Every law here reduces to \"an
--- endomorphism agrees with 'id'\" — the round-trips of an 'Iso', the iso-ness of
--- @assoc@ \/ @unitl@ \/ @unitr@, the involution of @swap@, the functoriality of
--- @gbimap@ — so the observer only ever runs /endomorphisms/ @cat z z@, and a
--- single @forall z. cat z z -> z -> obs z@ serves every category (including
--- 'Op', which a forward observer could not).
+-- endomorphism agrees with 'id'\". This covers the round-trips of an 'Iso', the
+-- iso-ness of @assoc@ \/ @unitl@ \/ @unitr@, the involution of @swap@, and the
+-- functoriality of @gbimap@. The observer only runs /endomorphisms/ @cat z z@,
+-- and a single @forall z. cat z z -> z -> obs z@ serves every category
+-- (including 'Op', which a forward observer could not).
 module Control.Category.Tensor.Laws
   ( -- * GBifunctor
     gbifunctorLaws,
@@ -53,7 +53,7 @@ import Prelude hiding (id)
 
 --------------------------------------------------------------------------------
 
--- | The two isomorphism laws for an 'Iso': @fwd . bwd ≡ id@ and
+-- | The two isomorphism laws for an 'Iso' are @fwd . bwd ≡ id@ and
 -- @bwd . fwd ≡ id@. Shared by 'isoLaws', 'associativeLaws', and 'tensorLaws'.
 isoProperties ::
   forall cat obs a b.
@@ -78,7 +78,7 @@ isoProperties run iso genA genB =
 --------------------------------------------------------------------------------
 -- GBifunctor
 
--- | The 'GBifunctor' laws for @gbimap@ in category @cat@ at tensor @t@:
+-- | The 'GBifunctor' laws for @gbimap@ in category @cat@ at tensor @t@.
 --
 -- @
 -- 'gbimap' 'id' 'id'                    ≡ 'id'
@@ -111,7 +111,7 @@ gbifunctorLaws run (f, f') (g, g') gen =
 --------------------------------------------------------------------------------
 -- Iso
 
--- | The isomorphism laws for a given 'Iso' value: @fwd@ and @bwd@ are mutually
+-- | The isomorphism laws for a given 'Iso' value. @fwd@ and @bwd@ are mutually
 -- inverse, checked on generated inhabitants of both endpoints.
 isoLaws ::
   forall cat obs a b.
@@ -133,7 +133,7 @@ isoLaws run iso genA genB = Laws "Iso" (isoProperties run iso genA genB)
 --------------------------------------------------------------------------------
 -- Associative
 
--- | The 'Associative' laws: @assoc@ is an isomorphism between the two
+-- | The 'Associative' laws. @assoc@ is an isomorphism between the two
 -- re-nestings of @t@. @genT@ builds a tensor from generators for its factors
 -- (e.g. @\\gx gy -> (,) '<$>' gx '<*>' gy@ for @(,)@), from which the nested
 -- witnesses are assembled.
@@ -163,10 +163,10 @@ associativeLaws run genT =
 --------------------------------------------------------------------------------
 -- Tensor
 
--- | The 'Tensor' laws: the left and right unitors @unitl@ \/ @unitr@ are
+-- | The 'Tensor' laws. The left and right unitors @unitl@ \/ @unitr@ are
 -- isomorphisms. The caller supplies generators for @i \`t\` a@ and @a \`t\` i@
--- (with @a = 'Int'@), which also fixes the unit @i@ — needed because some units
--- ('Data.Void.Void') are uninhabited and cannot be generated directly.
+-- (with @a = 'Int'@), which also fixes the unit @i@. This is needed because some
+-- units ('Data.Void.Void') are uninhabited and cannot be generated directly.
 tensorLaws ::
   forall cat t i obs.
   ( Tensor cat t i,
@@ -195,7 +195,7 @@ tensorLaws run genIA genAI =
 --------------------------------------------------------------------------------
 -- Symmetric
 
--- | The 'Symmetric' law: @swap@ is its own inverse, @swap ≡ swap⁻¹@, checked at
+-- | The 'Symmetric' law. @swap@ is its own inverse, @swap ≡ swap⁻¹@, checked at
 -- distinct factor types (@Int@, @Bool@) so a non-swapping @swap@ cannot pass.
 symmetricLaws ::
   forall cat t obs.
