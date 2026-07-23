@@ -1,9 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
 -- | Reusable @hedgehog-classes@ 'Laws' for the classes in
--- "Control.Category.Cartesian" — 'Semicartesian', 'Semicocartesian',
--- 'Cartesian', and 'Cocartesian' — so a consumer can law-test their own
--- instances the same way they test 'Monoid' or 'Applicative':
+-- "Control.Category.Cartesian". These cover 'Semicartesian', 'Semicocartesian',
+-- 'Cartesian', and 'Cocartesian'. A consumer can law-test their own
+-- instances the same way they test 'Monoid' or 'Applicative'.
 --
 -- > import Control.Category.Cartesian.Laws (cartesianLaws)
 -- > import Hedgehog.Classes (lawsCheck)
@@ -11,17 +11,17 @@
 -- > main :: IO Bool
 -- > main = lawsCheck (cartesianLaws @(->) @(,) @() (\f -> Identity . f))
 --
--- As in "Control.Category.Tensor.Laws", morphisms here have no 'Eq' \/ 'Show',
--- so every law is checked /extensionally/ through a caller-supplied observer
--- @run@. The observer's shape follows the law:
+-- As in "Control.Category.Tensor.Laws", morphisms here have no 'Eq' \/ 'Show'.
+-- Every law is checked /extensionally/ through a caller-supplied observer
+-- @run@. The observer's shape follows the law.
 --
---   * the diagonal \/ codiagonal coassociativity laws ('Semicartesian' \/
---     'Semicocartesian') relate morphisms whose domain and codomain /differ/, so
---     they take a general @forall x y. cat x y -> x -> obs y@ observer — usable
---     for @('->')@, @'Star' m@, @'Kleisli' m@, but not 'Op';
---   * the projection \/ inclusion unit laws ('Cartesian' \/ 'Cocartesian') relate
---     /endomorphisms/ against 'id', so they take a
---     @forall z. cat z z -> z -> obs z@ observer — which additionally covers 'Op'.
+--   * The diagonal \/ codiagonal coassociativity laws ('Semicartesian' \/
+--     'Semicocartesian') relate morphisms whose domain and codomain /differ/. They
+--     take a general @forall x y. cat x y -> x -> obs y@ observer, usable
+--     for @('->')@, @'Star' m@, and @'Kleisli' m@, but not 'Op'.
+--   * The projection \/ inclusion unit laws ('Cartesian' \/ 'Cocartesian') relate
+--     /endomorphisms/ against 'id'. They take a
+--     @forall z. cat z z -> z -> obs z@ observer, which additionally covers 'Op'.
 module Control.Category.Cartesian.Laws
   ( -- * Semicartesian
     semicartesianLaws,
@@ -61,7 +61,7 @@ import Prelude hiding (id)
 --------------------------------------------------------------------------------
 -- Semicartesian
 
--- | The 'Semicartesian' laws: the diagonal 'split' is coassociative.
+-- | The 'Semicartesian' laws. The diagonal 'split' is coassociative.
 --
 -- @
 -- 'Control.Category.Tensor.grmap' 'split' '>>>' … ≡ 'split' '>>>' 'Control.Category.Tensor.glmap' 'split' '>>>' 'bwd' 'assoc'
@@ -89,7 +89,7 @@ semicartesianLaws run =
 --------------------------------------------------------------------------------
 -- Semicocartesian
 
--- | The 'Semicocartesian' laws: the codiagonal 'merge' is coassociative. @genT@
+-- | The 'Semicocartesian' laws. The codiagonal 'merge' is coassociative. @genT@
 -- builds a tensor from generators for its factors, supplying the nested inputs.
 semicocartesianLaws ::
   forall cat t obs.
@@ -115,7 +115,7 @@ semicocartesianLaws run genT =
 --------------------------------------------------------------------------------
 -- Cartesian
 
--- | The 'Cartesian' laws: 'kill' is a counit for 'split', so projecting after
+-- | The 'Cartesian' laws. 'kill' is a counit for 'split', so projecting after
 -- duplicating is the identity.
 --
 -- @
@@ -140,7 +140,7 @@ cartesianLaws run =
 --------------------------------------------------------------------------------
 -- Cocartesian
 
--- | The 'Cocartesian' laws: 'spawn' is a unit for 'merge', so merging after
+-- | The 'Cocartesian' laws. 'spawn' is a unit for 'merge', so merging after
 -- including is the identity.
 --
 -- @

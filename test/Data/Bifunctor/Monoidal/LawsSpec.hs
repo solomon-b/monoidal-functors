@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Self-test: run the exported "Data.Bifunctor.Monoidal.Laws" 'Laws' against
--- known-good instances — covariant bifunctors (tuples, which exercise both
+-- | Runs the exported "Data.Bifunctor.Monoidal.Laws" 'Laws' against
+-- known-good instances. Covariant bifunctors (tuples, which exercise both
 -- tensor positions with a full 'Eq') and profunctors (@('->')@, @'Star' 'Maybe'@,
 -- @'Kleisli' 'Maybe'@, observed extensionally).
 module Data.Bifunctor.Monoidal.LawsSpec (tests) where
@@ -73,7 +73,7 @@ genPairT gx gy = (,) <$> gx <*> gy
 genEitherT :: Gen x -> Gen y -> Gen (Either x y)
 genEitherT gx gy = Gen.choice [Left <$> gx, Right <$> gy]
 
--- | Splice a sublibrary 'Laws' into the hedgehog 'Group', prefixing each of its
+-- | Splices a sublibrary 'Laws' into the hedgehog 'Group', prefixing each of its
 -- properties with the instance under test.
 labeled :: String -> Laws -> [(PropertyName, Property)]
 labeled prefix ls = [(fromString (prefix <> " " <> n), p) | (n, p) <- lawsProperties ls]

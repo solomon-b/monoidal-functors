@@ -2,8 +2,8 @@
 
 -- | Reusable @hedgehog-classes@ 'Laws' for the /covariant/ bifunctor
 -- 'Semigroupal' \/ 'Unital' \/ 'Monoidal' classes of
--- "Data.Bifunctor.Monoidal", so a consumer can law-test their own instances the
--- same way they test 'Monoid' or 'Applicative':
+-- "Data.Bifunctor.Monoidal". A consumer can law-test their own instances the
+-- same way they test 'Monoid' or 'Applicative'.
 --
 -- > import Data.Bifunctor.Monoidal.Laws (monoidalLaws)
 -- > import Hedgehog.Classes (lawsCheck)
@@ -13,9 +13,9 @@
 --
 -- Each law is stated at category @('->')@ over the /product/ domain tensor
 -- @(,)@, general in the two codomain tensors @t1@ \/ @t2@ (and, for the unit
--- laws, their units @i1@ \/ @i2@) — so one function covers whichever pair of
+-- laws, their units @i1@ \/ @i2@). One function covers whichever pair of
 -- tensors an instance uses. This is the bifunctor analog of the covariant half
--- of "Data.Functor.Monoidal.Laws": the coherence squares are compared with 'Eq'
+-- of "Data.Functor.Monoidal.Laws". The coherence squares are compared with 'Eq'
 -- and re-association happens with 'bimap' over both tensor positions.
 --
 -- The rank-2 generator @forall a b. 'Gen' a -> 'Gen' b -> 'Gen' (f a b)@ lets a
@@ -53,7 +53,7 @@ genInt = Gen.int (Range.linear (-100) 100)
 
 --------------------------------------------------------------------------------
 
--- | 'combine' laws: it commutes with the codomain tensors' associators
+-- | 'combine' laws. It commutes with the codomain tensors' associators
 -- (associativity) and with maps into them (naturality of the laxator).
 semigroupalLaws ::
   forall t1 t2 f.
@@ -207,15 +207,15 @@ monoidalLaws genF =
 -- Profunctors
 --
 -- The function-like instances ('(->)', @'Data.Profunctor.Star' f@,
--- @'Control.Arrow.Kleisli' f@, …) are /profunctors/, not covariant bifunctors:
--- contravariant in the first argument, and with no 'Eq' \/ 'Show'. So the laws
+-- @'Control.Arrow.Kleisli' f@, ...) are /profunctors/, not covariant bifunctors.
+-- They are contravariant in the first argument, and have no 'Eq' \/ 'Show'. The laws
 -- re-associate with 'dimap' (@fwd@ on the contravariant side, @bwd@ on the
 -- covariant side) and are observed extensionally through a caller-supplied
--- @run@, exactly as the contravariant-functor laws of
+-- @run@, as the contravariant-functor laws of
 -- "Data.Functor.Monoidal.Laws" are. @genP@ generates (opaque) profunctor values
 -- and @genT1@ builds the contravariant-side input tensor.
 
--- | 'combine' laws for a /profunctor/: associativity and naturality of the
+-- | 'combine' laws for a /profunctor/. Associativity and naturality of the
 -- laxator, observed through @run@.
 profunctorSemigroupalLaws ::
   forall t1 t2 p obs.

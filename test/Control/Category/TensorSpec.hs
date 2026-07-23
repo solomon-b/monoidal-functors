@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Self-test: run the exported "Control.Category.Tensor.Laws" 'Laws' against the
+-- | Run the exported "Control.Category.Tensor.Laws" 'Laws' against the
 -- instances the library ships for 'GBifunctor', 'Iso', 'Associative', 'Tensor',
--- and 'Symmetric', over every category that carries them — @('->')@, 'Op',
--- @'Iso' ('->')@, and @'Star' 'Maybe'@ \/ @'Kleisli' 'Maybe'@.
+-- and 'Symmetric', over every category that carries them. The categories are
+-- @('->')@, 'Op', @'Iso' ('->')@, and @'Star' 'Maybe'@ \/ @'Kleisli' 'Maybe'@.
 module Control.Category.TensorSpec (tests) where
 
 --------------------------------------------------------------------------------
@@ -75,7 +75,7 @@ kleisliMaybeLeft = (Kleisli (\x -> Just (x + 1)), Kleisli (\x -> if even x then 
 kleisliMaybeRight = (Kleisli (\x -> Just (x - 3)), Kleisli (\x -> Just (negate x)))
 
 -- | 'gbifunctorLaws' for one category at all three tensors. @run@ is rank-2 so
--- the single observer serves every tensor; the endo-arrow pair is reused across
+-- the single observer serves every tensor. The endo-arrow pair is reused across
 -- tensors since every factor is 'Int'.
 gbimapEveryTensor ::
   forall cat obs.

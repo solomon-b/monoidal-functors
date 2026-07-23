@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Shared scaffolding for the "Control.Category.Tensor.Laws" and
--- "Control.Category.Cartesian.Laws" self-tests: the extensional observers for
--- each category, the witness generators, and the 'labeled' splice that folds a
--- sublibrary 'Laws' into a hedgehog 'Group'.
+-- "Control.Category.Cartesian.Laws" self-tests. Provides the extensional
+-- observers for each category, the witness generators, and the 'labeled' splice
+-- that folds a sublibrary 'Laws' into a hedgehog 'Group'.
 module Control.Category.LawsSupport
   ( -- * Observers
     runFun,
@@ -40,7 +40,7 @@ import Hedgehog.Range qualified as Range
 import Prelude
 
 --------------------------------------------------------------------------------
--- Extensional observers: run a morphism on an input to get a comparable result.
+-- Extensional observers. Run a morphism on an input to get a comparable result.
 
 runFun :: (a -> b) -> a -> Identity b
 runFun f = Identity . f
