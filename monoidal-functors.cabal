@@ -107,6 +107,7 @@ library laws
   hs-source-dirs:    laws
   exposed-modules:   Control.Category.Cartesian.Laws
                      Control.Category.Tensor.Laws
+                     Data.Bifunctor.Monoidal.Laws
                      Data.Functor.Monoidal.Laws
   other-modules:     Control.Category.Laws.Internal
   build-depends:
@@ -114,6 +115,7 @@ library laws
     monoidal-functors,
     hedgehog,
     hedgehog-classes,
+    profunctors,
   default-language:  Haskell2010
 
 --------------------------------------------------------------------------------
@@ -141,6 +143,7 @@ test-suite spec
   other-modules:     Control.Category.CartesianSpec
                      Control.Category.LawsSupport
                      Control.Category.TensorSpec
+                     Data.Bifunctor.Monoidal.LawsSpec
                      Data.Functor.Monoidal.GenericSpec
                      Data.Functor.Monoidal.LawsSpec
   build-depends:
