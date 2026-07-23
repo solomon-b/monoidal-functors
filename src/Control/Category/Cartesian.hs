@@ -17,9 +17,11 @@ where
 
 --------------------------------------------------------------------------------
 
+import Control.Arrow (Kleisli (..))
 import Control.Category (id, (>>>))
 import Control.Category.Tensor (Iso (..), Symmetric, Tensor (..), (#))
 import Data.Functor.Contravariant (Op (..))
+import Data.Profunctor (Star (..))
 import Data.Void (Void, absurd)
 import Prelude hiding (fst, id, snd)
 
@@ -75,6 +77,14 @@ instance (Semicocartesian (->) t) => Semicartesian Op t where
   split :: (Semicocartesian (->) t) => Op a (t a a)
   split = Op merge
 
+instance (Monad m) => Semicartesian (Star m) (,) where
+  split :: Star m a (a, a)
+  split = Star $ \x -> pure (x, x)
+
+instance (Monad m) => Semicartesian (Kleisli m) (,) where
+  split :: Kleisli m a (a, a)
+  split = Kleisli $ \x -> pure (x, x)
+
 --------------------------------------------------------------------------------
 
 -- | A 'Category' is 'Semicocartesian' if it is equipped with a
@@ -121,6 +131,14 @@ instance Semicocartesian (->) Either where
 instance (Semicartesian (->) t) => Semicocartesian Op t where
   merge :: (Semicartesian (->) t) => Op (t a a) a
   merge = Op split
+
+instance (Monad m) => Semicocartesian (Star m) Either where
+  merge :: Star m (Either a a) a
+  merge = Star $ either pure pure
+
+instance (Monad m) => Semicocartesian (Kleisli m) Either where
+  merge :: Kleisli m (Either a a) a
+  merge = Kleisli $ either pure pure
 
 --------------------------------------------------------------------------------
 
@@ -177,6 +195,14 @@ instance (Cocartesian (->) t i) => Cartesian Op t i where
   kill :: (Cocartesian (->) t i) => Op a i
   kill = Op spawn
 
+instance (Monad m) => Cartesian (Star m) (,) () where
+  kill :: Star m a ()
+  kill = Star $ \_ -> pure ()
+
+instance (Monad m) => Cartesian (Kleisli m) (,) () where
+  kill :: Kleisli m a ()
+  kill = Kleisli $ \_ -> pure ()
+
 --------------------------------------------------------------------------------
 
 -- | A 'Category' equipped with a 'Tensor' @t@ where the 'Tensor' unit @i@ is the <https://ncatlab.org/nlab/show/initial+object initial object>
@@ -221,3 +247,11 @@ instance (Cartesian (->) t i) => Cocartesian Op t i where
 instance Cocartesian (->) Either Void where
   spawn :: Void -> a
   spawn = absurd
+
+instance (Monad m) => Cocartesian (Star m) Either Void where
+  spawn :: Star m Void a
+  spawn = Star (\void -> pure $ absurd void)
+
+instance (Monad m) => Cocartesian (Kleisli m) Either Void where
+  spawn :: Kleisli m Void a
+  spawn = Kleisli (\void -> pure $ absurd void)
