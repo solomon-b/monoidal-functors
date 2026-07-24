@@ -30,14 +30,18 @@ module Data.Bifunctor.Monoidal.Laws
     profunctorSemigroupalLaws,
     profunctorUnitalLaws,
     profunctorMonoidalLaws,
+
+    -- * Colax (Op) bifunctors
+    opSemigroupalLaws,
   )
 where
 
 --------------------------------------------------------------------------------
 
-import Control.Category.Tensor (Associative (assoc), Iso (bwd, fwd), Tensor (unitl, unitr), gbimap)
+import Control.Category.Tensor (Associative (assoc), Iso (bwd, fwd), Tensor (unitl, unitr), gbimap, glmap, grmap)
 import Data.Bifunctor (Bifunctor (bimap))
 import Data.Bifunctor.Monoidal (Monoidal, Semigroupal (combine), Unital (introduce))
+import Data.Functor.Contravariant (Op (..))
 import Data.Profunctor (Profunctor (dimap))
 import Hedgehog (Gen, Property, forAll, forAllWith, property, (===))
 import Hedgehog.Classes (Laws (..))
@@ -202,6 +206,101 @@ monoidalLaws genF =
     ( lawsProperties (semigroupalLaws @t1 @t2 genF)
         <> lawsProperties (unitalLaws @t1 @i1 @t2 @i2 genF)
     )
+
+--------------------------------------------------------------------------------
+-- Colax (Op) bifunctors
+
+-- | 'combine' laws for the colax (@'Op'@) direction. The split
+-- @f (t1 x x') (t2 y y') -> to (f x y) (f x' y')@ is coassociative and natural,
+-- general in all three tensors. Covariant bifunctors compared with 'Eq'.
+opSemigroupalLaws ::
+  forall t1 t2 to f.
+  ( Semigroupal Op t1 t2 to f,
+    Associative (->) t1,
+    Associative (->) t2,
+    Associative (->) to,
+    Bifunctor f,
+    Bifunctor t1,
+    Bifunctor t2,
+    Bifunctor to,
+    forall a b. (Eq a, Eq b) => Eq (f a b),
+    forall a b. (Show a, Show b) => Show (f a b),
+    forall a b. (Eq a, Eq b) => Eq (to a b),
+    forall a b. (Show a, Show b) => Show (to a b),
+    forall a b. (Show a, Show b) => Show (t1 a b),
+    forall a b. (Show a, Show b) => Show (t2 a b)
+  ) =>
+  (forall a b. Gen a -> Gen b -> Gen (f a b)) ->
+  (forall a b. Gen a -> Gen b -> Gen (t1 a b)) ->
+  (forall a b. Gen a -> Gen b -> Gen (t2 a b)) ->
+  Laws
+opSemigroupalLaws genF genT1 genT2 =
+  Laws
+    "Semigroupal (Op)"
+    [ ("Coassociativity", opCoassoc @t1 @t2 @to genF genT1 genT2),
+      ("Conaturality", opConaturality @t1 @t2 @to genF genT1 genT2)
+    ]
+
+opCoassoc ::
+  forall t1 t2 to f.
+  ( Semigroupal Op t1 t2 to f,
+    Associative (->) t1,
+    Associative (->) t2,
+    Associative (->) to,
+    Bifunctor f,
+    Bifunctor t1,
+    Bifunctor t2,
+    Bifunctor to,
+    forall a b. (Eq a, Eq b) => Eq (f a b),
+    forall a b. (Show a, Show b) => Show (f a b),
+    forall a b. (Eq a, Eq b) => Eq (to a b),
+    forall a b. (Show a, Show b) => Show (to a b),
+    forall a b. (Show a, Show b) => Show (t1 a b),
+    forall a b. (Show a, Show b) => Show (t2 a b)
+  ) =>
+  (forall a b. Gen a -> Gen b -> Gen (f a b)) ->
+  (forall a b. Gen a -> Gen b -> Gen (t1 a b)) ->
+  (forall a b. Gen a -> Gen b -> Gen (t2 a b)) ->
+  Property
+opCoassoc genF genT1 genT2 = property $ do
+  w <- forAll (genF (genT1 genInt (genT1 genInt genInt)) (genT2 genInt (genT2 genInt genInt)))
+  let split :: forall x x' y y'. f (t1 x x') (t2 y y') -> to (f x y) (f x' y')
+      split = getOp (combine @Op @t1 @t2 @to)
+      lhs = grmap @(->) @(->) @(->) @to split (split w)
+      rhs =
+        bwd (assoc @(->) @to) $
+          glmap @(->) @(->) @(->) @to split (split (bimap (fwd (assoc @(->) @t1)) (fwd (assoc @(->) @t2)) w))
+  lhs === rhs
+
+opConaturality ::
+  forall t1 t2 to f.
+  ( Semigroupal Op t1 t2 to f,
+    Associative (->) t1,
+    Associative (->) t2,
+    Associative (->) to,
+    Bifunctor f,
+    Bifunctor t1,
+    Bifunctor t2,
+    Bifunctor to,
+    forall a b. (Eq a, Eq b) => Eq (f a b),
+    forall a b. (Show a, Show b) => Show (f a b),
+    forall a b. (Eq a, Eq b) => Eq (to a b),
+    forall a b. (Show a, Show b) => Show (to a b),
+    forall a b. (Show a, Show b) => Show (t1 a b),
+    forall a b. (Show a, Show b) => Show (t2 a b)
+  ) =>
+  (forall a b. Gen a -> Gen b -> Gen (f a b)) ->
+  (forall a b. Gen a -> Gen b -> Gen (t1 a b)) ->
+  (forall a b. Gen a -> Gen b -> Gen (t2 a b)) ->
+  Property
+opConaturality genF genT1 genT2 = property $ do
+  w <- forAll (genF (genT1 genInt genInt) (genT2 genInt genInt))
+  let g = (+ 1) :: Int -> Int
+      h = (* 2) :: Int -> Int
+      split :: forall x x' y y'. f (t1 x x') (t2 y y') -> to (f x y) (f x' y')
+      split = getOp (combine @Op @t1 @t2 @to)
+  split (bimap (gbimap @(->) @(->) @(->) @t1 g g) (gbimap @(->) @(->) @(->) @t2 h h) w)
+    === gbimap @(->) @(->) @(->) @to (bimap g h) (bimap g h) (split w)
 
 --------------------------------------------------------------------------------
 -- Profunctors
