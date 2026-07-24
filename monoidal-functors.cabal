@@ -77,16 +77,16 @@ library
     Data.Bifunctor.Module
     Data.Bifunctor.Monoidal
     Data.Bifunctor.Monoidal.Specialized
-    Data.Bifunctor.Traversable
+    Data.Bifunctor.Rank2.Traversable
     Data.Functor.Invariant
     Data.Functor.Module
     Data.Functor.Monoidal
     Data.Functor.Monoidal.Generic
     Data.Functor.Monoidal.Specialized
-    Data.Functor.Traversable
+    Data.Functor.Rank2.Traversable
     Data.Trifunctor.Module
     Data.Trifunctor.Monoidal
-    Data.Trifunctor.Traversable
+    Data.Trifunctor.Rank2.Traversable
 
   ghc-options:
     -Wall
@@ -147,8 +147,11 @@ test-suite spec
                      Control.Category.LawsSupport
                      Control.Category.TensorSpec
                      Data.Bifunctor.Monoidal.LawsSpec
+                     Data.Bifunctor.Rank2.TraversableSpec
                      Data.Functor.Monoidal.GenericSpec
                      Data.Functor.Monoidal.LawsSpec
+                     Data.Functor.Rank2.TraversableSpec
+                     Data.Trifunctor.Rank2.TraversableSpec
   build-depends:
     base,
     contravariant,
@@ -157,9 +160,12 @@ test-suite spec
     hedgehog-classes,
     kind-generics,
     kind-generics-th,
+    kindly-functors,
     monoidal-functors,
     monoidal-functors:laws,
     profunctors,
     these,
     transformers,
+  ghc-options:
+    -Wall
   default-language: Haskell2010

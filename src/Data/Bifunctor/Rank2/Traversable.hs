@@ -4,15 +4,11 @@
 {-# LANGUAGE ImpredicativeTypes #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 
-module Data.Bifunctor.Traversable
+-- | Rank-2 traversal for higher-kinded data interpreted by a profunctor.
+module Data.Bifunctor.Rank2.Traversable
   ( Traversable (..),
     First (..),
     Second (..),
-    -- F (..),
-    -- ffirst,
-    -- farrow,
-    -- sequencedF,
-    -- example,
   )
 where
 
@@ -29,7 +25,15 @@ import Prelude hiding (Traversable (..))
 
 --------------------------------------------------------------------------------
 
+-- | Higher-kinded data that distributes over any profunctor 'Monoidal' with
+-- respect to tupling, splitting each field @p a b@ into its 'First' and
+-- 'Second' projections.
+--
+-- The generic default covers records whose fields all have the shape
+-- @p a b@. Sums and nested HKD fields are not supported.
 class Traversable hkd where
+  -- | Pull the interpretation profunctor out of the record: consume the
+  -- record of first arguments, produce the record of second arguments.
   sequence :: forall p. (Kindly.Bifunctor Op (->) p, Monoidal (->) (,) () (,) () (,) () p) => hkd p -> p (hkd First) (hkd Second)
   default sequence :: forall p. (Kindly.Bifunctor Op (->) p, Monoidal (->) (,) () (,) () (,) () p, Generic (hkd p), Generic (hkd First), Generic (hkd Second), GTraversable p (Rep (hkd p)) (Rep (hkd First)) (Rep (hkd Second))) => hkd p -> p (hkd First) (hkd Second)
   sequence = Kindly.bimap (Op from) to . gsequence @p @(Rep (hkd p)) @(Rep (hkd First)) @(Rep (hkd Second)) . from
@@ -59,6 +63,7 @@ instance (Kindly.Bifunctor Op (->) p, Monoidal (->) (,) () (,) () (,) () p, GTra
 
 --------------------------------------------------------------------------------
 
+-- | Projects a field's first argument: @First x y@ holds the @x@.
 type First :: Type -> Type -> Type
 newtype First x y = First {unFirst :: x}
   deriving stock (Generic, Generic1, Functor)
@@ -81,6 +86,7 @@ instance Bifunctor First where
 
 --------------------------------------------------------------------------------
 
+-- | Projects a field's second argument: @Second x y@ holds the @y@.
 type Second :: Type -> Type -> Type
 newtype Second x y = Second {unSecond :: y}
   deriving stock (Generic, Generic1, Functor)
@@ -96,25 +102,3 @@ instance Applicative (Second x) where
 instance Bifunctor Second where
   bimap :: (a -> b) -> (c -> d) -> Second a c -> Second b d
   bimap _ g (Second y) = Second (g y)
-
---------------------------------------------------------------------------------
--- Example:
-
--- type F :: (Type -> Type -> Type) -> Type
--- data F p = F {foo :: p Int String, bar :: p Bool String, baz :: p Bool Bool}
---   deriving stock (Generic)
---   deriving anyclass (Traversable)
-
--- deriving instance (forall x y. (Show x, Show y) => Show (p x y)) => Show (F p)
-
--- farrow :: F (->)
--- farrow = F {foo = show, bar = show, baz = id}
-
--- ffirst :: F First
--- ffirst = F {foo = First 0, bar = First True, baz = First True}
-
--- sequencedF :: (->) (F First) (F Second)
--- sequencedF = sequence farrow
-
--- example :: F Second
--- example = sequencedF ffirst

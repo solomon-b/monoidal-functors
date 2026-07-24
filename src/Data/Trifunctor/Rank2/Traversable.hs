@@ -5,10 +5,13 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 
-module Data.Trifunctor.Traversable
+-- | Rank-2 traversal for higher-kinded data interpreted by a trifunctor of
+-- variance @(covariant, contravariant, covariant)@.
+module Data.Trifunctor.Rank2.Traversable
   ( Traversable (..),
     First (..),
     Second (..),
+    Third (..),
   )
 where
 
@@ -25,7 +28,16 @@ import Prelude hiding (Traversable)
 
 --------------------------------------------------------------------------------
 
+-- | Higher-kinded data that distributes over any trifunctor 'Monoidal' with
+-- respect to tupling, splitting each field @p a b c@ into its 'First',
+-- 'Second', and 'Third' projections.
+--
+-- The generic default covers records whose fields all have the shape
+-- @p a b c@. Sums and nested HKD fields are not supported.
 class Traversable hkd where
+  -- | Pull the interpretation trifunctor out of the record: consume the
+  -- record of second arguments, produce the records of first and third
+  -- arguments.
   sequence :: forall p. (Kindly.Trifunctor (->) Op (->) p, Monoidal (->) (,) () (,) () (,) () (,) () p) => hkd p -> p (hkd First) (hkd Second) (hkd Third)
   default sequence ::
     forall p.
@@ -69,6 +81,7 @@ instance
 
 --------------------------------------------------------------------------------
 
+-- | Projects a field's first argument: @First x y z@ holds the @x@.
 type First :: Type -> Type -> Type -> Type
 newtype First x y z = First {unFirst :: x}
   deriving stock (Generic, Generic1, Functor)
@@ -91,6 +104,7 @@ instance Bifunctor (First x) where
 
 --------------------------------------------------------------------------------
 
+-- | Projects a field's second argument: @Second x y z@ holds the @y@.
 type Second :: Type -> Type -> Type -> Type
 newtype Second x y z = Second {unSecond :: y}
   deriving stock (Generic, Generic1, Functor)
@@ -109,6 +123,7 @@ instance Bifunctor (Second x) where
 
 --------------------------------------------------------------------------------
 
+-- | Projects a field's third argument: @Third x y z@ holds the @z@.
 type Third :: Type -> Type -> Type -> Type
 newtype Third x y z = Third {unThird :: z}
   deriving stock (Generic, Generic1, Functor)

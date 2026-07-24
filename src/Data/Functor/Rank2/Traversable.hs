@@ -1,7 +1,10 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 
-module Data.Functor.Traversable
+-- | Rank-2 traversal for higher-kinded data interpreted by a functor: the
+-- analogue of "Data.Traversable" one level up, equivalent to @barbies@'
+-- @TraversableB@.
+module Data.Functor.Rank2.Traversable
   ( Traversable (..),
   )
 where
@@ -17,7 +20,13 @@ import Prelude hiding (Traversable (..))
 
 --------------------------------------------------------------------------------
 
+-- | Higher-kinded data that distributes over any functor 'Monoidal' with
+-- respect to tupling, the monoidal presentation of @Applicative@.
+--
+-- The generic default covers records whose fields all have the shape @f a@.
+-- Sums and nested HKD fields are not supported.
 class Traversable hkd where
+  -- | Pull the interpretation functor out of the record.
   sequence :: forall f. (Kindly.Functor (->) f, Monoidal (->) (,) () (,) () f) => hkd f -> f (hkd Identity)
   default sequence :: forall p. (Kindly.Functor (->) p, Monoidal (->) (,) () (,) () p, Generic (hkd p), Generic (hkd Identity), GTraversable p (Rep (hkd p)) (Rep (hkd Identity))) => hkd p -> p (hkd Identity)
   sequence = Kindly.fmap to . gsequence @p @(Rep (hkd p)) @(Rep (hkd Identity)) . from
