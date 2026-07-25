@@ -28,6 +28,7 @@ import Prelude hiding (fst, id, snd)
 -- $setup
 -- >>> :set -dppr-cols=1000
 -- >>> import Prelude
+-- >>> import Data.Void (Void)
 
 --------------------------------------------------------------------------------
 
@@ -109,6 +110,12 @@ class (Symmetric cat t) => Semicocartesian cat t where
   -- universal map @cat (x \`t\` y) a@.
   --
   -- ==== __Examples__
+  --
+  -- >>> fuse @(->) @Either (show @Bool) (show @Int) (Left True)
+  -- "True"
+  --
+  -- >>> fuse @(->) @Either (show @Bool) (show @Int) (Right 42)
+  -- "42"
   fuse :: cat x a -> cat y a -> cat (x `t` y) a
   fuse f g = f # g >>> merge
 
@@ -170,6 +177,10 @@ class (Semicartesian cat t, Tensor cat t i) => Cartesian cat t i | i -> t, t -> 
   -- | Given the universal map @cat a (x `t` y)@, construct morphisms @cat a x@ and @cat a y@.
   --
   -- ==== __Examples__
+  --
+  -- >>> let (f, g) = unfork @(->) @(,) (\b -> (b, not b))
+  -- >>> (f True, g True)
+  -- (True,False)
   unfork :: cat a (x `t` y) -> (cat a x, cat a y)
   unfork h = (h >>> projl, h >>> projr)
 
@@ -196,25 +207,34 @@ instance (Cocartesian (->) t i) => Cartesian Op t i where
 -- @
 class (Semicocartesian cat t, Tensor cat t i) => Cocartesian cat t i | i -> t, t -> i where
   -- | A morphism from the initial object @i@ in @cat@ to @a@.
-  --
-  -- ==== __Examples__
   spawn :: cat i a
 
   -- | The left inclusion for @t@.
   --
   -- ==== __Examples__
+  --
+  -- >>> incll @(->) @Either @Void True :: Either Bool ()
+  -- Left True
   incll :: cat x (x `t` y)
   incll = bwd unitr >>> id # spawn
 
   -- | The right inclusion for @t@.
   --
   -- ==== __Examples__
+  --
+  -- >>> inclr @(->) @Either @Void True :: Either () Bool
+  -- Right True
   inclr :: cat y (x `t` y)
   inclr = bwd unitl >>> spawn # id
 
   -- | Given the universal map @cat (x `t` y) a@, construct morphisms @cat x a@ and @cat y a@.
   --
   -- ==== __Examples__
+  --
+  -- >>> let h = either not not :: Either Bool Bool -> Bool
+  -- >>> let (f, g) = unfuse @(->) @Either @Void h
+  -- >>> (f True, g False)
+  -- (False,True)
   unfuse :: cat (x `t` y) a -> (cat x a, cat y a)
   unfuse h = (incll >>> h, inclr >>> h)
 

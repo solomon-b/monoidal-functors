@@ -96,16 +96,31 @@ class (Category cat1, Category cat2, Category cat3) => GBifunctor cat1 cat2 cat3
   gbimap :: cat1 a b -> cat2 c d -> cat3 (a `t` c) (b `t` d)
 
 -- | Infix operator for 'gbimap'.
+--
+-- ==== __Examples__
+--
+-- >>> (#) @(->) @(->) @(->) @(,) show not (123 :: Int, False)
+-- ("123",True)
 infixr 9 #
 
 (#) :: (GBifunctor cat1 cat2 cat3 t) => cat1 a b -> cat2 c d -> cat3 (a `t` c) (b `t` d)
 (#) = gbimap
 
 -- | Covariantally map over the right variable.
+--
+-- ==== __Examples__
+--
+-- >>> grmap @(->) @(->) @(->) @(,) not (123 :: Int, False)
+-- (123,True)
 grmap :: (GBifunctor cat1 cat2 cat3 t) => cat2 c d -> cat3 (a `t` c) (a `t` d)
 grmap = (#) id
 
 -- | Covariantally map over the left variable.
+--
+-- ==== __Examples__
+--
+-- >>> glmap @(->) @(->) @(->) @(,) show (123 :: Int, False)
+-- ("123",False)
 glmap :: (GBifunctor cat1 cat2 cat3 t) => cat1 a b -> cat3 (a `t` c) (b `t` c)
 glmap = flip (#) id
 
