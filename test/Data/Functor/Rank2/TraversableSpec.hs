@@ -4,15 +4,18 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Exercises the generically derived rank-2 'Rank2.Traversable' for
--- functor-interpreted HKDs. 'Rank2.sequence' at an 'Applicative'
--- interpretation must agree with the hand-written applicative traversal,
--- respect the 'Identity' law, and commute with applicative homomorphisms.
+-- functor-interpreted HKDs. At a covariant 'Applicative' interpretation
+-- (@cat ~ (->)@) 'Rank2.sequence' must agree with the hand-written applicative
+-- traversal, respect the 'Identity' law, and commute with applicative
+-- homomorphisms. At a contravariant 'Predicate' interpretation (@cat ~ Op@,
+-- 'Divisible') it must conjoin the field predicates.
 module Data.Functor.Rank2.TraversableSpec (tests) where
 
 --------------------------------------------------------------------------------
 
 import Control.Category.LawsSupport (genInt)
 import Data.Functor.Compose (Compose (..))
+import Data.Functor.Contravariant (Predicate (..))
 import Data.Functor.Identity (Identity (..))
 import Data.Functor.Monoidal (Monoidal)
 import Data.Functor.Rank2.Traversable qualified as Rank2
@@ -115,6 +118,36 @@ emptySequencesToPure = withTests 1 $ property $ do
   Rank2.sequence (EmptyHKD :: EmptyHKD []) === [EmptyHKD]
 
 --------------------------------------------------------------------------------
+-- Contravariant interpretation
+
+-- | The reference for the contravariant 'Predicate' interpretation: sequencing
+-- a record of per-field predicates through 'Divisible' conjoins them, so the
+-- whole record passes iff every field's predicate passes on its own value.
+refPredicate :: TestHKD Predicate -> Predicate (TestHKD Identity)
+refPredicate (TestHKD pInt pBool pString) =
+  Predicate $ \(TestHKD (Identity i) (Identity b) (Identity s)) ->
+    getPredicate pInt i && getPredicate pBool b && getPredicate pString s
+
+-- | 'Rank2.sequence' at the contravariant 'Predicate' interpretation
+-- (@cat ~ Op@, 'Divisible') must agree with the conjunction reference.
+-- Predicates have no 'Eq', so they are compared extensionally by observing
+-- them on a generated record. The predicate parameters are generated (rather
+-- than the predicates themselves) so 'forAll' has something to show.
+agreesWithRefPredicate :: Property
+agreesWithRefPredicate = property $ do
+  n <- forAll genInt
+  b <- forAll Gen.bool
+  k <- forAll (Gen.int (Range.linear 0 5))
+  input <- forAll genIdentityHKD
+  let preds = TestHKD (Predicate (< n)) (Predicate (== b)) (Predicate ((<= k) . length))
+  getPredicate (Rank2.sequence preds) input === getPredicate (refPredicate preds) input
+
+-- | A field-less record sequences to 'conquer', the always-true predicate.
+emptyPredicateIsConquer :: Property
+emptyPredicateIsConquer = withTests 1 $ property $ do
+  getPredicate (Rank2.sequence (EmptyHKD :: EmptyHKD Predicate)) EmptyHKD === True
+
+--------------------------------------------------------------------------------
 
 tests :: IO Bool
 tests =
@@ -126,5 +159,7 @@ tests =
         ("agrees with reference ([])", agreesWithRef genListHKD),
         ("agrees with reference (Compose Maybe [])", agreesWithRef genComposeHKD),
         ("naturality of maybeToList", naturality),
-        ("empty record sequences to pure", emptySequencesToPure)
+        ("empty record sequences to pure", emptySequencesToPure),
+        ("agrees with reference (Predicate)", agreesWithRefPredicate),
+        ("empty record is conquer (Predicate)", emptyPredicateIsConquer)
       ]
