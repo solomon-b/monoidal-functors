@@ -6,8 +6,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 
--- | Rank-2 traversal for higher-kinded data interpreted by a trifunctor of
--- variance @(covariant, contravariant, covariant)@.
+-- | Rank-2 traversal for higher-kinded data interpreted by a trifunctor of any variance.
 module Data.Trifunctor.Rank2.Traversable
   ( Traversable (..),
     First (..),
@@ -20,7 +19,8 @@ where
 
 import Control.Applicative
 import Data.Bifunctor (Bifunctor (..))
-import Data.Functor.Contravariant (Contravariant (..), Op (..))
+import Data.Functor.Contravariant (Contravariant (..))
+import Data.Isomorphism (Iso (..))
 import Data.Kind (Constraint, Type)
 import Data.Trifunctor.Monoidal (Monoidal, Semigroupal (..), Unital (..))
 import GHC.Generics (Generic (..), Generic1, K1 (..), M1 (..), U1 (..), type (:*:) (..))
@@ -36,13 +36,14 @@ import Prelude hiding (Traversable)
 -- The generic default covers records whose fields all have the shape
 -- @p a b c@. Sums and nested HKD fields are not supported.
 class Traversable hkd where
-  -- | Pull the interpretation trifunctor out of the record: consume the
-  -- record of second arguments, produce the records of first and third
-  -- arguments.
-  sequence :: forall p. (Kindly.Trifunctor (->) Op (->) p, Monoidal (->) (,) () (,) () (,) () (,) () p) => hkd p -> p (hkd First) (hkd Second) (hkd Third)
+  -- | Pull the interpretation trifunctor out of the record.
+  sequence :: forall cat1 cat2 cat3 p. (Kindly.Trifunctor cat1 cat2 cat3 p, Kindly.LiftIso cat1, Kindly.LiftIso cat2, Kindly.LiftIso cat3, Monoidal (->) (,) () (,) () (,) () (,) () p) => hkd p -> p (hkd First) (hkd Second) (hkd Third)
   default sequence ::
-    forall p.
-    ( Kindly.MapArg3 (->) Op (->) p,
+    forall cat1 cat2 cat3 p.
+    ( Kindly.Trifunctor cat1 cat2 cat3 p,
+      Kindly.LiftIso cat1,
+      Kindly.LiftIso cat2,
+      Kindly.LiftIso cat3,
       Monoidal (->) (,) () (,) () (,) () (,) () p,
       Generic (hkd p),
       Generic (hkd First),
@@ -52,33 +53,33 @@ class Traversable hkd where
     ) =>
     hkd p ->
     p (hkd First) (hkd Second) (hkd Third)
-  sequence = Kindly.trimap to (Op from) to . gsequence @p @(Rep (hkd p)) @(Rep (hkd First)) @(Rep (hkd Second)) . from
+  sequence = Kindly.trimapIso (Iso to from) (Iso to from) (Iso to from) . gsequence @p @(Rep (hkd p)) @(Rep (hkd First)) @(Rep (hkd Second)) . from
 
 type GTraversable :: (Type -> Type -> Type -> Type) -> (Type -> Type) -> (Type -> Type) -> (Type -> Type) -> (Type -> Type) -> Constraint
 class GTraversable p f g h i where
   gsequence :: f x -> p (g x) (h x) (i x)
 
-instance (Kindly.Trifunctor (->) Op (->) p, GTraversable p f g h i) => GTraversable p (M1 _1 _2 f) (M1 _1 _2 g) (M1 _1 _2 h) (M1 _1 _2 i) where
+instance (Kindly.Trifunctor cat1 cat2 cat3 p, Kindly.LiftIso cat1, Kindly.LiftIso cat2, Kindly.LiftIso cat3, GTraversable p f g h i) => GTraversable p (M1 _1 _2 f) (M1 _1 _2 g) (M1 _1 _2 h) (M1 _1 _2 i) where
   gsequence :: M1 _1 _2 f x -> p (M1 _1 _2 g x) (M1 _1 _2 h x) (M1 _1 _2 i x)
-  gsequence (M1 f) = Kindly.trimap M1 (Op unM1) M1 $ gsequence @p @f @g @h @i f
+  gsequence (M1 f) = Kindly.trimapIso (Iso M1 unM1) (Iso M1 unM1) (Iso M1 unM1) $ gsequence @p @f @g @h @i f
 
-instance (Kindly.Trifunctor (->) Op (->) p) => GTraversable p (K1 _1 (p a b c)) (K1 _1 (First a b c)) (K1 _1 (Second a b c)) (K1 _1 (Third a b c)) where
+instance (Kindly.Trifunctor cat1 cat2 cat3 p, Kindly.LiftIso cat1, Kindly.LiftIso cat2, Kindly.LiftIso cat3) => GTraversable p (K1 _1 (p a b c)) (K1 _1 (First a b c)) (K1 _1 (Second a b c)) (K1 _1 (Third a b c)) where
   gsequence :: K1 _1 (p a b c) x -> p (K1 _1 (First a b c) x) (K1 _1 (Second a b c) x) (K1 _1 (Third a b c) x)
-  gsequence (K1 f) = Kindly.trimap (K1 . First) (Op $ unSecond . unK1) (K1 . Third) f
+  gsequence (K1 f) = Kindly.trimapIso (Iso (K1 . First) (unFirst . unK1)) (Iso (K1 . Second) (unSecond . unK1)) (Iso (K1 . Third) (unThird . unK1)) f
 
-instance (Kindly.Trifunctor (->) Op (->) p, Monoidal (->) (,) () (,) () (,) () (,) () p) => GTraversable p U1 U1 U1 U1 where
+instance (Kindly.Trifunctor cat1 cat2 cat3 p, Kindly.LiftIso cat1, Kindly.LiftIso cat2, Kindly.LiftIso cat3, Monoidal (->) (,) () (,) () (,) () (,) () p) => GTraversable p U1 U1 U1 U1 where
   gsequence :: U1 x -> p (U1 x) (U1 x) (U1 x)
-  gsequence U1 = Kindly.trimap (const U1) (Op $ const ()) (const U1) $ introduce @_ @() @() @() ()
+  gsequence U1 = Kindly.trimapIso (Iso (const U1) (const ())) (Iso (const U1) (const ())) (Iso (const U1) (const ())) $ introduce @_ @() @() @() ()
 
 instance
-  (Kindly.Trifunctor (->) Op (->) p, Monoidal (->) (,) () (,) () (,) () (,) () p, GTraversable p f1 g1 h1 j1, GTraversable p f2 g2 h2 j2) =>
+  (Kindly.Trifunctor cat1 cat2 cat3 p, Kindly.LiftIso cat1, Kindly.LiftIso cat2, Kindly.LiftIso cat3, Monoidal (->) (,) () (,) () (,) () (,) () p, GTraversable p f1 g1 h1 j1, GTraversable p f2 g2 h2 j2) =>
   GTraversable p (f1 :*: f2) (g1 :*: g2) (h1 :*: h2) (j1 :*: j2)
   where
   gsequence :: (:*:) f1 f2 x -> p ((:*:) g1 g2 x) ((:*:) h1 h2 x) ((:*:) j1 j2 x)
   gsequence (hkd1 :*: hkd2) =
     let phkd1 = gsequence @p @f1 @g1 @h1 @j1 hkd1
         phkd2 = gsequence @p @f2 @g2 @h2 @j2 hkd2
-     in Kindly.trimap (uncurry (:*:)) (Op (\(x :*: y) -> (x, y))) (uncurry (:*:)) $ combine @_ @(,) @(,) @(,) (phkd1, phkd2)
+     in Kindly.trimapIso (Iso (uncurry (:*:)) (\(x :*: y) -> (x, y))) (Iso (uncurry (:*:)) (\(x :*: y) -> (x, y))) (Iso (uncurry (:*:)) (\(x :*: y) -> (x, y))) $ combine @_ @(,) @(,) @(,) (phkd1, phkd2)
 
 --------------------------------------------------------------------------------
 

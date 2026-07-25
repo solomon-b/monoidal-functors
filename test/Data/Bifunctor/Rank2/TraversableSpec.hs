@@ -4,8 +4,10 @@
 {-# LANGUAGE TypeFamilies #-}
 
 -- | Exercises the generically derived rank-2 'Rank2.Traversable' for
--- profunctor-interpreted HKDs. Sequencing a record of @p a b@ fields yields
--- @p (hkd 'Rank2.First') (hkd 'Rank2.Second')@, which must act field-wise.
+-- bifunctor-interpreted HKDs. Sequencing a record of @p a b@ fields yields
+-- @p (hkd 'Rank2.First') (hkd 'Rank2.Second')@, which must act field-wise. The
+-- profunctor case (@(Op, (->))@) is checked against an applicative reference.
+-- The covariant case (@((->), (->))@) is the 'Biapplicative' unzip.
 module Data.Bifunctor.Rank2.TraversableSpec (tests) where
 
 --------------------------------------------------------------------------------
@@ -47,6 +49,14 @@ data EmptyHKD (p :: Type -> Type -> Type) = EmptyHKD
 
 genString :: Gen String
 genString = Gen.string (Range.linear 0 5) Gen.alpha
+
+-- | A record of pairs, for the covariant @(,)@ (Biapplicative) instantiation.
+genPairHKD :: Gen (TestHKD (,))
+genPairHKD =
+  TestHKD
+    <$> ((,) <$> genInt <*> Gen.bool)
+    <*> ((,) <$> genString <*> genInt)
+    <*> ((,) <$> Gen.bool <*> genString)
 
 --------------------------------------------------------------------------------
 -- Properties
@@ -97,6 +107,18 @@ kleisliOrdersEffects = property $ do
   runKleisli (Rank2.sequence hkd) (TestHKD (Rank2.First a) (Rank2.First s) (Rank2.First b))
     === ((\x y z -> TestHKD (Rank2.Second x) (Rank2.Second y) (Rank2.Second z)) <$> f a <*> g s <*> h b)
 
+-- | At the covariant bifunctor @(,)@ sequencing is the 'Biapplicative' unzip:
+-- a record of pairs splits into the record of first components and the record
+-- of second components.
+pairUnzips :: Property
+pairUnzips = property $ do
+  hkd <- forAll genPairHKD
+  let TestHKD (a1, b1) (a2, b2) (a3, b3) = hkd
+  Rank2.sequence hkd
+    === ( TestHKD (Rank2.First a1) (Rank2.First a2) (Rank2.First a3),
+          TestHKD (Rank2.Second b1) (Rank2.Second b2) (Rank2.Second b3)
+        )
+
 -- | A field-less record sequences to the unit of the profunctor via
 -- 'introduce'.
 emptySequencesToUnit :: Property
@@ -114,5 +136,6 @@ tests =
       [ ("function sequencing acts field-wise", functionActsFieldwise),
         ("Kleisli sequencing agrees with reference", kleisliAgrees),
         ("Kleisli sequencing orders effects left-to-right", kleisliOrdersEffects),
+        ("record of pairs unzips (Biapplicative)", pairUnzips),
         ("empty record sequences to unit", emptySequencesToUnit)
       ]
