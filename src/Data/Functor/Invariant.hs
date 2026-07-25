@@ -21,6 +21,13 @@ import Prelude
 
 --------------------------------------------------------------------------------
 
+-- $setup
+-- >>> :set -dppr-cols=1000
+-- >>> import Prelude
+-- >>> import Data.Functor.Identity (Identity (..))
+
+--------------------------------------------------------------------------------
+
 -- | A functor is 'Invariant' if it is parametric in its type
 -- parameter @a@.
 --

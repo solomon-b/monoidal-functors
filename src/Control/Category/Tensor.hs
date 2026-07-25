@@ -35,6 +35,14 @@ import Prelude hiding (Applicative (..), id, (.))
 
 --------------------------------------------------------------------------------
 
+-- $setup
+-- >>> :set -dppr-cols=1000
+-- >>> import Prelude
+-- >>> import Data.Void (Void)
+-- >>> import Data.Functor.Contravariant (Op (..))
+
+--------------------------------------------------------------------------------
+
 -- | An invertible mapping between 'a' and 'b' in category 'cat'.
 --
 -- === Laws
@@ -147,9 +155,6 @@ class (Category cat, GBifunctor cat cat cat t) => Associative cat t where
   -- right associated nestings of @t@.
   --
   -- ==== __Examples__
-  --
-  -- >>> :t assoc @(->) @(,)
-  -- assoc @(->) @(,) :: Iso (->) (a, (b, c)) ((a, b), c)
   --
   -- >>> fwd (assoc @(->) @(,)) (1, ("hello", True))
   -- ((1,"hello"),True)
@@ -373,9 +378,6 @@ class (Associative cat t) => Symmetric cat t where
   -- | @swap@ is a symmetry isomorphism for @t@
   --
   -- ==== __Examples__
-  --
-  -- >>> :t swap @(->) @(,)
-  -- swap @(->) @(,) :: (a, b) -> (b, a)
   --
   -- >>> swap @(->) @(,) (True, "hello")
   -- ("hello",True)

@@ -69,6 +69,13 @@ import Prelude
 
 --------------------------------------------------------------------------------
 
+-- $setup
+-- >>> :set -dppr-cols=1000
+-- >>> import Prelude
+-- >>> import Data.Void (Void)
+
+--------------------------------------------------------------------------------
+
 -- | Given monoidal categories \((\mathcal{C}, \otimes, I_{\mathcal{C}})\) and \((\mathcal{D}, \bullet, I_{\mathcal{D}})\).
 -- A functor \(F : \mathcal{C} \to \mathcal{D}\) is 'Semigroupal' if it supports a natural transformation
 -- \(\phi_{A,B} : F\ A \bullet F\ B \to F\ (A \otimes B)\), which we call 'combine'.
@@ -377,9 +384,6 @@ class Unital cat i1 i0 f where
   --
   -- >>> introduce @(->) @() @() @Maybe ()
   -- Just ()
-  --
-  -- >>> :t introduce @(->) @Void @() @Maybe
-  -- introduce @(->) @Void @() @Maybe :: () -> Maybe Void
   --
   -- >>> introduce @(->) @Void @() @Maybe ()
   -- Nothing

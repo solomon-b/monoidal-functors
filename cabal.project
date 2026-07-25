@@ -2,6 +2,11 @@ packages: .
 
 tests: True
 
+-- doctest-parallel's test-suite loads the library through a GHC environment
+-- file. Without it, Cabal only writes one for `cabal run`, so `cabal test`
+-- fails to resolve the package. See doctest-parallel issue #22.
+write-ghc-environment-files: always
+
 source-repository-package
   type: git
   location: https://github.com/solomon-b/kindly-functors.git

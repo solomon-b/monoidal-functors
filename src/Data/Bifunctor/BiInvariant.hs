@@ -44,6 +44,12 @@ import Prelude
 
 --------------------------------------------------------------------------------
 
+-- $setup
+-- >>> :set -dppr-cols=1000
+-- >>> import Prelude
+
+--------------------------------------------------------------------------------
+
 -- | A bifunctor is 'BiInvariant' if it is parametric in both its type
 -- parameters.
 --

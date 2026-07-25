@@ -25,6 +25,12 @@ import Prelude hiding (fst, id, snd)
 
 --------------------------------------------------------------------------------
 
+-- $setup
+-- >>> :set -dppr-cols=1000
+-- >>> import Prelude
+
+--------------------------------------------------------------------------------
+
 -- | A 'Category' is 'Semicartesian' if it is equipped with a
 -- 'Symmetric' bifunctor @t@ and each object comes equipped with a
 -- <https://ncatlab.org/nlab/show/diagonal+morphism diagonal morphism>
