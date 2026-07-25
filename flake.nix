@@ -21,8 +21,8 @@
                 kindly-functors = hfinal.callCabal2nix "kindly-functors" (pkgs.fetchFromGitHub {
                   owner = "solomon-b";
                   repo = "kindly-functors";
-                  rev = "693a785a085221c1f68a794439556f239ef1499f";
-                  sha256 = "sha256-XCqC/5X3cRIN0UHnO0P4wQxzEgEPuQyQcQEurEtNdbY=";
+                  rev = "cdc0ea3aed2e3d44b23444236694cab6e6db1942";
+                  sha256 = "sha256-kZaG2IdW4EAkBTKahk3Uim8eGsLUM36gVq0iuODMwQQ=";
                 }) {};
                 monoidal-functors = hfinal.callCabal2nix "monoidal-functors" ./. { };
               });

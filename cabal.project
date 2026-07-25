@@ -5,4 +5,4 @@ tests: True
 source-repository-package
   type: git
   location: https://github.com/solomon-b/kindly-functors.git
-  tag: 693a785a085221c1f68a794439556f239ef1499f
+  tag: cdc0ea3aed2e3d44b23444236694cab6e6db1942
