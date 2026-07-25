@@ -10,13 +10,23 @@
     let
       ghcVersion = "9103";
       compiler = "ghc${ghcVersion}";
-      overlay = import ./overlay.nix;
-      overlays = [ overlay ];
     in
     flake-utils.lib.eachDefaultSystem
       (system:
         let
-          pkgs = import nixpkgs { inherit system overlays; };
+          pkgs = import nixpkgs { inherit system; };
+          hsPkgs = pkgs.haskell.packages.${compiler}.override (old: {
+            overrides = pkgs.lib.composeExtensions (old.overrides or (_: _: { }))
+              (hfinal: hprev: {
+                kindly-functors = hfinal.callCabal2nix "kindly-functors" (pkgs.fetchFromGitHub {
+                  owner = "solomon-b";
+                  repo = "kindly-functors";
+                  rev = "cdc0ea3aed2e3d44b23444236694cab6e6db1942";
+                  sha256 = "sha256-kZaG2IdW4EAkBTKahk3Uim8eGsLUM36gVq0iuODMwQQ=";
+                }) {};
+                monoidal-functors = hfinal.callCabal2nix "monoidal-functors" ./. { };
+              });
+          });
         in
         {
           devShells.default = pkgs.mkShell {
@@ -33,11 +43,9 @@
           formatter = pkgs.nixpkgs-fmt;
           packages = flake-utils.lib.flattenTree
             {
-              monoidal-functors = pkgs.haskellPackages.monoidal-functors;
+              monoidal-functors = hsPkgs.monoidal-functors;
             } // {
-            default = pkgs.haskellPackages.monoidal-functors;
+            default = hsPkgs.monoidal-functors;
           };
-        }) // {
-      overlays.default = overlay;
-    };
+        });
 }

@@ -1,0 +1,109 @@
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ImpredicativeTypes #-}
+{-# LANGUAGE MonoLocalBinds #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
+
+-- | Rank-2 traversal for higher-kinded data interpreted by a bifunctor of any variance.
+module Data.Bifunctor.Rank2.Traversable
+  ( Traversable (..),
+    First (..),
+    Second (..),
+  )
+where
+
+--------------------------------------------------------------------------------
+
+import Control.Applicative
+import Data.Bifunctor (Bifunctor (..))
+import Data.Bifunctor.Monoidal (Monoidal, Semigroupal (..), Unital (..))
+import Data.Functor.Contravariant (Contravariant (..))
+import Data.Isomorphism (Iso (..))
+import Data.Kind (Constraint, Type)
+import GHC.Generics (Generic (..), Generic1, K1 (..), M1 (..), U1 (..), type (:*:) (..))
+import Kindly qualified
+import Prelude hiding (Traversable (..))
+
+--------------------------------------------------------------------------------
+
+-- | Higher-kinded data that distributes over any bifunctor 'Monoidal' with
+-- respect to tupling, splitting each field @p a b@ into its 'First' and
+-- 'Second' projections. The two positions may have either variance, selected
+-- by @cat1@ and @cat2@: at a profunctor (@cat1 ~ Op@, @cat2 ~ (->)@)
+-- 'sequence' consumes the record of first arguments and produces the record
+-- of second arguments; at a covariant bifunctor (both @(->)@) it is the
+-- 'Biapplicative' unzip.
+--
+-- The generic default covers records whose fields all have the shape
+-- @p a b@. Sums and nested HKD fields are not supported.
+class Traversable hkd where
+  -- | Pull the interpretation bifunctor out of the record.
+  sequence :: forall cat1 cat2 p. (Kindly.Bifunctor cat1 cat2 p, Kindly.LiftIso cat1, Kindly.LiftIso cat2, Monoidal (->) (,) () (,) () (,) () p) => hkd p -> p (hkd First) (hkd Second)
+  default sequence :: forall cat1 cat2 p. (Kindly.Bifunctor cat1 cat2 p, Kindly.LiftIso cat1, Kindly.LiftIso cat2, Monoidal (->) (,) () (,) () (,) () p, Generic (hkd p), Generic (hkd First), Generic (hkd Second), GTraversable p (Rep (hkd p)) (Rep (hkd First)) (Rep (hkd Second))) => hkd p -> p (hkd First) (hkd Second)
+  sequence = Kindly.bimapIso (Iso to from) (Iso to from) . gsequence @p @(Rep (hkd p)) @(Rep (hkd First)) @(Rep (hkd Second)) . from
+
+type GTraversable :: (Type -> Type -> Type) -> (Type -> Type) -> (Type -> Type) -> (Type -> Type) -> Constraint
+class GTraversable p f g h where
+  gsequence :: f x -> p (g x) (h x)
+
+instance (Kindly.Bifunctor cat1 cat2 p, Kindly.LiftIso cat1, Kindly.LiftIso cat2, GTraversable p f g h) => GTraversable p (M1 _1 _2 f) (M1 _1 _2 g) (M1 _1 _2 h) where
+  gsequence :: M1 _1 _2 f x -> p (M1 _1 _2 g x) (M1 _1 _2 h x)
+  gsequence (M1 f) = Kindly.bimapIso (Iso M1 unM1) (Iso M1 unM1) $ gsequence f
+
+instance (Kindly.Bifunctor cat1 cat2 p, Kindly.LiftIso cat1, Kindly.LiftIso cat2) => GTraversable p (K1 _1 (p a b)) (K1 _1 (First a b)) (K1 _1 (Second a b)) where
+  gsequence :: K1 _1 (p a b) x -> p (K1 _1 (First a b) x) (K1 _1 (Second a b) x)
+  gsequence (K1 f) = Kindly.bimapIso (Iso (K1 . First) (unFirst . unK1)) (Iso (K1 . Second) (unSecond . unK1)) f
+
+instance (Kindly.Bifunctor cat1 cat2 p, Kindly.LiftIso cat1, Kindly.LiftIso cat2, Monoidal (->) (,) () (,) () (,) () p) => GTraversable p U1 U1 U1 where
+  gsequence :: U1 x -> p (U1 x) (U1 x)
+  gsequence U1 = Kindly.bimapIso (Iso (const U1) (const ())) (Iso (const U1) (const ())) $ introduce @_ @_ @() ()
+
+instance (Kindly.Bifunctor cat1 cat2 p, Kindly.LiftIso cat1, Kindly.LiftIso cat2, Monoidal (->) (,) () (,) () (,) () p, GTraversable p f1 g1 h1, GTraversable p f2 g2 h2) => GTraversable p (f1 :*: f2) (g1 :*: g2) (h1 :*: h2) where
+  gsequence :: (:*:) f1 f2 x -> p ((:*:) g1 g2 x) ((:*:) h1 h2 x)
+  gsequence (hkd1 :*: hkd2) =
+    let phkd1 = gsequence hkd1
+        phkd2 = gsequence hkd2
+     in Kindly.bimapIso (Iso (uncurry (:*:)) (\(x :*: y) -> (x, y))) (Iso (uncurry (:*:)) (\(x :*: y) -> (x, y))) $ combine (phkd1, phkd2)
+
+--------------------------------------------------------------------------------
+
+-- | Projects a field's first argument: @First x y@ holds the @x@.
+type First :: Type -> Type -> Type
+newtype First x y = First {unFirst :: x}
+  deriving stock (Generic, Generic1, Functor)
+  deriving newtype (Bounded, Show, Read, Eq, Ord, Enum, Num, Integral, Real, Semigroup, Monoid)
+
+instance Contravariant (First x) where
+  contramap :: (a' -> a) -> First x a -> First x a'
+  contramap _ (First x) = First x
+
+instance (Monoid x) => Applicative (First x) where
+  pure :: a -> First x a
+  pure _ = First mempty
+
+  liftA2 :: (a -> b -> c) -> First x a -> First x b -> First x c
+  liftA2 _ (First x) (First x') = First (x <> x')
+
+instance Bifunctor First where
+  bimap :: (a -> b) -> (c -> d) -> First a c -> First b d
+  bimap f _ (First x) = First (f x)
+
+--------------------------------------------------------------------------------
+
+-- | Projects a field's second argument: @Second x y@ holds the @y@.
+type Second :: Type -> Type -> Type
+newtype Second x y = Second {unSecond :: y}
+  deriving stock (Generic, Generic1, Functor)
+  deriving newtype (Bounded, Show, Read, Eq, Ord, Enum, Num, Integral, Real, Semigroup, Monoid)
+
+instance Applicative (Second x) where
+  pure :: a -> Second x a
+  pure = Second
+
+  liftA2 :: (a -> b -> c) -> Second x a -> Second x b -> Second x c
+  liftA2 f (Second y) (Second y') = Second (f y y')
+
+instance Bifunctor Second where
+  bimap :: (a -> b) -> (c -> d) -> Second a c -> Second b d
+  bimap _ g (Second y) = Second (g y)
