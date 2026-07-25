@@ -1,4 +1,5 @@
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 
 -- | Rank-2 traversal for higher-kinded data interpreted by a functor: the

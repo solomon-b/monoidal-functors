@@ -2,9 +2,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
--- kindly-functors does not yet cover Kleisli at the profunctor arity, so we
--- fill in the two missing instances locally.
-{-# OPTIONS_GHC -Wno-orphans #-}
 
 -- | Exercises the generically derived rank-2 'Rank2.Traversable' for
 -- profunctor-interpreted HKDs. Sequencing a record of @p a b@ fields yields
@@ -16,26 +13,12 @@ module Data.Bifunctor.Rank2.TraversableSpec (tests) where
 import Control.Arrow (Kleisli (..))
 import Control.Category.LawsSupport (genInt)
 import Data.Bifunctor.Rank2.Traversable qualified as Rank2
-import Data.Functor.Contravariant (Op (..))
 import Data.Kind (Type)
 import GHC.Generics (Generic)
 import Hedgehog (Gen, Group (..), Property, checkSequential, forAll, property, withTests, (===))
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
-import Kindly (CategoricalFunctor (..), FunctorOf, MapArg2, Nat (..), type (~>))
 import Prelude
-
---------------------------------------------------------------------------------
--- Orphan kindly-functors instances for Kleisli at the profunctor arity
-
-instance (FunctorOf (->) (->) m) => CategoricalFunctor (Kleisli m) where
-  type Dom (Kleisli m) = Op
-  type Cod (Kleisli m) = (->) ~> (->)
-
-  map :: Op a a' -> ((->) ~> (->)) (Kleisli m a) (Kleisli m a')
-  map (Op f) = Nat (\(Kleisli g) -> Kleisli (g . f))
-
-instance (FunctorOf (->) (->) m) => MapArg2 Op (->) (Kleisli m)
 
 --------------------------------------------------------------------------------
 -- Test types

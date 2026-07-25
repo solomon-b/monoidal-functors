@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImpredicativeTypes #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 
 -- | Rank-2 traversal for higher-kinded data interpreted by a profunctor.

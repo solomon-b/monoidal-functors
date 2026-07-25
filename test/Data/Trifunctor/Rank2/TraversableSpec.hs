@@ -23,7 +23,7 @@ import Data.Trifunctor.Rank2.Traversable qualified as Rank2
 import GHC.Generics (Generic)
 import Hedgehog (Group (..), Property, checkSequential, forAll, property, withTests, (===))
 import Hedgehog.Gen qualified as Gen
-import Kindly (CategoricalFunctor (..), MapArg1, MapArg2, MapArg3, Nat (..), type (~>))
+import Kindly (CategoricalFunctor (..), Nat (..), type (~>))
 import Prelude
 
 --------------------------------------------------------------------------------
@@ -45,8 +45,6 @@ instance CategoricalFunctor (Shear a b) where
   map :: (c -> c') -> Shear a b c -> Shear a b c'
   map = fmap
 
-instance MapArg1 (->) (Shear a b)
-
 instance CategoricalFunctor (Shear a) where
   type Dom (Shear a) = Op
   type Cod (Shear a) = (->) ~> (->)
@@ -54,16 +52,12 @@ instance CategoricalFunctor (Shear a) where
   map :: Op b b' -> ((->) ~> (->)) (Shear a b) (Shear a b')
   map (Op f) = Nat (\(Shear g) -> Shear (g . f))
 
-instance MapArg2 Op (->) (Shear a)
-
 instance CategoricalFunctor Shear where
   type Dom Shear = (->)
   type Cod Shear = Op ~> (->) ~> (->)
 
   map :: (a -> a') -> (Op ~> (->) ~> (->)) (Shear a) (Shear a')
   map f = Nat (Nat (\(Shear g) -> Shear (\b -> let (x, c) = g b in (f x, c))))
-
-instance MapArg3 (->) Op (->) Shear
 
 instance Semigroupal (->) (,) (,) (,) (,) Shear where
   combine :: (Shear x y z, Shear x' y' z') -> Shear (x, x') (y, y') (z, z')
