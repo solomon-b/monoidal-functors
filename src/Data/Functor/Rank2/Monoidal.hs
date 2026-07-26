@@ -28,15 +28,21 @@
 --   @'Sum' f g@, all on one side (@'gcombineSum'@). 'introduce' is
 --   'Data.Void.absurd'.
 --
+-- * __These__, @'Monoidal' (->) 'These1' V1 'These' 'Data.Void.Void' b@. 'combine'
+--   follows the outer 'These'. A record of @f@ becomes all-'This1', a record of
+--   @g@ all-'That1', and a pair of records a field-wise 'These1'
+--   (@'gcombineThese'@). 'introduce' is 'Data.Void.absurd'.
+--
 -- * __Oplax product__ (the @'Op'@ dual of the first), @'Monoidal' 'Op' 'Product' 'Data.Proxy.Proxy' (,) () b@.
 --   'combine' unzips a record of 'Data.Functor.Product.Pair's back into two
 --   records (@'gsplitProduct'@). 'introduce' is @'Op' ('const' ())@.
 --
--- The coproduct has no oplax dual here. A record of independent @'Sum' f g@
--- fields picks a side per field, so there is no single @'Either' (b f) (b g)@ to
--- project back to. The @Divisible@ \/ @Decidable@-style contravariant-functor
--- duals need @f@ in negative position, which is not the @f a@ field shape the
--- generic machinery walks. Neither is provided.
+-- The coproduct and These have no oplax dual here. A record of independent
+-- @'Sum' f g@ or @'These1' f g@ fields picks per field, so there is no single
+-- @'Either' (b f) (b g)@ or @'These' (b f) (b g)@ to project back to. The
+-- @Divisible@ \/ @Decidable@-style contravariant-functor duals need @f@ in
+-- negative position, which is not the @f a@ field shape the generic machinery
+-- walks. Neither is provided.
 --
 -- The generic derivation covers records whose fields all have the shape @f a@.
 -- Sums and nested HKD fields are not supported, matching
@@ -55,6 +61,7 @@ module Data.Functor.Rank2.Monoidal
     gcombineProduct,
     gsplitProduct,
     gcombineSum,
+    gcombineThese,
   )
 where
 
@@ -64,8 +71,10 @@ import Data.Either (Either (..), either)
 import Data.Function ((.))
 import Data.Functor.Product (Product (..))
 import Data.Functor.Sum (Sum (..))
+import Data.Functor.These (These1 (..))
 import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy (..))
+import Data.These (These (..), these)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Generic (..), K1 (..), M1 (..), U1 (..), type (:*:) (..))
 
@@ -77,7 +86,9 @@ import GHC.Generics (Generic (..), K1 (..), M1 (..), U1 (..), type (:*:) (..))
 -- >>> import GHC.Generics (Generic)
 -- >>> import Data.Functor.Product (Product (..))
 -- >>> import Data.Functor.Sum (Sum (..))
+-- >>> import Data.Functor.These (These1 (..))
 -- >>> import Data.Proxy (Proxy (..))
+-- >>> import Data.These (These (..))
 -- >>> :{
 -- data Rec f = Rec {rFst :: f Int, rSnd :: f Bool} deriving Generic
 -- deriving instance (Show (f Int), Show (f Bool)) => Show (Rec f)
@@ -85,6 +96,7 @@ import GHC.Generics (Generic (..), K1 (..), M1 (..), U1 (..), type (:*:) (..))
 -- instance Unital (->) Proxy () Rec
 -- instance Monoidal (->) Product Proxy (,) () Rec
 -- instance Semigroupal (->) Sum Either Rec where combine = gcombineSum
+-- instance Semigroupal (->) These1 These Rec where combine = gcombineThese
 -- :}
 
 --------------------------------------------------------------------------------
@@ -123,6 +135,11 @@ class Semigroupal cat t1 t0 b where
   --
   -- >>> combine @(->) @Sum @Either (Left (Rec (Just 1) (Just True)) :: Either (Rec Maybe) (Rec []))
   -- Rec {rFst = InL (Just 1), rSnd = InL (Just True)}
+  --
+  -- Merge two records field-wise through a 'These' (the These instantiation):
+  --
+  -- >>> combine @(->) @These1 @These (These (Rec (Just 1) (Just True)) (Rec [10] [False]) :: These (Rec Maybe) (Rec []))
+  -- Rec {rFst = These1 (Just 1) [10], rSnd = These1 (Just True) [False]}
   combine :: forall f g. cat (t0 (b f) (b g)) (b (t1 f g))
   default combine ::
     forall f g.
@@ -252,6 +269,35 @@ gcombineSum ::
   b (Sum f g)
 gcombineSum = either (to . ginjectL . from) (to . ginjectR . from)
 
+-- | Generic These 'combine': following the outer 'These', send a record of @f@
+-- to an all-'This1' record, a record of @g@ to an all-'That1' record, or a pair
+-- of records to a field-wise 'These1' record of @'These1' f g@. This is
+-- @combine@ for @'Semigroupal' (->) 'These1' 'These'@.
+--
+-- ==== __Examples__
+--
+-- >>> gcombineThese (This (Rec (Just 1) (Just True)) :: These (Rec Maybe) (Rec []))
+-- Rec {rFst = This1 (Just 1), rSnd = This1 (Just True)}
+--
+-- >>> gcombineThese (That (Rec [10] [False]) :: These (Rec Maybe) (Rec []))
+-- Rec {rFst = That1 [10], rSnd = That1 [False]}
+--
+-- >>> gcombineThese (These (Rec (Just 1) (Just True)) (Rec [10] [False]) :: These (Rec Maybe) (Rec []))
+-- Rec {rFst = These1 (Just 1) [10], rSnd = These1 (Just True) [False]}
+gcombineThese ::
+  ( Generic (b f),
+    Generic (b g),
+    Generic (b (These1 f g)),
+    GThese (Rep (b f)) (Rep (b g)) (Rep (b (These1 f g)))
+  ) =>
+  These (b f) (b g) ->
+  b (These1 f g)
+gcombineThese =
+  these
+    (to . gthis . from)
+    (to . gthat . from)
+    (\bf bg -> to (gthese (from bf) (from bg)))
+
 --------------------------------------------------------------------------------
 -- Generic workers for the product tensor (zip and its inverse split).
 
@@ -306,6 +352,38 @@ instance GCoproduct (K1 i (f a)) (K1 i (g a)) (K1 i (Sum f g a)) where
 instance GCoproduct U1 U1 U1 where
   ginjectL U1 = U1
   ginjectR U1 = U1
+
+--------------------------------------------------------------------------------
+-- Generic worker for the These tensor (per-side injection following an outer These).
+
+-- | Generic worker for the 'These1' tensor. 'gthis' sends a record of @f@ to an
+-- all-'This1' record, 'gthat' a record of @g@ to an all-'That1' record, and
+-- 'gthese' a pair of records to a field-wise 'These1' record.
+type GThese :: (Type -> Type) -> (Type -> Type) -> (Type -> Type) -> Constraint
+class GThese repf repg reph | reph -> repf repg where
+  gthis :: repf x -> reph x
+  gthat :: repg x -> reph x
+  gthese :: repf x -> repg x -> reph x
+
+instance (GThese repf repg reph) => GThese (M1 i c repf) (M1 i c repg) (M1 i c reph) where
+  gthis (M1 a) = M1 (gthis a)
+  gthat (M1 a) = M1 (gthat a)
+  gthese (M1 a) (M1 b) = M1 (gthese a b)
+
+instance (GThese f1 g1 h1, GThese f2 g2 h2) => GThese (f1 :*: f2) (g1 :*: g2) (h1 :*: h2) where
+  gthis (a1 :*: a2) = gthis a1 :*: gthis a2
+  gthat (a1 :*: a2) = gthat a1 :*: gthat a2
+  gthese (a1 :*: a2) (b1 :*: b2) = gthese a1 b1 :*: gthese a2 b2
+
+instance GThese (K1 i (f a)) (K1 i (g a)) (K1 i (These1 f g a)) where
+  gthis (K1 fa) = K1 (This1 fa)
+  gthat (K1 ga) = K1 (That1 ga)
+  gthese (K1 fa) (K1 ga) = K1 (These1 fa ga)
+
+instance GThese U1 U1 U1 where
+  gthis U1 = U1
+  gthat U1 = U1
+  gthese U1 U1 = U1
 
 --------------------------------------------------------------------------------
 -- Generic worker for the unit (fill every field with the domain unit).

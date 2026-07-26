@@ -27,11 +27,13 @@ import Control.Category.LawsSupport (genInt)
 import Data.Functor.Contravariant (Op (..), getOp)
 import Data.Functor.Identity (Identity (..))
 import Data.Functor.Product (Product (..))
-import Data.Functor.Rank2.Monoidal (Monoidal, Semigroupal (..), Unital (..), gcombineSum, gsplitProduct)
+import Data.Functor.Rank2.Monoidal (Monoidal, Semigroupal (..), Unital (..), gcombineSum, gcombineThese, gsplitProduct)
 import Data.Functor.Sum (Sum (..))
+import Data.Functor.These (These1 (..))
 import Data.Kind (Type)
 import Data.Maybe (listToMaybe, maybeToList)
 import Data.Proxy (Proxy (..))
+import Data.These (These (..))
 import Data.Void (Void, absurd)
 import GHC.Generics (Generic, V1)
 import Hedgehog (Gen, Group (..), Property, checkSequential, forAll, property, withTests, (===))
@@ -62,6 +64,10 @@ instance Semigroupal (->) Sum Either TestHKD where combine = gcombineSum
 instance Unital (->) V1 Void TestHKD where introduce = absurd
 
 instance Monoidal (->) Sum V1 Either Void TestHKD
+
+instance Semigroupal (->) These1 These TestHKD where combine = gcombineThese
+
+instance Monoidal (->) These1 V1 These Void TestHKD
 
 instance Semigroupal Op Product (,) TestHKD where combine = Op gsplitProduct
 
@@ -96,6 +102,10 @@ instance Unital (->) V1 Void EmptyHKD where introduce = absurd
 
 instance Monoidal (->) Sum V1 Either Void EmptyHKD
 
+instance Semigroupal (->) These1 These EmptyHKD where combine = gcombineThese
+
+instance Monoidal (->) These1 V1 These Void EmptyHKD
+
 --------------------------------------------------------------------------------
 -- Monomorphic call sites (fix @cat@, @t1@, @t0@ for the derived instances).
 
@@ -107,6 +117,9 @@ introduceHKD = introduce @(->) @Proxy @() ()
 
 combineSumHKD :: Either (TestHKD f) (TestHKD g) -> TestHKD (Sum f g)
 combineSumHKD = combine @(->) @Sum @Either
+
+combineTheseHKD :: These (TestHKD f) (TestHKD g) -> TestHKD (These1 f g)
+combineTheseHKD = combine @(->) @These1 @These
 
 splitHKD :: TestHKD (Product f g) -> (TestHKD f, TestHKD g)
 splitHKD = getOp (combine @Op @Product @(,))
@@ -120,6 +133,13 @@ refCombine (TestHKD a b c) (TestHKD a' b' c') =
 refCombineSum :: Either (TestHKD f) (TestHKD g) -> TestHKD (Sum f g)
 refCombineSum (Left (TestHKD a b c)) = TestHKD (InL a) (InL b) (InL c)
 refCombineSum (Right (TestHKD a b c)) = TestHKD (InR a) (InR b) (InR c)
+
+-- | The reference for the These 'combine': every field follows the outer 'These'.
+refCombineThese :: These (TestHKD f) (TestHKD g) -> TestHKD (These1 f g)
+refCombineThese (This (TestHKD a b c)) = TestHKD (This1 a) (This1 b) (This1 c)
+refCombineThese (That (TestHKD a b c)) = TestHKD (That1 a) (That1 b) (That1 c)
+refCombineThese (These (TestHKD a b c) (TestHKD a' b' c')) =
+  TestHKD (These1 a a') (These1 b b') (These1 c c')
 
 --------------------------------------------------------------------------------
 -- Associators and unitors for the 'Product' tensor on the functor category.
@@ -166,6 +186,15 @@ genIdentityHKD = genHKD (fmap Identity)
 
 genProductHKD :: Gen (TestHKD (Product Maybe []))
 genProductHKD = genHKD (\g -> Pair <$> Gen.maybe g <*> Gen.list (Range.linear 0 3) g)
+
+-- | A 'These' generator that hits all three cases.
+genTheseHKD :: Gen (These (TestHKD Maybe) (TestHKD []))
+genTheseHKD =
+  Gen.choice
+    [ This <$> genMaybeHKD,
+      That <$> genListHKD,
+      These <$> genMaybeHKD <*> genListHKD
+    ]
 
 --------------------------------------------------------------------------------
 -- Covariant product: agreement with the reference
@@ -241,6 +270,16 @@ coproductInjectsRight = property $ do
   combineSumHKD e === refCombineSum e
 
 --------------------------------------------------------------------------------
+-- These
+
+-- | 'combine' at the 'These1' tensor follows the outer 'These' field-wise,
+-- across all three cases.
+theseAgreesWithRef :: Property
+theseAgreesWithRef = property $ do
+  e <- forAll genTheseHKD
+  combineTheseHKD e === refCombineThese e
+
+--------------------------------------------------------------------------------
 -- Oplax product (split)
 
 -- | Split then combine is the identity (product iso, one direction).
@@ -265,6 +304,7 @@ emptyRecord = withTests 1 $ property $ do
   combine @(->) @Product @(,) (EmptyHKD :: EmptyHKD Maybe, EmptyHKD :: EmptyHKD []) === EmptyHKD
   introduce @(->) @Proxy @() () === (EmptyHKD :: EmptyHKD Proxy)
   combine @(->) @Sum @Either (Left EmptyHKD :: Either (EmptyHKD Maybe) (EmptyHKD [])) === EmptyHKD
+  combine @(->) @These1 @These (These EmptyHKD EmptyHKD :: These (EmptyHKD Maybe) (EmptyHKD [])) === EmptyHKD
 
 --------------------------------------------------------------------------------
 
@@ -282,6 +322,7 @@ tests =
         ("left unit", leftUnitLaw),
         ("coproduct injects left", coproductInjectsLeft),
         ("coproduct injects right", coproductInjectsRight),
+        ("these follows outer These", theseAgreesWithRef),
         ("split . combine = id", splitAfterCombine),
         ("combine . split = id", combineAfterSplit),
         ("empty record at every instantiation", emptyRecord)
