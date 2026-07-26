@@ -25,12 +25,12 @@
 --
 -- * __Coproduct__, @'Monoidal' (->) 'Sum' V1 'Either' 'Data.Void.Void' b@. 'combine'
 --   injects a whole record of @f@ or a whole record of @g@ into a record of
---   @'Sum' f g@, all on one side (@'gcombineSum'@); 'introduce' is
+--   @'Sum' f g@, all on one side (@'gcombineSum'@). 'introduce' is
 --   'Data.Void.absurd'.
 --
 -- * __Oplax product__ (the @'Op'@ dual of the first), @'Monoidal' 'Op' 'Product' 'Data.Proxy.Proxy' (,) () b@.
 --   'combine' unzips a record of 'Data.Functor.Product.Pair's back into two
---   records (@'gsplitProduct'@); 'introduce' is @'Op' ('const' ())@.
+--   records (@'gsplitProduct'@). 'introduce' is @'Op' ('const' ())@.
 --
 -- The coproduct has no oplax dual here. A record of independent @'Sum' f g@
 -- fields picks a side per field, so there is no single @'Either' (b f) (b g)@ to
@@ -71,6 +71,24 @@ import GHC.Generics (Generic (..), K1 (..), M1 (..), U1 (..), type (:*:) (..))
 
 --------------------------------------------------------------------------------
 
+-- $setup
+-- >>> :set -XDeriveGeneric -XStandaloneDeriving -XFlexibleContexts -XMultiParamTypeClasses -XTypeApplications
+-- >>> import Prelude
+-- >>> import GHC.Generics (Generic)
+-- >>> import Data.Functor.Product (Product (..))
+-- >>> import Data.Functor.Sum (Sum (..))
+-- >>> import Data.Proxy (Proxy (..))
+-- >>> :{
+-- data Rec f = Rec {rFst :: f Int, rSnd :: f Bool} deriving Generic
+-- deriving instance (Show (f Int), Show (f Bool)) => Show (Rec f)
+-- instance Semigroupal (->) Product (,) Rec
+-- instance Unital (->) Proxy () Rec
+-- instance Monoidal (->) Product Proxy (,) () Rec
+-- instance Semigroupal (->) Sum Either Rec where combine = gcombineSum
+-- :}
+
+--------------------------------------------------------------------------------
+
 -- | The rank-2 analogue of 'Data.Functor.Monoidal.Semigroupal'. Given a
 -- monoidal structure \(\otimes\) on the functor category and \(\bullet\) on
 -- @Hask@, a rank-2 functor @b@ is 'Semigroupal' if it carries a natural
@@ -94,6 +112,17 @@ type Semigroupal ::
   ((Type -> Type) -> Type) ->
   Constraint
 class Semigroupal cat t1 t0 b where
+  -- | ==== __Examples__
+  --
+  -- Zip two records field-wise (the covariant 'Product' instantiation):
+  --
+  -- >>> combine @(->) @Product @(,) (Rec (Just 1) (Just True), Rec [10, 20] [False])
+  -- Rec {rFst = Pair (Just 1) [10,20], rSnd = Pair (Just True) [False]}
+  --
+  -- Inject a whole record onto one side of a 'Sum' (the coproduct instantiation):
+  --
+  -- >>> combine @(->) @Sum @Either (Left (Rec (Just 1) (Just True)) :: Either (Rec Maybe) (Rec []))
+  -- Rec {rFst = InL (Just 1), rSnd = InL (Just True)}
   combine :: forall f g. cat (t0 (b f) (b g)) (b (t1 f g))
   default combine ::
     forall f g.
@@ -123,7 +152,7 @@ class Semigroupal cat t1 t0 b where
 --
 -- The empty-instance default derives the covariant 'Proxy' unit. The coproduct
 -- unit is @'introduce' = 'Data.Void.absurd'@ and the oplax-product unit is
--- @'introduce' = 'Op' ('const' ())@; both are trivial enough to write inline.
+-- @'introduce' = 'Op' ('const' ())@. Both are trivial enough to write inline.
 type Unital ::
   (Type -> Type -> Type) ->
   (Type -> Type) ->
@@ -131,6 +160,10 @@ type Unital ::
   ((Type -> Type) -> Type) ->
   Constraint
 class Unital cat i1 i0 b where
+  -- | ==== __Examples__
+  --
+  -- >>> introduce @(->) @Proxy @() @Rec ()
+  -- Rec {rFst = Proxy, rSnd = Proxy}
   introduce :: cat i0 (b i1)
   default introduce ::
     ( cat ~ (->),
@@ -168,6 +201,11 @@ class
 -- | Generic covariant product 'combine': zip two records field-wise into
 -- 'Data.Functor.Product.Pair's. This is the default for
 -- @'Semigroupal' (->) 'Product' (,)@.
+--
+-- ==== __Examples__
+--
+-- >>> gcombineProduct (Rec (Just 1) (Just True), Rec [10] [False])
+-- Rec {rFst = Pair (Just 1) [10], rSnd = Pair (Just True) [False]}
 gcombineProduct ::
   ( Generic (b f),
     Generic (b g),
@@ -181,6 +219,11 @@ gcombineProduct (bf, bg) = to (gcombine (from bf, from bg))
 -- | Generic oplax product 'combine': unzip a record of
 -- 'Data.Functor.Product.Pair's back into two records. Wrap in 'Op' for
 -- @'Semigroupal' 'Op' 'Product' (,)@: @combine = 'Op' 'gsplitProduct'@.
+--
+-- ==== __Examples__
+--
+-- >>> gsplitProduct (Rec (Pair (Just 1) [10]) (Pair (Just True) [False]))
+-- (Rec {rFst = Just 1, rSnd = Just True},Rec {rFst = [10], rSnd = [False]})
 gsplitProduct ::
   ( Generic (b f),
     Generic (b g),
@@ -194,6 +237,11 @@ gsplitProduct bfg = case gsplit (from bfg) of (l, r) -> (to l, to r)
 -- | Generic coproduct 'combine': inject a whole record of @f@ or a whole record
 -- of @g@ into a record of @'Sum' f g@, all on one side. This is @combine@ for
 -- @'Semigroupal' (->) 'Sum' 'Either'@.
+--
+-- ==== __Examples__
+--
+-- >>> gcombineSum (Right (Rec [10] [False]) :: Either (Rec Maybe) (Rec []))
+-- Rec {rFst = InR [10], rSnd = InR [False]}
 gcombineSum ::
   ( Generic (b f),
     Generic (b g),
@@ -208,9 +256,9 @@ gcombineSum = either (to . ginjectL . from) (to . ginjectR . from)
 -- Generic workers for the product tensor (zip and its inverse split).
 
 -- | Generic worker for the 'Product' tensor. The three representations are
--- @'Rep' (b f)@, @'Rep' (b g)@, and @'Rep' (b (Product f g))@; structurally
--- identical up to the field interpretation, which 'gcombine' fuses into a
--- 'Data.Functor.Product.Pair' and 'gsplit' takes apart.
+-- @'Rep' (b f)@, @'Rep' (b g)@, and @'Rep' (b (Product f g))@. They are
+-- structurally identical up to the field interpretation, which 'gcombine' fuses
+-- into a 'Data.Functor.Product.Pair' and 'gsplit' takes apart.
 type GSemigroupal :: (Type -> Type) -> (Type -> Type) -> (Type -> Type) -> Constraint
 class GSemigroupal repf repg reph where
   gcombine :: (repf x, repg x) -> reph x
