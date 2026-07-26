@@ -9,6 +9,7 @@ import Data.Bifunctor.Monoidal.LawsSpec qualified as BifunctorLawsSpec
 import Data.Bifunctor.Rank2.TraversableSpec qualified as BifunctorTraversableSpec
 import Data.Functor.Monoidal.GenericSpec qualified as GenericSpec
 import Data.Functor.Monoidal.LawsSpec qualified as LawsSpec
+import Data.Functor.Rank2.MonoidalSpec qualified as FunctorMonoidalSpec
 import Data.Functor.Rank2.TraversableSpec qualified as FunctorTraversableSpec
 import Data.Trifunctor.Rank2.TraversableSpec qualified as TrifunctorTraversableSpec
 import System.Exit (exitFailure)
@@ -25,6 +26,7 @@ main = do
         putStrLn "=== bifunctor monoidal laws ===" *> BifunctorLawsSpec.tests,
         putStrLn "=== generic deriving ===" *> GenericSpec.tests,
         putStrLn "=== rank-2 traversable ===" *> FunctorTraversableSpec.tests,
+        putStrLn "=== rank-2 monoidal ===" *> FunctorMonoidalSpec.tests,
         BifunctorTraversableSpec.tests,
         TrifunctorTraversableSpec.tests,
         putStrLn "=== laws sublibrary self-test ===" *> LawsSpec.tests
