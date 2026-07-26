@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
@@ -75,7 +76,12 @@ import Data.Functor.These (These1 (..))
 import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy (..))
 import Data.These (These (..), these)
+#if MIN_VERSION_base(4,17,0)
+-- On GHC 9.4+ (@base >= 4.17@) @~@ is an ordinary type operator rather than
+-- built-in syntax, so under @NoImplicitPrelude@ it must be brought into scope.
+-- Earlier GHCs still treat @~@ as built-in syntax and do not export it.
 import Data.Type.Equality (type (~))
+#endif
 import GHC.Generics (Generic (..), K1 (..), M1 (..), U1 (..), type (:*:) (..))
 
 --------------------------------------------------------------------------------
