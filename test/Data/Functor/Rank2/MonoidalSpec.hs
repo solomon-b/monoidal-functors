@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- | Exercises the generically derived rank-2 'Monoidal' for functor-interpreted
 -- HKDs, at all three derivable instantiations:
@@ -11,6 +12,13 @@
 -- * coproduct: 'combine' injects a whole record all-'InL' or all-'InR';
 -- * oplax product: 'combine' unzips a record of 'Pair's, and is inverse to the
 --   covariant product 'combine'.
+--
+-- The covariant product also gets a laws pass (associativity, both unit laws,
+-- and naturality), stated through @kindly-functors@' rank-2 'bmap' with
+-- associators and unitors written inline. This doubles as an interop check that
+-- 'combine' commutes with 'bmap'. The associators/unitors would collapse into
+-- the shared "Data.Functor.Monoidal.Laws" machinery once the @Nat@-category
+-- 'Control.Category.Tensor.Tensor' instances for 'Product' exist.
 module Data.Functor.Rank2.MonoidalSpec (tests) where
 
 --------------------------------------------------------------------------------
@@ -22,13 +30,15 @@ import Data.Functor.Product (Product (..))
 import Data.Functor.Rank2.Monoidal (Monoidal, Semigroupal (..), Unital (..), gcombineSum, gsplitProduct)
 import Data.Functor.Sum (Sum (..))
 import Data.Kind (Type)
+import Data.Maybe (listToMaybe, maybeToList)
 import Data.Proxy (Proxy (..))
 import Data.Void (Void, absurd)
 import GHC.Generics (Generic, V1)
 import Hedgehog (Gen, Group (..), Property, checkSequential, forAll, property, withTests, (===))
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
-import Prelude
+import Kindly (CategoricalFunctor (..), Nat (..), bmap, type (~>))
+import Prelude hiding (map)
 
 --------------------------------------------------------------------------------
 -- Test types
@@ -58,6 +68,13 @@ instance Semigroupal Op Product (,) TestHKD where combine = Op gsplitProduct
 instance Unital Op Proxy () TestHKD where introduce = Op (const ())
 
 instance Monoidal Op Product Proxy (,) () TestHKD
+
+-- | 'TestHKD' as a @kindly-functors@ rank-2 functor, so the law properties can
+-- map interpretations through it with 'bmap'.
+instance CategoricalFunctor TestHKD where
+  type Dom TestHKD = (->) ~> (->)
+  type Cod TestHKD = (->)
+  map (Nat nt) (TestHKD a b c) = TestHKD (nt a) (nt b) (nt c)
 
 deriving stock instance (Show (f Int), Show (f Bool), Show (f String)) => Show (TestHKD f)
 
@@ -105,6 +122,30 @@ refCombineSum (Left (TestHKD a b c)) = TestHKD (InL a) (InL b) (InL c)
 refCombineSum (Right (TestHKD a b c)) = TestHKD (InR a) (InR b) (InR c)
 
 --------------------------------------------------------------------------------
+-- Associators and unitors for the 'Product' tensor on the functor category.
+-- These stand in for the (as yet unwritten) @Nat@-category 'Tensor' instances.
+
+-- | 'Product'\'s action on morphisms (the functor-category bifunctor).
+prodNat ::
+  (forall x. f x -> f' x) ->
+  (forall x. g x -> g' x) ->
+  Product f g a ->
+  Product f' g' a
+prodNat l r (Pair p q) = Pair (l p) (r q)
+
+-- | The associator of 'Product' on the functor category.
+assocProd :: Product f (Product g h) a -> Product (Product f g) h a
+assocProd (Pair a (Pair b c)) = Pair (Pair a b) c
+
+-- | The right unitor: 'Proxy' is the unit of 'Product'.
+runitProd :: Product f Proxy a -> f a
+runitProd (Pair a _) = a
+
+-- | The left unitor.
+lunitProd :: Product Proxy f a -> f a
+lunitProd (Pair _ a) = a
+
+--------------------------------------------------------------------------------
 -- Generators
 
 genString :: Gen String
@@ -127,7 +168,7 @@ genProductHKD :: Gen (TestHKD (Product Maybe []))
 genProductHKD = genHKD (\g -> Pair <$> Gen.maybe g <*> Gen.list (Range.linear 0 3) g)
 
 --------------------------------------------------------------------------------
--- Covariant product properties
+-- Covariant product: agreement with the reference
 
 -- | 'combine' agrees with the hand-written field-wise 'Pair' (@bprod@).
 combineAgreesWithRef :: Property
@@ -149,7 +190,41 @@ introduceIsAllProxy = withTests 1 $ property $ do
   introduceHKD === TestHKD Proxy Proxy Proxy
 
 --------------------------------------------------------------------------------
--- Coproduct properties
+-- Covariant product: monoidal laws (via kindly's rank-2 'bmap')
+
+-- | Naturality: 'combine' commutes with maps into either tensor position.
+-- Doubles as the interop check that 'combine' commutes with 'bmap'.
+naturalityLaw :: Property
+naturalityLaw = property $ do
+  x <- forAll genMaybeHKD
+  y <- forAll genListHKD
+  bmap (prodNat maybeToList listToMaybe) (combineHKD x y)
+    === combineHKD (bmap maybeToList x) (bmap listToMaybe y)
+
+-- | Associativity: reassociating the domain 'Product' turns the right-nested
+-- 'combine' into the left-nested one.
+associativityLaw :: Property
+associativityLaw = property $ do
+  x <- forAll genMaybeHKD
+  y <- forAll genListHKD
+  z <- forAll genIdentityHKD
+  bmap assocProd (combineHKD x (combineHKD y z))
+    === combineHKD (combineHKD x y) z
+
+-- | Right unit: combining with @'introduce' ()@ and projecting recovers the record.
+rightUnitLaw :: Property
+rightUnitLaw = property $ do
+  x <- forAll genMaybeHKD
+  bmap runitProd (combineHKD x introduceHKD) === x
+
+-- | Left unit: the mirror of 'rightUnitLaw'.
+leftUnitLaw :: Property
+leftUnitLaw = property $ do
+  x <- forAll genMaybeHKD
+  bmap lunitProd (combineHKD introduceHKD x) === x
+
+--------------------------------------------------------------------------------
+-- Coproduct
 
 -- | Injecting on the left sends every field to 'InL'.
 coproductInjectsLeft :: Property
@@ -166,7 +241,7 @@ coproductInjectsRight = property $ do
   combineSumHKD e === refCombineSum e
 
 --------------------------------------------------------------------------------
--- Oplax product (split) properties
+-- Oplax product (split)
 
 -- | Split then combine is the identity (product iso, one direction).
 splitAfterCombine :: Property
@@ -201,6 +276,10 @@ tests =
       [ ("combine agrees with reference (Maybe/[])", combineAgreesWithRef),
         ("combine agrees with reference (Identity)", combineAgreesWithRefHomogeneous),
         ("introduce is all Proxy", introduceIsAllProxy),
+        ("naturality (combine commutes with bmap)", naturalityLaw),
+        ("associativity", associativityLaw),
+        ("right unit", rightUnitLaw),
+        ("left unit", leftUnitLaw),
         ("coproduct injects left", coproductInjectsLeft),
         ("coproduct injects right", coproductInjectsRight),
         ("split . combine = id", splitAfterCombine),
