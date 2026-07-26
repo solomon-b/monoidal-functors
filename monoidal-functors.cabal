@@ -83,6 +83,7 @@ library
     Data.Functor.Monoidal
     Data.Functor.Monoidal.Generic
     Data.Functor.Monoidal.Specialized
+    Data.Functor.Rank2.Monoidal
     Data.Functor.Rank2.Traversable
     Data.Trifunctor.Module
     Data.Trifunctor.Monoidal
@@ -150,6 +151,7 @@ test-suite spec
                      Data.Bifunctor.Rank2.TraversableSpec
                      Data.Functor.Monoidal.GenericSpec
                      Data.Functor.Monoidal.LawsSpec
+                     Data.Functor.Rank2.MonoidalSpec
                      Data.Functor.Rank2.TraversableSpec
                      Data.Trifunctor.Rank2.TraversableSpec
   build-depends:
