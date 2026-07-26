@@ -2,6 +2,7 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- | Rank-2 monoidal functors: the analogue of "Data.Functor.Monoidal" one level
 -- up, for higher-kinded data @b :: (Type -> Type) -> Type@.
