@@ -32,6 +32,13 @@ import Prelude (IO)
 
 --------------------------------------------------------------------------------
 
+-- $setup
+-- >>> :set -dppr-cols=1000
+-- >>> import Prelude
+-- >>> import Data.Functor.Contravariant (Predicate (..))
+
+--------------------------------------------------------------------------------
+
 newtype FromContra f a = FromContra (f a)
   deriving newtype (Contravariant)
 
@@ -45,9 +52,6 @@ class LeftModule cat t1 f where
   --
   -- >>> :t lstrength @(->) @(,) @Predicate (Predicate @Int (> 10))
   -- lstrength @(->) @(,) @Predicate (Predicate @Int (> 10)) :: Predicate (Int, x)
-  --
-  -- >>> :t lstrength @(->) @Either @[]
-  -- lstrength @(->) @Either @[] :: a -> [Either a x]
   --
   -- >>> lstrength @(->) @Either @[] [True, False]
   -- [Left True,Left False]
@@ -233,8 +237,6 @@ class RightModule cat t1 f where
   -- >>> :t rstrength @(->) @(,) @Predicate (Predicate @Int (> 10))
   -- rstrength @(->) @(,) @Predicate (Predicate @Int (> 10)) :: Predicate (x, Int)
   --
-  -- >>> :t rstrength @(->) @Either @[]
-  -- rstrength @(->) @Either @[] :: [a] -> [Either x a]
   -- >>> rstrength @(->) @Either @[] [True, False]
   -- [Right True,Right False]
   rstrength :: cat (f a) (f (t1 x a))

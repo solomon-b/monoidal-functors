@@ -21,6 +21,14 @@ import Prelude
 
 --------------------------------------------------------------------------------
 
+-- $setup
+-- >>> :set -dppr-cols=1000
+-- >>> import Prelude
+-- >>> import Data.Functor.Identity (Identity (..))
+-- >>> import Control.Category.Tensor (Iso (..), fwd)
+
+--------------------------------------------------------------------------------
+
 -- | A functor is 'Invariant' if it is parametric in its type
 -- parameter @a@.
 --
@@ -45,6 +53,12 @@ class Invariant f where
   default invmap :: (Functor f) => (a -> a') -> (a' -> a) -> f a -> f a'
   invmap = invmapFunctor
 
+-- | Lift an 'Iso' through an 'Invariant' functor.
+--
+-- ==== __Examples__
+--
+-- >>> fwd (invIso @Identity (Iso (read @Bool) show)) (Identity "True")
+-- Identity True
 invIso :: (Invariant f) => Iso (->) a a' -> Iso (->) (f a) (f a')
 invIso (Iso f g) = Iso (invmap f g) (invmap g f)
 

@@ -57,6 +57,12 @@ import GHC.Generics (K1 (..))
 
 --------------------------------------------------------------------------------
 
+-- $setup
+-- >>> :set -dppr-cols=1000
+-- >>> import Prelude
+
+--------------------------------------------------------------------------------
+
 -- | Boilerplate newtype to derive modules for any 'Profunctor'.
 newtype FromProfunctor p a b = FromProfunctor (p a b)
   deriving newtype (Functor, Profunctor, Strong, Choice, Costrong, Cochoice)

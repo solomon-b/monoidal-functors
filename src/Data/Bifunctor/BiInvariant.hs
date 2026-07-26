@@ -44,6 +44,13 @@ import Prelude
 
 --------------------------------------------------------------------------------
 
+-- $setup
+-- >>> :set -dppr-cols=1000
+-- >>> import Prelude
+-- >>> import Control.Category.Tensor (Iso (..), fwd)
+
+--------------------------------------------------------------------------------
+
 -- | A bifunctor is 'BiInvariant' if it is parametric in both its type
 -- parameters.
 --
@@ -74,6 +81,11 @@ class BiInvariant p where
   biinvmap :: (a' -> a) -> (a -> a') -> (b' -> b) -> (b -> b') -> p a b -> p a' b'
 
 -- | BiInvariant witnesses an Isomorphism
+--
+-- ==== __Examples__
+--
+-- >>> fwd (biinvIso @(,) (Iso (read @Int) show) (Iso (read @Bool) show)) ("10", "True")
+-- (10,True)
 biinvIso :: (BiInvariant p) => Iso (->) a a' -> Iso (->) b b' -> Iso (->) (p a b) (p a' b')
 biinvIso (Iso f f') (Iso g g') = Iso (biinvmap f' f g' g) (biinvmap f f' g g')
 

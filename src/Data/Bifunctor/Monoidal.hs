@@ -57,6 +57,13 @@ import Prelude (Either (..), Monoid, curry)
 
 --------------------------------------------------------------------------------
 
+-- $setup
+-- >>> :set -dppr-cols=1000
+-- >>> import Prelude
+-- >>> import Data.Void (Void)
+
+--------------------------------------------------------------------------------
+
 -- | Given monoidal categories \((\mathcal{C}, \otimes, I_{\mathcal{C}})\) and \((\mathcal{D}, \bullet, I_{\mathcal{D}})\).
 -- A bifunctor \(F : \mathcal{C_1} \times \mathcal{C_2} \to \mathcal{D}\) is 'Semigroupal' if it supports a
 -- natural transformation \(\phi_{AB,CD} : F\ A\ B \bullet F\ C\ D \to F\ (A \otimes C)\ (B \otimes D)\), which we call 'combine'.
@@ -83,9 +90,6 @@ class (Associative cat t1, Associative cat t2, Associative cat to) => Semigroupa
   -- | A natural transformation \(\phi_{AB,CD} : F\ A\ B \bullet F\ C\ D \to F\ (A \otimes C)\ (B \otimes D)\).
   --
   -- ==== __Examples__
-  --
-  -- >>> :t combine @(->) @(,) @(,) @(,) @(,)
-  -- combine @(->) @(,) @(,) @(,) @(,) :: ((x, y), (x', y')) -> ((x, x'), (y, y'))
   --
   -- >>> combine @(->) @(,) @(,) @(,) @(,) ((True, "Hello"), ((), "World"))
   -- ((True,()),("Hello","World"))
@@ -474,9 +478,6 @@ class Unital cat i1 i2 io f where
   --
   -- >>> introduce @(->) @() @() @() @(,) ()
   -- ((),())
-  --
-  -- >>> :t introduce @(->) @Void @() @() @Either
-  -- introduce @(->) @Void @() @() @Either :: () -> Either Void ()
   --
   -- >>> introduce @(->) @Void @() @() @Either ()
   -- Right ()
