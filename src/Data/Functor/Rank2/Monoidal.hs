@@ -10,7 +10,7 @@
 -- A rank-2 functor is a functor \(B : [\mathcal{Hask}, \mathcal{Hask}] \to \mathcal{Hask}\)
 -- from the functor category to @Hask@; @b f@ reinterprets each field of the
 -- record @b@ through @f@. "Kindly.Rank2" already supplies the functorial action
--- (@'Kindly.bmap' :: (forall x. f x -> g x) -> b f -> b g@). This module adds the
+-- (@'Kindly.bmap1' :: (forall x. f x -> g x) -> b f -> b g@). This module adds the
 -- /monoidal/ structure on top of it, the same way "Data.Functor.Monoidal" adds
 -- 'Data.Functor.Monoidal.combine' \/ 'Data.Functor.Monoidal.introduce' on top of
 -- an ordinary 'Functor'.
