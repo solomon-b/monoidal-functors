@@ -6,8 +6,3 @@ tests: True
 -- file. Without it, Cabal only writes one for `cabal run`, so `cabal test`
 -- fails to resolve the package. See doctest-parallel issue #22.
 write-ghc-environment-files: always
-
-source-repository-package
-  type: git
-  location: https://github.com/solomon-b/kindly-functors.git
-  tag: cdc0ea3aed2e3d44b23444236694cab6e6db1942

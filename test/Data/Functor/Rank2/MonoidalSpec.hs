@@ -14,9 +14,9 @@
 --   covariant product 'combine'.
 --
 -- The covariant product also gets a laws pass (associativity, both unit laws,
--- and naturality), stated through @kindly-functors@' rank-2 'bmap' with
+-- and naturality), stated through @kindly-functors@' rank-2 'bmap1' with
 -- associators and unitors written inline. This doubles as an interop check that
--- 'combine' commutes with 'bmap'. The associators/unitors would collapse into
+-- 'combine' commutes with 'bmap1'. The associators/unitors would collapse into
 -- the shared "Data.Functor.Monoidal.Laws" machinery once the @Nat@-category
 -- 'Control.Category.Tensor.Tensor' instances for 'Product' exist.
 module Data.Functor.Rank2.MonoidalSpec (tests) where
@@ -39,7 +39,7 @@ import GHC.Generics (Generic, V1)
 import Hedgehog (Gen, Group (..), Property, checkSequential, forAll, property, withTests, (===))
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
-import Kindly (CategoricalFunctor (..), Nat (..), bmap, type (~>))
+import Kindly (CategoricalFunctor (..), Nat (..), bmap1, type (~>))
 import Prelude hiding (map)
 
 --------------------------------------------------------------------------------
@@ -76,7 +76,7 @@ instance Unital Op Proxy () TestHKD where introduce = Op (const ())
 instance Monoidal Op Product Proxy (,) () TestHKD
 
 -- | 'TestHKD' as a @kindly-functors@ rank-2 functor, so the law properties can
--- map interpretations through it with 'bmap'.
+-- map interpretations through it with 'bmap1'.
 instance CategoricalFunctor TestHKD where
   type Dom TestHKD = (->) ~> (->)
   type Cod TestHKD = (->)
@@ -219,16 +219,16 @@ introduceIsAllProxy = withTests 1 $ property $ do
   introduceHKD === TestHKD Proxy Proxy Proxy
 
 --------------------------------------------------------------------------------
--- Covariant product: monoidal laws (via kindly's rank-2 'bmap')
+-- Covariant product: monoidal laws (via kindly's rank-2 'bmap1')
 
 -- | Naturality: 'combine' commutes with maps into either tensor position.
--- Doubles as the interop check that 'combine' commutes with 'bmap'.
+-- Doubles as the interop check that 'combine' commutes with 'bmap1'.
 naturalityLaw :: Property
 naturalityLaw = property $ do
   x <- forAll genMaybeHKD
   y <- forAll genListHKD
-  bmap (prodNat maybeToList listToMaybe) (combineHKD x y)
-    === combineHKD (bmap maybeToList x) (bmap listToMaybe y)
+  bmap1 (prodNat maybeToList listToMaybe) (combineHKD x y)
+    === combineHKD (bmap1 maybeToList x) (bmap1 listToMaybe y)
 
 -- | Associativity: reassociating the domain 'Product' turns the right-nested
 -- 'combine' into the left-nested one.
@@ -237,20 +237,20 @@ associativityLaw = property $ do
   x <- forAll genMaybeHKD
   y <- forAll genListHKD
   z <- forAll genIdentityHKD
-  bmap assocProd (combineHKD x (combineHKD y z))
+  bmap1 assocProd (combineHKD x (combineHKD y z))
     === combineHKD (combineHKD x y) z
 
 -- | Right unit: combining with @'introduce' ()@ and projecting recovers the record.
 rightUnitLaw :: Property
 rightUnitLaw = property $ do
   x <- forAll genMaybeHKD
-  bmap runitProd (combineHKD x introduceHKD) === x
+  bmap1 runitProd (combineHKD x introduceHKD) === x
 
 -- | Left unit: the mirror of 'rightUnitLaw'.
 leftUnitLaw :: Property
 leftUnitLaw = property $ do
   x <- forAll genMaybeHKD
-  bmap lunitProd (combineHKD introduceHKD x) === x
+  bmap1 lunitProd (combineHKD introduceHKD x) === x
 
 --------------------------------------------------------------------------------
 -- Coproduct
@@ -316,7 +316,7 @@ tests =
       [ ("combine agrees with reference (Maybe/[])", combineAgreesWithRef),
         ("combine agrees with reference (Identity)", combineAgreesWithRefHomogeneous),
         ("introduce is all Proxy", introduceIsAllProxy),
-        ("naturality (combine commutes with bmap)", naturalityLaw),
+        ("naturality (combine commutes with bmap1)", naturalityLaw),
         ("associativity", associativityLaw),
         ("right unit", rightUnitLaw),
         ("left unit", leftUnitLaw),
