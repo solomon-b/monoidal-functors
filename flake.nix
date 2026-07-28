@@ -32,6 +32,7 @@
             buildInputs = with pkgs; [
               cabal-install
               haskell.compiler.${compiler}
+              haskell.packages.${compiler}.doctest
               haskell.packages.${compiler}.haskell-language-server
               just
               nixpkgs-fmt

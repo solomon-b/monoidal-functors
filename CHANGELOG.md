@@ -14,6 +14,7 @@
 * Adds `Unalign` `Semigroupal` instances.
 * Expands GHC support through 9.12; bumps nixpkgs, Cabal, and CI tooling.
 * Adds support for `semialign` 1.4 (retaining 1.3 compatibility via CPP).
+* Replaces the `doctest-parallel` test-suite with the canonical `cabal repl --with-compiler=doctest` invocation, exposed as `just doctest` and as its own CI job. The old suite reached the library through a shared GHC environment file, which `cabal test all` could rewrite while the suite was running, so any pending rebuild failed the doctests with missing dependencies. Driving `doctest` as the compiler also passes the library's real `ghc-options` and CPP macros, which retires the hand-rolled `MIN_VERSION_semialign` reconstruction and picks up examples the old suite was skipping.
 * Replaces the `Makefile` with a `justfile` for local development.
 * Adds release commands to `justfile`.
 

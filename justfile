@@ -103,8 +103,12 @@ build:
 clean:
     cabal clean
 
+# run doctests
+doctest:
+    cabal repl lib:monoidal-functors --with-compiler=doctest --repl-options=-Wno-type-defaults
+
 # run all test suites
-test:
+test: doctest
     cabal test all
 
 # build Haddock documentation
