@@ -6,6 +6,7 @@ import Control.Category.CartesianSpec qualified as CartesianSpec
 import Control.Category.TensorSpec qualified as TensorSpec
 import Control.Monad (unless)
 import Data.Bifunctor.Monoidal.LawsSpec qualified as BifunctorLawsSpec
+import Data.Bifunctor.Rank2.MonoidalSpec qualified as BifunctorMonoidalSpec
 import Data.Bifunctor.Rank2.TraversableSpec qualified as BifunctorTraversableSpec
 import Data.Functor.Monoidal.GenericSpec qualified as GenericSpec
 import Data.Functor.Monoidal.LawsSpec qualified as LawsSpec
@@ -27,6 +28,7 @@ main = do
         putStrLn "=== generic deriving ===" *> GenericSpec.tests,
         putStrLn "=== rank-2 traversable ===" *> FunctorTraversableSpec.tests,
         putStrLn "=== rank-2 monoidal ===" *> FunctorMonoidalSpec.tests,
+        BifunctorMonoidalSpec.tests,
         BifunctorTraversableSpec.tests,
         TrifunctorTraversableSpec.tests,
         putStrLn "=== laws sublibrary self-test ===" *> LawsSpec.tests

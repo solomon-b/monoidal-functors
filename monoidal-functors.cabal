@@ -77,6 +77,7 @@ library
     Data.Bifunctor.Module
     Data.Bifunctor.Monoidal
     Data.Bifunctor.Monoidal.Specialized
+    Data.Bifunctor.Rank2.Monoidal
     Data.Bifunctor.Rank2.Traversable
     Data.Functor.Invariant
     Data.Functor.Module
@@ -148,6 +149,7 @@ test-suite spec
                      Control.Category.LawsSupport
                      Control.Category.TensorSpec
                      Data.Bifunctor.Monoidal.LawsSpec
+                     Data.Bifunctor.Rank2.MonoidalSpec
                      Data.Bifunctor.Rank2.TraversableSpec
                      Data.Functor.Monoidal.GenericSpec
                      Data.Functor.Monoidal.LawsSpec
