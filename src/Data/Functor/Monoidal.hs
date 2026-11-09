@@ -98,7 +98,7 @@ import Prelude
 -- @
 -- 'combine' 'Control.Category..' 'grmap' 'combine' 'Control.Category..' 'bwd' 'assoc' ≡ 'fmap' ('bwd' 'assoc') 'Control.Category..' 'combine' 'Control.Category..' 'glmap' 'combine'
 -- @
-class (Associative cat t1, Associative cat t0) => Semigroupal cat t1 t0 f where
+class (Associative cat tC, Associative cat tD) => Semigroupal cat tC tD f where
   -- | @combine@ is a natural transformation from functors \(\mathcal{C} × \mathcal{C}\) to \(\mathcal{D}\).
   --
   -- ==== __Examples__
@@ -114,7 +114,7 @@ class (Associative cat t1, Associative cat t0) => Semigroupal cat t1 t0 f where
   --
   -- >>> combine @(->) @Either @(,) @Maybe (Nothing, Just "hello")
   -- Just (Right "hello")
-  combine :: (f x `t0` f x') `cat` f (x `t1` x')
+  combine :: (f x `tD` f x') `cat` f (x `tC` x')
 
 newtype FromApplicative f a = FromApplicative (f a)
   deriving newtype (Functor, Applicative)
@@ -150,10 +150,10 @@ deriving via FromApplicative IO instance Semigroupal (->) (,) (,) IO
 -- @FromApplicative@ \/ @FromAlternative@ \/ @FromSemialign@ instances (product,
 -- coproduct, and these tensors) and covers the contravariant components
 -- (Divisible \/ Decidable), which previously overlapped.
-instance (Semigroupal (->) t1 (,) f, Semigroupal (->) t1 (,) g) => Semigroupal (->) t1 (,) (Product f g) where
-  combine :: forall x x'. (Product f g x, Product f g x') -> Product f g (t1 x x')
+instance (Semigroupal (->) tC (,) f, Semigroupal (->) tC (,) g) => Semigroupal (->) tC (,) (Product f g) where
+  combine :: forall x x'. (Product f g x, Product f g x') -> Product f g (tC x x')
   combine (Pair fx gx, Pair fx' gx') =
-    Pair (combine @(->) @t1 @(,) (fx, fx')) (combine @(->) @t1 @(,) (gx, gx'))
+    Pair (combine @(->) @tC @(,) (fx, fx')) (combine @(->) @tC @(,) (gx, gx'))
 
 deriving via (FromApplicative ((,) x1)) instance (Monoid x1) => Semigroupal (->) (,) (,) ((,) x1)
 
@@ -194,36 +194,36 @@ deriving via FromAlternative (Ap f) instance (Alternative f) => Semigroupal (->)
 
 -- | A transparent newtype wrapper inherits its component's 'Semigroupal' at
 -- every tensor and both variances, by coercion.
-deriving newtype instance (Semigroupal (->) t1 (,) f) => Semigroupal (->) t1 (,) (Rec1 f)
+deriving newtype instance (Semigroupal (->) tC (,) f) => Semigroupal (->) tC (,) (Rec1 f)
 
-deriving newtype instance (Semigroupal (->) t1 (,) f) => Semigroupal (->) t1 (,) (M1 i c f)
+deriving newtype instance (Semigroupal (->) tC (,) f) => Semigroupal (->) tC (,) (M1 i c f)
 
-deriving newtype instance (Semigroupal (->) t1 (,) f) => Semigroupal (->) t1 (,) (Alt f)
+deriving newtype instance (Semigroupal (->) tC (,) f) => Semigroupal (->) tC (,) (Alt f)
 
-deriving newtype instance (Semigroupal (->) t1 (,) f) => Semigroupal (->) t1 (,) (Reverse f)
+deriving newtype instance (Semigroupal (->) tC (,) f) => Semigroupal (->) tC (,) (Reverse f)
 
-deriving newtype instance (Semigroupal (->) t1 (,) f) => Semigroupal (->) t1 (,) (Backwards f)
+deriving newtype instance (Semigroupal (->) tC (,) f) => Semigroupal (->) tC (,) (Backwards f)
 
 -- | Componentwise, like 'Product'. The generic product @f ':*:' g@ is
 -- 'Semigroupal' at any tensor its components share, both variances.
-instance (Semigroupal (->) t1 (,) f, Semigroupal (->) t1 (,) g) => Semigroupal (->) t1 (,) (f :*: g) where
-  combine :: forall x x'. ((f :*: g) x, (f :*: g) x') -> (f :*: g) (t1 x x')
+instance (Semigroupal (->) tC (,) f, Semigroupal (->) tC (,) g) => Semigroupal (->) tC (,) (f :*: g) where
+  combine :: forall x x'. ((f :*: g) x, (f :*: g) x') -> (f :*: g) (tC x x')
   combine (fx :*: gx, fx' :*: gx') =
-    combine @(->) @t1 @(,) (fx, fx') :*: combine @(->) @t1 @(,) (gx, gx')
+    combine @(->) @tC @(,) (fx, fx') :*: combine @(->) @tC @(,) (gx, gx')
 
 -- | Phantom (constant) functors are both covariant and contravariant at once.
 -- @combine@ ignores the parameter, so one instance serves every tensor and both
 -- variances. For 'Const' \/ 'Constant' it is the underlying 'Semigroup'.
-instance (Associative (->) t1) => Semigroupal (->) t1 (,) (Proxy :: Type -> Type) where
+instance (Associative (->) tC) => Semigroupal (->) tC (,) (Proxy :: Type -> Type) where
   combine _ = Proxy
 
-instance (Associative (->) t1) => Semigroupal (->) t1 (,) (U1 :: Type -> Type) where
+instance (Associative (->) tC) => Semigroupal (->) tC (,) (U1 :: Type -> Type) where
   combine _ = U1
 
-instance (Semigroup c, Associative (->) t1) => Semigroupal (->) t1 (,) (Const c :: Type -> Type) where
+instance (Semigroup c, Associative (->) tC) => Semigroupal (->) tC (,) (Const c :: Type -> Type) where
   combine (Const a, Const b) = Const (a <> b)
 
-instance (Semigroup c, Associative (->) t1) => Semigroupal (->) t1 (,) (Constant c :: Type -> Type) where
+instance (Semigroup c, Associative (->) tC) => Semigroupal (->) tC (,) (Constant c :: Type -> Type) where
   combine (Constant a, Constant b) = Constant (a <> b)
 
 deriving via FromAlternative (f `Compose` g) instance (Alternative f, Applicative g) => Semigroupal (->) Either (,) (f `Compose` g)
@@ -353,7 +353,7 @@ deriving via FromUnalign (Product f g) instance (Unalign f, Unalign g) => Semigr
 
 infixr 9 |?|
 
-(|?|) :: (Semigroupal (->) t1 (,) f) => f a -> f b -> f (a `t1` b)
+(|?|) :: (Semigroupal (->) tC (,) f) => f a -> f b -> f (a `tC` b)
 (|?|) = curry combine
 
 infixr 4 |*|
@@ -376,7 +376,7 @@ infixr 3 |&|
 -- | Given monoidal categories \((\mathcal{C}, \otimes, I_{\mathcal{C}})\) and \((\mathcal{D}, \bullet, I_{\mathcal{D}})\).
 -- A functor \(F : \mathcal{C} \to \mathcal{D}\) is 'Unital' if it supports a morphism \(\phi : I_{\mathcal{D}} \to F\ I_{\mathcal{C}}\),
 -- which we call 'introduce'.
-class Unital cat i1 i0 f where
+class Unital cat iC iD f where
   -- | @introduce@ maps from the identity in \(\mathcal{C}\) to the
   -- identity in \(\mathcal{D}\).
   --
@@ -387,7 +387,7 @@ class Unital cat i1 i0 f where
   --
   -- >>> introduce @(->) @Void @() @Maybe ()
   -- Nothing
-  introduce :: cat i0 (f i1)
+  introduce :: cat iD (f iC)
 
 instance (Applicative f) => Unital (->) () () (FromApplicative f) where
   introduce :: () -> FromApplicative f ()
@@ -412,9 +412,9 @@ deriving via FromApplicative IO instance Unital (->) () () IO
 -- | Componentwise 'introduce', delegating to each component's 'Unital'. Covers
 -- both the product unit @()@ and the coproduct unit @Void@, covariant and
 -- contravariant alike.
-instance (Unital (->) i1 () f, Unital (->) i1 () g) => Unital (->) i1 () (Product f g) where
-  introduce :: () -> Product f g i1
-  introduce () = Pair (introduce @(->) @i1 @() ()) (introduce @(->) @i1 @() ())
+instance (Unital (->) iC () f, Unital (->) iC () g) => Unital (->) iC () (Product f g) where
+  introduce :: () -> Product f g iC
+  introduce () = Pair (introduce @(->) @iC @() ()) (introduce @(->) @iC @() ())
 
 deriving via (FromApplicative ((,) x1)) instance (Monoid x1) => Unital (->) () () ((,) x1)
 
@@ -450,30 +450,30 @@ deriving via FromAlternative (Kleisli m a) instance (Alternative m) => Unital (-
 
 deriving via FromAlternative (Ap f) instance (Alternative f) => Unital (->) Void () (Ap f)
 
-deriving newtype instance (Unital (->) i1 () f) => Unital (->) i1 () (Rec1 f)
+deriving newtype instance (Unital (->) iC () f) => Unital (->) iC () (Rec1 f)
 
-deriving newtype instance (Unital (->) i1 () f) => Unital (->) i1 () (M1 i c f)
+deriving newtype instance (Unital (->) iC () f) => Unital (->) iC () (M1 i c f)
 
-deriving newtype instance (Unital (->) i1 () f) => Unital (->) i1 () (Alt f)
+deriving newtype instance (Unital (->) iC () f) => Unital (->) iC () (Alt f)
 
-deriving newtype instance (Unital (->) i1 () f) => Unital (->) i1 () (Reverse f)
+deriving newtype instance (Unital (->) iC () f) => Unital (->) iC () (Reverse f)
 
-deriving newtype instance (Unital (->) i1 () f) => Unital (->) i1 () (Backwards f)
+deriving newtype instance (Unital (->) iC () f) => Unital (->) iC () (Backwards f)
 
-instance (Unital (->) i1 () f, Unital (->) i1 () g) => Unital (->) i1 () (f :*: g) where
-  introduce :: () -> (f :*: g) i1
-  introduce () = introduce @(->) @i1 @() () :*: introduce @(->) @i1 @() ()
+instance (Unital (->) iC () f, Unital (->) iC () g) => Unital (->) iC () (f :*: g) where
+  introduce :: () -> (f :*: g) iC
+  introduce () = introduce @(->) @iC @() () :*: introduce @(->) @iC @() ()
 
-instance Unital (->) i1 () (Proxy :: Type -> Type) where
+instance Unital (->) iC () (Proxy :: Type -> Type) where
   introduce _ = Proxy
 
-instance Unital (->) i1 () (U1 :: Type -> Type) where
+instance Unital (->) iC () (U1 :: Type -> Type) where
   introduce _ = U1
 
-instance (Monoid c) => Unital (->) i1 () (Const c :: Type -> Type) where
+instance (Monoid c) => Unital (->) iC () (Const c :: Type -> Type) where
   introduce _ = Const mempty
 
-instance (Monoid c) => Unital (->) i1 () (Constant c :: Type -> Type) where
+instance (Monoid c) => Unital (->) iC () (Constant c :: Type -> Type) where
   introduce _ = Constant mempty
 
 deriving via FromAlternative (f `Compose` g) instance (Alternative f, Applicative g) => Unital (->) Void () (f `Compose` g)
@@ -611,12 +611,12 @@ deriving via FromDecidable (Lazy.RWST r w s m) instance (Decidable m) => Unital 
 --   'combine' 'Control.Category..' 'glmap' 'introduce' ≡ 'fmap' ('bwd' 'unitl') 'Control.Category..' 'fwd' 'unitl'
 -- @
 class
-  ( Tensor cat t1 i1,
-    Tensor cat t0 i0,
-    Semigroupal cat t1 t0 f,
-    Unital cat i1 i0 f
+  ( Tensor cat tC iC,
+    Tensor cat tD iD,
+    Semigroupal cat tC tD f,
+    Unital cat iC iD f
   ) =>
-  Monoidal cat t1 i1 t0 i0 f
+  Monoidal cat tC iC tD iD f
 
 instance (Applicative f) => Monoidal (->) (,) () (,) () (FromApplicative f)
 
@@ -636,7 +636,7 @@ deriving via FromApplicative (Either e) instance Monoidal (->) (,) () (,) () (Ei
 
 deriving via FromApplicative IO instance Monoidal (->) (,) () (,) () IO
 
-instance (Semigroupal (->) t1 (,) f, Semigroupal (->) t1 (,) g, Unital (->) i1 () f, Unital (->) i1 () g, Tensor (->) t1 i1) => Monoidal (->) t1 i1 (,) () (Product f g)
+instance (Semigroupal (->) tC (,) f, Semigroupal (->) tC (,) g, Unital (->) iC () f, Unital (->) iC () g, Tensor (->) tC iC) => Monoidal (->) tC iC (,) () (Product f g)
 
 deriving via (FromApplicative ((,) x1)) instance (Monoid x1) => Monoidal (->) (,) () (,) () ((,) x1)
 
@@ -670,25 +670,25 @@ deriving via FromAlternative (Kleisli m a) instance (Alternative m) => Monoidal 
 
 deriving via FromAlternative (Ap f) instance (Alternative f) => Monoidal (->) Either Void (,) () (Ap f)
 
-instance (Semigroupal (->) t1 (,) f, Unital (->) i1 () f, Tensor (->) t1 i1) => Monoidal (->) t1 i1 (,) () (Rec1 f)
+instance (Semigroupal (->) tC (,) f, Unital (->) iC () f, Tensor (->) tC iC) => Monoidal (->) tC iC (,) () (Rec1 f)
 
-instance (Semigroupal (->) t1 (,) f, Unital (->) i1 () f, Tensor (->) t1 i1) => Monoidal (->) t1 i1 (,) () (M1 i c f)
+instance (Semigroupal (->) tC (,) f, Unital (->) iC () f, Tensor (->) tC iC) => Monoidal (->) tC iC (,) () (M1 i c f)
 
-instance (Semigroupal (->) t1 (,) f, Unital (->) i1 () f, Tensor (->) t1 i1) => Monoidal (->) t1 i1 (,) () (Alt f)
+instance (Semigroupal (->) tC (,) f, Unital (->) iC () f, Tensor (->) tC iC) => Monoidal (->) tC iC (,) () (Alt f)
 
-instance (Semigroupal (->) t1 (,) f, Unital (->) i1 () f, Tensor (->) t1 i1) => Monoidal (->) t1 i1 (,) () (Reverse f)
+instance (Semigroupal (->) tC (,) f, Unital (->) iC () f, Tensor (->) tC iC) => Monoidal (->) tC iC (,) () (Reverse f)
 
-instance (Semigroupal (->) t1 (,) f, Unital (->) i1 () f, Tensor (->) t1 i1) => Monoidal (->) t1 i1 (,) () (Backwards f)
+instance (Semigroupal (->) tC (,) f, Unital (->) iC () f, Tensor (->) tC iC) => Monoidal (->) tC iC (,) () (Backwards f)
 
-instance (Semigroupal (->) t1 (,) f, Semigroupal (->) t1 (,) g, Unital (->) i1 () f, Unital (->) i1 () g, Tensor (->) t1 i1) => Monoidal (->) t1 i1 (,) () (f :*: g)
+instance (Semigroupal (->) tC (,) f, Semigroupal (->) tC (,) g, Unital (->) iC () f, Unital (->) iC () g, Tensor (->) tC iC) => Monoidal (->) tC iC (,) () (f :*: g)
 
-instance (Tensor (->) t1 i1) => Monoidal (->) t1 i1 (,) () (Proxy :: Type -> Type)
+instance (Tensor (->) tC iC) => Monoidal (->) tC iC (,) () (Proxy :: Type -> Type)
 
-instance (Tensor (->) t1 i1) => Monoidal (->) t1 i1 (,) () (U1 :: Type -> Type)
+instance (Tensor (->) tC iC) => Monoidal (->) tC iC (,) () (U1 :: Type -> Type)
 
-instance (Monoid c, Tensor (->) t1 i1) => Monoidal (->) t1 i1 (,) () (Const c :: Type -> Type)
+instance (Monoid c, Tensor (->) tC iC) => Monoidal (->) tC iC (,) () (Const c :: Type -> Type)
 
-instance (Monoid c, Tensor (->) t1 i1) => Monoidal (->) t1 i1 (,) () (Constant c :: Type -> Type)
+instance (Monoid c, Tensor (->) tC iC) => Monoidal (->) tC iC (,) () (Constant c :: Type -> Type)
 
 deriving via FromAlternative (f `Compose` g) instance (Alternative f, Applicative g) => Monoidal (->) Either Void (,) () (f `Compose` g)
 

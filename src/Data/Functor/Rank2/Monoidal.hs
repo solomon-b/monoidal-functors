@@ -16,8 +16,8 @@
 -- an ordinary 'Functor'.
 --
 -- The classes keep the same parameter shape as their rank-1 siblings, only
--- lifted a kind: the domain tensor @t1@ now acts on functors while the codomain
--- tensor @t0@ still acts on @Hask@. A product-shaped record is monoidal at three
+-- lifted a kind: the domain tensor @tC@ now acts on functors while the codomain
+-- tensor @tD@ still acts on @Hask@. A product-shaped record is monoidal at three
 -- instantiations, all derivable from the record's 'GHC.Generics' structure:
 --
 -- * __Covariant product__, @'Monoidal' (->) 'Product' 'Data.Proxy.Proxy' (,) () b@.
@@ -117,8 +117,8 @@ import GHC.Generics (Generic (..), K1 (..), M1 (..), U1 (..), type (:*:) (..))
 -- The parameters mirror the rank-1 class one kind up:
 --
 -- * @cat@ is the codomain category (@Hask@, or 'Op' for the oplax duals).
--- * @t1@ is the domain tensor, acting on functors (e.g. 'Product', 'Sum').
--- * @t0@ is the codomain tensor, acting on @Hask@ (e.g. @(,)@, 'Either').
+-- * @tC@ is the domain tensor, acting on functors (e.g. 'Product', 'Sum').
+-- * @tD@ is the codomain tensor, acting on @Hask@ (e.g. @(,)@, 'Either').
 -- * @b@ is the higher-kinded record.
 --
 -- The empty-instance default derives the covariant 'Product' instantiation. For
@@ -130,7 +130,7 @@ type Semigroupal ::
   (Type -> Type -> Type) ->
   ((Type -> Type) -> Type) ->
   Constraint
-class Semigroupal cat t1 t0 b where
+class Semigroupal cat tC tD b where
   -- | ==== __Examples__
   --
   -- Zip two records field-wise (the covariant 'Product' instantiation):
@@ -147,18 +147,18 @@ class Semigroupal cat t1 t0 b where
   --
   -- >>> combine @(->) @These1 @These (These (Rec (Just 1) (Just True)) (Rec [10] [False]) :: These (Rec Maybe) (Rec []))
   -- Rec {rFst = These1 (Just 1) [10], rSnd = These1 (Just True) [False]}
-  combine :: forall f g. cat (t0 (b f) (b g)) (b (t1 f g))
+  combine :: forall f g. cat (tD (b f) (b g)) (b (tC f g))
   default combine ::
     forall f g.
     ( cat ~ (->),
-      t1 ~ Product,
-      t0 ~ (,),
+      tC ~ Product,
+      tD ~ (,),
       Generic (b f),
       Generic (b g),
       Generic (b (Product f g)),
       GSemigroupal (Rep (b f)) (Rep (b g)) (Rep (b (Product f g)))
     ) =>
-    cat (t0 (b f) (b g)) (b (t1 f g))
+    cat (tD (b f) (b g)) (b (tC f g))
   combine = gcombineProduct
 
 --------------------------------------------------------------------------------
@@ -168,9 +168,9 @@ class Semigroupal cat t1 t0 b where
 -- domain unit, which we call 'introduce'.
 --
 -- * @cat@ is the codomain category (@Hask@, or 'Op' for the oplax duals).
--- * @i1@ is the domain unit, a functor (the unit of @t1@; 'Proxy' for 'Product',
+-- * @iC@ is the domain unit, a functor (the unit of @tC@; 'Proxy' for 'Product',
 --   @V1@ for 'Sum').
--- * @i0@ is the codomain unit (the unit of @t0@; @()@ for @(,)@, 'Data.Void.Void'
+-- * @iD@ is the codomain unit (the unit of @tD@; @()@ for @(,)@, 'Data.Void.Void'
 --   for 'Either').
 -- * @b@ is the higher-kinded record.
 --
@@ -183,20 +183,20 @@ type Unital ::
   Type ->
   ((Type -> Type) -> Type) ->
   Constraint
-class Unital cat i1 i0 b where
+class Unital cat iC iD b where
   -- | ==== __Examples__
   --
   -- >>> introduce @(->) @Proxy @() @Rec ()
   -- Rec {rFst = Proxy, rSnd = Proxy}
-  introduce :: cat i0 (b i1)
+  introduce :: cat iD (b iC)
   default introduce ::
     ( cat ~ (->),
-      i1 ~ Proxy,
-      i0 ~ (),
+      iC ~ Proxy,
+      iD ~ (),
       Generic (b Proxy),
       GUnital (Rep (b Proxy))
     ) =>
-    cat i0 (b i1)
+    cat iD (b iC)
   introduce () = to gintroduce
 
 --------------------------------------------------------------------------------
@@ -214,10 +214,10 @@ type Monoidal ::
   ((Type -> Type) -> Type) ->
   Constraint
 class
-  ( Semigroupal cat t1 t0 b,
-    Unital cat i1 i0 b
+  ( Semigroupal cat tC tD b,
+    Unital cat iC iD b
   ) =>
-  Monoidal cat t1 i1 t0 i0 b
+  Monoidal cat tC iC tD iD b
 
 --------------------------------------------------------------------------------
 -- Generic derivation helpers.

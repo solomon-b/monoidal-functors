@@ -8,7 +8,7 @@
 -- The @kind-generics@ 'RepK' represents a type parameter structurally,
 -- whether it occurs covariantly (as in an @Applicative@) or contravariantly
 -- (as in a @Divisible@). One mechanism therefore derives
--- @'Semigroupal' (->) t1 (,)@ for both, across the codomain tensors @(,)@
+-- @'Semigroupal' (->) tC (,)@ for both, across the domain tensors @(,)@
 -- (Applicative and Divisible), @Either@ (Alternative and Decidable), and
 -- @These@ (Semialign).
 --
@@ -31,21 +31,21 @@ import Data.Functor.Monoidal (Monoidal, Semigroupal (..), Unital (..))
 import Generics.Kind
 import Prelude
 
--- | @combine@ over a @kind-generics@ 'RepK', for the product domain tensor
--- @(,)@ and an arbitrary codomain tensor @t1@.
-class GSemigroupalK t1 rep where
-  gcombineK :: rep (x :&&: LoT0) -> rep (x' :&&: LoT0) -> rep (t1 x x' :&&: LoT0)
+-- | @combine@ over a @kind-generics@ 'RepK', for the product codomain tensor
+-- @(,)@ and an arbitrary domain tensor @tC@.
+class GSemigroupalK tC rep where
+  gcombineK :: rep (x :&&: LoT0) -> rep (x' :&&: LoT0) -> rep (tC x x' :&&: LoT0)
 
 -- | The empty constructor.
-instance GSemigroupalK t1 U1 where
+instance GSemigroupalK tC U1 where
   gcombineK U1 U1 = U1
 
 -- | Metadata is transparent.
-instance (GSemigroupalK t1 f) => GSemigroupalK t1 (M1 i c f) where
+instance (GSemigroupalK tC f) => GSemigroupalK tC (M1 i c f) where
   gcombineK (M1 a) (M1 b) = M1 (gcombineK a b)
 
 -- | Combine each side of a product componentwise, for any codomain tensor.
-instance (GSemigroupalK t1 f, GSemigroupalK t1 g) => GSemigroupalK t1 (f :*: g) where
+instance (GSemigroupalK tC f, GSemigroupalK tC g) => GSemigroupalK tC (f :*: g) where
   gcombineK (a :*: b) (a' :*: b') = gcombineK a a' :*: gcombineK b b'
 
 -- | The bare parameter, like 'GHC.Generics.Par1'. Only the product tensor
@@ -55,51 +55,51 @@ instance GSemigroupalK (,) (Field Var0) where
 
 -- | A constant field merges with its 'Monoid'. The value does not mention the
 -- parameter, so this holds for any tensor.
-instance (Monoid c) => GSemigroupalK t1 (Field (Kon c)) where
+instance (Monoid c) => GSemigroupalK tC (Field (Kon c)) where
   gcombineK (Field c) (Field c') = Field (c <> c')
 
 -- | A sub-functor @g@ applied to the parameter delegates to @g@'s own
--- 'Semigroupal' instance at tensor @t1@. This holds whether @g@ is covariant
+-- 'Semigroupal' instance at tensor @tC@. This holds whether @g@ is covariant
 -- (Applicative, Alternative, Semialign) or contravariant (Divisible, Decidable).
-instance (Semigroupal (->) t1 (,) g) => GSemigroupalK t1 (Field (Kon g :@: Var0)) where
-  gcombineK (Field a) (Field b) = Field (combine @(->) @t1 @(,) (a, b))
+instance (Semigroupal (->) tC (,) g) => GSemigroupalK tC (Field (Kon g :@: Var0)) where
+  gcombineK (Field a) (Field b) = Field (combine @(->) @tC @(,) (a, b))
 
 -- | A nested field @f (g a)@. Product-combine the outer functor, then map the
 -- inner combine over it.
 instance
-  (Semigroupal (->) (,) (,) f, Functor f, Semigroupal (->) t1 (,) g) =>
-  GSemigroupalK t1 (Field (Kon f :@: (Kon g :@: Var0)))
+  (Semigroupal (->) (,) (,) f, Functor f, Semigroupal (->) tC (,) g) =>
+  GSemigroupalK tC (Field (Kon f :@: (Kon g :@: Var0)))
   where
   gcombineK (Field a) (Field b) =
-    Field (fmap (combine @(->) @t1 @(,)) (combine @(->) @(,) @(,) (a, b)))
+    Field (fmap (combine @(->) @tC @(,)) (combine @(->) @(,) @(,) (a, b)))
 
 -- | A bare function field @x -> r@, the shape of primitive contravariants like
 -- 'Data.Functor.Contravariant.Predicate' and @'Op' r@. @kind-generics@
 -- represents it as an application of @(->)@. It delegates to the @'Op' r@
 -- instance at the same tensor (Divisible at @(,)@, Decidable at @Either@).
 instance
-  (Semigroupal (->) t1 (,) (Op r)) =>
-  GSemigroupalK t1 (Field ((Kon (->) :@: Var0) :@: Kon r))
+  (Semigroupal (->) tC (,) (Op r)) =>
+  GSemigroupalK tC (Field ((Kon (->) :@: Var0) :@: Kon r))
   where
   gcombineK (Field h1) (Field h2) =
-    Field (getOp (combine @(->) @t1 @(,) (Op h1, Op h2)))
+    Field (getOp (combine @(->) @tC @(,) (Op h1, Op h2)))
 
 -- | The deriving-via vehicle.
 --
--- > deriving via FromGeneric Foo instance Semigroupal (->) t1 (,) Foo
+-- > deriving via FromGeneric Foo instance Semigroupal (->) tC (,) Foo
 newtype FromGeneric f a = FromGeneric (f a)
 
 instance
-  (GenericK f, GSemigroupalK t1 (RepK f), Associative (->) t1) =>
-  Semigroupal (->) t1 (,) (FromGeneric f)
+  (GenericK f, GSemigroupalK tC (RepK f), Associative (->) tC) =>
+  Semigroupal (->) tC (,) (FromGeneric f)
   where
   combine ::
     forall x x'.
     (FromGeneric f x, FromGeneric f x') ->
-    FromGeneric f (t1 x x')
+    FromGeneric f (tC x x')
   combine (FromGeneric fx, FromGeneric fx') =
     FromGeneric
-      ( toK @_ @f @(t1 x x' :&&: LoT0)
+      ( toK @_ @f @(tC x x' :&&: LoT0)
           (gcombineK (fromK @_ @f @(x :&&: LoT0) fx) (fromK @_ @f @(x' :&&: LoT0) fx'))
       )
 
@@ -189,19 +189,19 @@ instance
 -- Unital and Monoidal
 
 -- | @introduce@ over a @kind-generics@ 'RepK', building the unit-filled
--- structure at a codomain unit @i1@. This is @()@ for the product tensor
+-- structure at a domain unit @iC@. This is @()@ for the product tensor
 -- (Applicative and Divisible) and @Void@ for @Either@ and @These@ (Alternative
 -- and Decidable).
-class GUnitalK i1 rep where
-  gintroduceK :: rep (i1 :&&: LoT0)
+class GUnitalK iC rep where
+  gintroduceK :: rep (iC :&&: LoT0)
 
-instance GUnitalK i1 U1 where
+instance GUnitalK iC U1 where
   gintroduceK = U1
 
-instance (GUnitalK i1 f) => GUnitalK i1 (M1 i c f) where
+instance (GUnitalK iC f) => GUnitalK iC (M1 i c f) where
   gintroduceK = M1 gintroduceK
 
-instance (GUnitalK i1 f, GUnitalK i1 g) => GUnitalK i1 (f :*: g) where
+instance (GUnitalK iC f, GUnitalK iC g) => GUnitalK iC (f :*: g) where
   gintroduceK = gintroduceK :*: gintroduceK
 
 -- | A bare parameter can only be introduced at the product unit @()@, the one
@@ -211,43 +211,43 @@ instance GUnitalK () (Field Var0) where
   gintroduceK = Field ()
 
 -- | A constant field is the 'Monoid' identity, at any unit.
-instance (Monoid c) => GUnitalK i1 (Field (Kon c)) where
+instance (Monoid c) => GUnitalK iC (Field (Kon c)) where
   gintroduceK = Field mempty
 
 -- | A sub-functor delegates to its own 'Unital' instance at the same unit.
-instance (Unital (->) i1 () g) => GUnitalK i1 (Field (Kon g :@: Var0)) where
-  gintroduceK = Field (introduce @(->) @i1 @() ())
+instance (Unital (->) iC () g) => GUnitalK iC (Field (Kon g :@: Var0)) where
+  gintroduceK = Field (introduce @(->) @iC @() ())
 
--- | A nested field @f (g i1)@. The outer functor at the product unit, the inner
--- at @i1@, mirroring the nested @combine@.
+-- | A nested field @f (g iC)@. The outer functor at the product unit, the inner
+-- at @iC@, mirroring the nested @combine@.
 instance
-  (Functor f, Unital (->) () () f, Unital (->) i1 () g) =>
-  GUnitalK i1 (Field (Kon f :@: (Kon g :@: Var0)))
+  (Functor f, Unital (->) () () f, Unital (->) iC () g) =>
+  GUnitalK iC (Field (Kon f :@: (Kon g :@: Var0)))
   where
   gintroduceK =
-    Field (fmap (const (introduce @(->) @i1 @() ())) (introduce @(->) @() @() ()))
+    Field (fmap (const (introduce @(->) @iC @() ())) (introduce @(->) @() @() ()))
 
 -- | A bare function field's unit delegates to @'Op' r@ (@conquer@ at @()@,
 -- @lose@ at @Void@).
 instance
-  (Unital (->) i1 () (Op r)) =>
-  GUnitalK i1 (Field ((Kon (->) :@: Var0) :@: Kon r))
+  (Unital (->) iC () (Op r)) =>
+  GUnitalK iC (Field ((Kon (->) :@: Var0) :@: Kon r))
   where
-  gintroduceK = Field (getOp (introduce @(->) @i1 @() ()))
+  gintroduceK = Field (getOp (introduce @(->) @iC @() ()))
 
--- | The unit vehicle, at any codomain unit @i1@:
+-- | The unit vehicle, at any domain unit @iC@:
 --
 -- > deriving via FromGeneric Foo instance Unital (->) () () Foo
 -- > deriving via FromGeneric Foo instance Unital (->) Void () Foo
-instance (GenericK f, GUnitalK i1 (RepK f)) => Unital (->) i1 () (FromGeneric f) where
-  introduce :: () -> FromGeneric f i1
-  introduce () = FromGeneric (toK @_ @f @(i1 :&&: LoT0) gintroduceK)
+instance (GenericK f, GUnitalK iC (RepK f)) => Unital (->) iC () (FromGeneric f) where
+  introduce :: () -> FromGeneric f iC
+  introduce () = FromGeneric (toK @_ @f @(iC :&&: LoT0) gintroduceK)
 
 -- | @Monoidal@ from 'Semigroupal' plus 'Unital', for any codomain
--- tensor @t1@ paired with its unit @i1@:
+-- tensor @tC@ paired with its unit @iC@:
 --
 -- > deriving via FromGeneric Foo instance Monoidal (->) (,) () (,) () Foo
 -- > deriving via FromGeneric Foo instance Monoidal (->) Either Void (,) () Foo
 instance
-  (GenericK f, GSemigroupalK t1 (RepK f), GUnitalK i1 (RepK f), Tensor (->) t1 i1) =>
-  Monoidal (->) t1 i1 (,) () (FromGeneric f)
+  (GenericK f, GSemigroupalK tC (RepK f), GUnitalK iC (RepK f), Tensor (->) tC iC) =>
+  Monoidal (->) tC iC (,) () (FromGeneric f)

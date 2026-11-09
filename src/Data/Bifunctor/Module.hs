@@ -73,7 +73,7 @@ newtype FromBifunctor p a b = FromBifunctor (p a b)
 
 --------------------------------------------------------------------------------
 
--- | A 'Profunctor' \(P : \mathcal{C}^{op} \times \mathcal{D} \to Set\)
+-- | A 'Profunctor' \(P : \mathcal{C_1}^{op} \times \mathcal{C_2} \to Set\)
 -- is a Tambara 'LeftModule' if it is equipped with a morphism \(s_{a,b,m} : P(a, b) \to P(a \odot m, b \odot m)\),
 -- which we call 'lstrength'.
 --
@@ -84,7 +84,7 @@ newtype FromBifunctor p a b = FromBifunctor (p a b)
 -- 'Data.Profunctor.Types.lmap' ('rstrength' @f@) 'Control.Category..' 'lstrength' ≡ 'Data.Profunctor.Types.rmap' ('rstrength' @f@) 'Control.Category..' 'lstrength'
 -- 'lstrength' 'Control.Category..' 'lstrength' ≡ 'Types.dimap' ('Control.Category.Tensor.bwd' 'Control.Category.Tensor.assoc') ('Control.Category.Tensor.fwd' 'Control.Category.Tensor.assoc') 'Control.Category..' 'lstrength'
 -- @
-class LeftModule cat t1 t2 p where
+class LeftModule cat tC1 tC2 p where
   -- | ==== __Examples__
   --
   -- 'Data.Profiunctor.Strong.first'':
@@ -96,7 +96,7 @@ class LeftModule cat t1 t2 p where
   --
   -- >>> :t lstrength @(->) @Either @Either
   -- lstrength @(->) @Either @Either :: LeftModule (->) Either Either p => p a b -> p (Either a x) (Either b x)
-  lstrength :: cat (p a b) (p (t1 a x) (t2 b x))
+  lstrength :: cat (p a b) (p (tC1 a x) (tC2 b x))
 
 instance (Strong p) => LeftModule (->) (,) (,) (FromProfunctor p) where
   lstrength :: FromProfunctor p a b -> FromProfunctor p (a, x) (b, x)
@@ -270,7 +270,7 @@ deriving via (FromBifunctor ((,,,,,,) x1 x2 x3 x4 x5)) instance LeftModule Op (,
 
 --------------------------------------------------------------------------------
 
--- | A 'Profunctor' \(P : \mathcal{C}^{op} \times \mathcal{D} \to Set\)
+-- | A 'Profunctor' \(P : \mathcal{C_1}^{op} \times \mathcal{C_2} \to Set\)
 -- is a Tambara 'RightModule' if it is equipped with a morphism \(s_{a,b,m} : P(a, b) \to P(m \odot a, m \odot b)\),
 -- which we call 'rstrength'.
 --
@@ -281,7 +281,7 @@ deriving via (FromBifunctor ((,,,,,,) x1 x2 x3 x4 x5)) instance LeftModule Op (,
 -- 'Data.Profunctor.Types.lmap' ('lstrength' @f@) 'Control.Category..' 'rstrength' ≡ 'Data.Profunctor.Types.rmap' ('lstrength' @f@) 'Control.Category..' 'rstrength'
 -- 'rstrength' 'Control.Category..' 'rstrength' ≡  'Data.Profunctor.Types.dimap' ('Control.Category.Tensor.fwd' 'Control.Category.Tensor.assoc') ('Control.Category.Tensor.bwd' 'Control.Category.Tensor.assoc') 'Control.Category..' 'rstrength'
 -- @
-class RightModule cat t1 t2 f where
+class RightModule cat tC1 tC2 f where
   -- | ==== __Examples__
   --
   -- 'Data.Profunctor.Strong.second'':
@@ -293,7 +293,7 @@ class RightModule cat t1 t2 f where
   --
   -- >>> :t rstrength @(->) @Either @Either
   -- rstrength @(->) @Either @Either :: RightModule (->) Either Either f => f a b -> f (Either x a) (Either x b)
-  rstrength :: cat (f a b) (f (x `t1` a) (x `t2` b))
+  rstrength :: cat (f a b) (f (x `tC1` a) (x `tC2` b))
 
 instance (Strong p) => RightModule (->) (,) (,) (FromProfunctor p) where
   rstrength :: FromProfunctor p a b -> FromProfunctor p (c, a) (c, b)
@@ -476,7 +476,7 @@ deriving via (FromBifunctor ((,,,,,,) x1 x2 x3 x4 x5)) instance RightModule Op (
 -- 'rstrength' ≡ 'Data.Profunctor.Types.dimap' 'Control.Category.Tensor.swap' 'Control.Category.Tensor.swap' 'Control.Category..' 'lstrength'
 -- 'lstrength' ≡ 'Data.Profunctor.Types.dimap' 'Control.Category.Tensor.swap' 'Control.Category.Tensor.swap' 'Control.Category..' 'rstrength'
 -- @
-class (LeftModule cat t1 t2 f, RightModule cat t1 t2 f) => Bimodule cat t1 t2 f
+class (LeftModule cat tC1 tC2 f, RightModule cat tC1 tC2 f) => Bimodule cat tC1 tC2 f
 
 instance (Strong p) => Bimodule (->) (,) (,) (FromProfunctor p)
 
@@ -640,7 +640,7 @@ deriving via (FromBifunctor ((,,,,,,) x1 x2 x3 x4 x5)) instance Bimodule Op (,) 
 
 --------------------------------------------------------------------------------
 
--- | A 'Profunctor' \(P : \mathcal{C}^{op} \times \mathcal{D} \to Set\)
+-- | A 'Profunctor' \(P : \mathcal{C_1}^{op} \times \mathcal{C_2} \to Set\)
 -- is a Tambara 'LeftCoModule' if it is equipped with a morphism \(s^{-1}_{a,b,m} : P(a \odot m, a \odot m) \to P(a, b) \),
 -- which we call 'lcostrength'.
 --
@@ -651,7 +651,7 @@ deriving via (FromBifunctor ((,,,,,,) x1 x2 x3 x4 x5)) instance Bimodule Op (,) 
 -- 'lcostrength' 'Control.Category..' 'Data.Profunctor.Types.lmap' ('rstrength' f) ≡ 'lcostrength' 'Control.Category..' 'Data.Profunctor.Types.rmap' ('rstrength' f)
 -- 'lcostrength' 'Control.Category..' 'lcostrength' ≡  'lcostrength' 'Control.Category..' 'Data.Profunctor.Types.dimap' ('Control.Category.Tensor.fwd' 'Control.Category.Tensor.assoc') ('Control.Category.Tensor.bwd' 'Control.Category.Tensor.assoc')
 -- @
-class LeftCoModule cat t1 t2 f where
+class LeftCoModule cat tC1 tC2 f where
   -- | ==== __Examples__
   --
   -- 'Data.Profunctor.Strong.unfirst':
@@ -663,7 +663,7 @@ class LeftCoModule cat t1 t2 f where
   --
   -- >>> :t lcostrength @(->) @Either @Either
   -- lcostrength @(->) @Either @Either :: LeftCoModule (->) Either Either f => f (Either a x) (Either b x) -> f a b
-  lcostrength :: cat (f (t1 a x) (t2 b x)) (f a b)
+  lcostrength :: cat (f (tC1 a x) (tC2 b x)) (f a b)
 
 instance (Costrong p) => LeftCoModule (->) (,) (,) (FromProfunctor p) where
   lcostrength :: FromProfunctor p (a, x) (b, x) -> FromProfunctor p a b
@@ -805,7 +805,7 @@ deriving via (FromBifunctor ((,,,,,,) x1 x2 x3 x4 x5)) instance LeftCoModule Op 
 
 --------------------------------------------------------------------------------
 
--- | A 'Profunctor' \(P : \mathcal{C}^{op} \times \mathcal{D} \to Set\)
+-- | A 'Profunctor' \(P : \mathcal{C_1}^{op} \times \mathcal{C_2} \to Set\)
 -- is a Tambara 'RightCoModule' if it is equipped with a morphism \(s^{-1}_{a,b,m} : P(m \odot a, m \odot a) \to P(a, b) \),
 -- which we call 'rcostrength'.
 --
@@ -816,7 +816,7 @@ deriving via (FromBifunctor ((,,,,,,) x1 x2 x3 x4 x5)) instance LeftCoModule Op 
 -- 'rcostrength' 'Control.Category..' 'Data.Profunctor.Types.lmap' ('lstrength' f) ≡ 'rcostrength' 'Control.Category..' 'Data.Profunctor.Types.rmap' ('lstrength' f)
 -- 'rcostrength' 'Control.Category..' 'rcostrength' ≡  'rcostrength' 'Control.Category..' 'Data.Profunctor.Types.dimap' ('Control.Category.Tensor.bwd' 'Control.Category.Tensor.assoc') ('Control.Category.Tensor.fwd' 'Control.Category.Tensor.assoc')
 -- @
-class RightCoModule cat t1 t2 f where
+class RightCoModule cat tC1 tC2 f where
   -- | ==== __Examples__
   --
   -- 'Data.Profunctor.Strong.unsecond':
@@ -828,7 +828,7 @@ class RightCoModule cat t1 t2 f where
   --
   -- >>> :t rcostrength @(->) @Either @Either
   -- rcostrength @(->) @Either @Either :: RightCoModule (->) Either Either f => f (Either x a) (Either x b) -> f a b
-  rcostrength :: cat (f (x `t1` a) (x `t2` b)) (f a b)
+  rcostrength :: cat (f (x `tC1` a) (x `tC2` b)) (f a b)
 
 instance (Costrong p) => RightCoModule (->) (,) (,) (FromProfunctor p) where
   rcostrength :: FromProfunctor p (x, a) (x, b) -> FromProfunctor p a b
@@ -979,7 +979,7 @@ deriving via (FromBifunctor ((,,,,,,) x1 x2 x3 x4 x5)) instance RightCoModule Op
 -- 'rcostrength' ≡ 'lcostrength' 'Control.Category..' 'Data.Profunctor.Types.dimap' 'Control.Category.Tensor.swap' 'Control.Category.Tensor.swap'
 -- 'lcostrength' ≡ 'rcostrength' 'Control.Category..' 'Data.Profunctor.Types.dimap' 'Control.Category.Tensor.swap' 'Control.Category.Tensor.swap'
 -- @
-class (LeftCoModule cat t1 t2 f, RightCoModule cat t1 t2 f) => CoBimodule cat t1 t2 f
+class (LeftCoModule cat tC1 tC2 f, RightCoModule cat tC1 tC2 f) => CoBimodule cat tC1 tC2 f
 
 instance (Costrong p) => CoBimodule (->) (,) (,) (FromProfunctor p)
 

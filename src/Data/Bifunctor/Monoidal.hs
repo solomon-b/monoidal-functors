@@ -86,7 +86,7 @@ import Prelude (Either (..), Monoid, curry)
 -- @
 -- 'combine' 'Control.Category..' 'Control.Category.Tensor.grmap' 'combine' 'Control.Category..' 'bwd' 'Control.Category.Tensor.assoc' ≡ 'fmap' ('bwd' 'Control.Category.Tensor.assoc') 'Control.Category..' 'combine' 'Control.Category..' 'Control.Category.Tensor.glmap' 'combine'
 -- @
-class (Associative cat t1, Associative cat t2, Associative cat to) => Semigroupal cat t1 t2 to f where
+class (Associative cat tC1, Associative cat tC2, Associative cat tD) => Semigroupal cat tC1 tC2 tD f where
   -- | A natural transformation \(\phi_{AB,CD} : F\ A\ B \bullet F\ C\ D \to F\ (A \otimes C)\ (B \otimes D)\).
   --
   -- ==== __Examples__
@@ -96,7 +96,7 @@ class (Associative cat t1, Associative cat t2, Associative cat to) => Semigroupa
   --
   -- >>> combine @(->) @(,) @(,) @(,) @(->) (show, (>10)) (True, 11)
   -- ("True",True)
-  combine :: cat (to (f x y) (f x' y')) (f (t1 x x') (t2 y y'))
+  combine :: cat (tD (f x y) (f x' y')) (f (tC1 x x') (tC2 y y'))
 
 newtype FromBiapplicative p a b = FromBiapplicative (p a b)
   deriving newtype (Functor, Bifunctor, Biapplicative)
@@ -107,7 +107,7 @@ instance (Biapplicative p) => Semigroupal (->) (,) (,) (,) (FromBiapplicative p)
 
 deriving via FromBiapplicative (,) instance Semigroupal (->) (,) (,) (,) (,)
 
--- Colax (Op) splits. The split @f (t1 x x') (t2 y y') -> to (f x y) (f x' y')@,
+-- Colax (Op) splits. The split @f (tC1 x x') (tC2 y y') -> tD (f x y) (f x' y')@,
 -- dual to the covariant @combine@.
 
 -- | The product transpose, inverse to the covariant @(,)@ combine.
@@ -166,32 +166,32 @@ instance Semigroupal Op (,) (,) (,) Tagged where
 -- transpose into a pair of products. @Associative@ \/ @Bifunctor@ on the tensors
 -- are the 'Semigroupal' superclasses, listed so GHC can use @combine@ here.
 instance
-  ( Semigroupal Op t1 t2 (,) f,
-    Semigroupal Op t1 t2 (,) g,
-    Associative (->) t1,
-    Associative (->) t2,
-    Bifunctor t1,
-    Bifunctor t2
+  ( Semigroupal Op tC1 tC2 (,) f,
+    Semigroupal Op tC1 tC2 (,) g,
+    Associative (->) tC1,
+    Associative (->) tC2,
+    Bifunctor tC1,
+    Bifunctor tC2
   ) =>
-  Semigroupal Op t1 t2 (,) (Product f g)
+  Semigroupal Op tC1 tC2 (,) (Product f g)
   where
-  combine :: Op (Product f g a b, Product f g a' b') (Product f g (t1 a a') (t2 b b'))
+  combine :: Op (Product f g a b, Product f g a' b') (Product f g (tC1 a a') (tC2 b b'))
   combine = Op $ \(Pair fab gab) ->
-    let (fa, fa') = getOp (combine @Op @t1 @t2 @(,)) fab
-        (ga, ga') = getOp (combine @Op @t1 @t2 @(,)) gab
+    let (fa, fa') = getOp (combine @Op @tC1 @tC2 @(,)) fab
+        (ga, ga') = getOp (combine @Op @tC1 @tC2 @(,)) gab
      in (Pair fa ga, Pair fa' ga')
 
 -- | 'Joker' and 'Clown' carry a functor on one parameter and are phantom in the
 -- other, so their split delegates to the functor colax split of
 -- "Data.Functor.Monoidal". 'Joker' acts on the second parameter, 'Clown' on the
 -- first.
-instance (F.Semigroupal Op t2 to f, Associative (->) t1, Bifunctor to) => Semigroupal Op t1 t2 to (Joker f) where
-  combine :: Op (to (Joker f a b) (Joker f a' b')) (Joker f (t1 a a') (t2 b b'))
-  combine = Op $ \(Joker fbb') -> gbimap Joker Joker (getOp (F.combine @Op @t2 @to) fbb')
+instance (F.Semigroupal Op tC2 tD f, Associative (->) tC1, Bifunctor tD) => Semigroupal Op tC1 tC2 tD (Joker f) where
+  combine :: Op (tD (Joker f a b) (Joker f a' b')) (Joker f (tC1 a a') (tC2 b b'))
+  combine = Op $ \(Joker fbb') -> gbimap Joker Joker (getOp (F.combine @Op @tC2 @tD) fbb')
 
-instance (F.Semigroupal Op t1 to f, Associative (->) t2, Bifunctor to) => Semigroupal Op t1 t2 to (Clown f) where
-  combine :: Op (to (Clown f a b) (Clown f a' b')) (Clown f (t1 a a') (t2 b b'))
-  combine = Op $ \(Clown faa') -> gbimap Clown Clown (getOp (F.combine @Op @t1 @to) faa')
+instance (F.Semigroupal Op tC1 tD f, Associative (->) tC2, Bifunctor tD) => Semigroupal Op tC1 tC2 tD (Clown f) where
+  combine :: Op (tD (Clown f a b) (Clown f a' b')) (Clown f (tC1 a a') (tC2 b b'))
+  combine = Op $ \(Clown faa') -> gbimap Clown Clown (getOp (F.combine @Op @tC1 @tD) faa')
 
 -- | 'Forget' is a function out of its first parameter, phantom in the second.
 -- The split is the co-pairing, inverse to the covariant @Forget@ @combine@
@@ -211,46 +211,46 @@ instance Semigroupal Op Either Either (,) (Forget (f r)) where
 -- codomain @f r@ does not depend on the (contravariant) argument.
 
 -- | Transparent newtype wrappers delegate to the wrapped bifunctor's split.
-instance (Semigroupal Op t1 t2 to p, Associative (->) t1, Associative (->) t2, Bifunctor to) => Semigroupal Op t1 t2 to (Biap p) where
-  combine :: Op (to (Biap p a b) (Biap p a' b')) (Biap p (t1 a a') (t2 b b'))
-  combine = Op $ \(Biap pv) -> gbimap Biap Biap (getOp (combine @Op @t1 @t2 @to) pv)
+instance (Semigroupal Op tC1 tC2 tD p, Associative (->) tC1, Associative (->) tC2, Bifunctor tD) => Semigroupal Op tC1 tC2 tD (Biap p) where
+  combine :: Op (tD (Biap p a b) (Biap p a' b')) (Biap p (tC1 a a') (tC2 b b'))
+  combine = Op $ \(Biap pv) -> gbimap Biap Biap (getOp (combine @Op @tC1 @tC2 @tD) pv)
 
-instance (Semigroupal Op t1 t2 to p, Associative (->) t1, Associative (->) t2, Bifunctor to) => Semigroupal Op t1 t2 to (WrappedBifunctor p) where
-  combine :: Op (to (WrappedBifunctor p a b) (WrappedBifunctor p a' b')) (WrappedBifunctor p (t1 a a') (t2 b b'))
-  combine = Op $ \(WrapBifunctor pv) -> gbimap WrapBifunctor WrapBifunctor (getOp (combine @Op @t1 @t2 @to) pv)
+instance (Semigroupal Op tC1 tC2 tD p, Associative (->) tC1, Associative (->) tC2, Bifunctor tD) => Semigroupal Op tC1 tC2 tD (WrappedBifunctor p) where
+  combine :: Op (tD (WrappedBifunctor p a b) (WrappedBifunctor p a' b')) (WrappedBifunctor p (tC1 a a') (tC2 b b'))
+  combine = Op $ \(WrapBifunctor pv) -> gbimap WrapBifunctor WrapBifunctor (getOp (combine @Op @tC1 @tC2 @tD) pv)
 
 -- | 'Flip' swaps the parameters, so its split is the wrapped bifunctor's split at
 -- the swapped tensors.
-instance (Semigroupal Op t2 t1 to p, Associative (->) t1, Associative (->) t2, Bifunctor to) => Semigroupal Op t1 t2 to (Flip p) where
-  combine :: Op (to (Flip p a b) (Flip p a' b')) (Flip p (t1 a a') (t2 b b'))
-  combine = Op $ \(Flip pv) -> gbimap Flip Flip (getOp (combine @Op @t2 @t1 @to) pv)
+instance (Semigroupal Op tC2 tC1 tD p, Associative (->) tC1, Associative (->) tC2, Bifunctor tD) => Semigroupal Op tC1 tC2 tD (Flip p) where
+  combine :: Op (tD (Flip p a b) (Flip p a' b')) (Flip p (tC1 a a') (tC2 b b'))
+  combine = Op $ \(Flip pv) -> gbimap Flip Flip (getOp (combine @Op @tC2 @tC1 @tD) pv)
 
 -- | 'Tannen' wraps a bifunctor in a functor. Map the bifunctor split under the
 -- functor, then use the functor colax split to pull the tensor out.
-instance (F.Semigroupal Op to to f, Semigroupal Op t1 t2 to p, Functor f, Associative (->) t1, Associative (->) t2, Bifunctor to) => Semigroupal Op t1 t2 to (Tannen f p) where
-  combine :: Op (to (Tannen f p a b) (Tannen f p a' b')) (Tannen f p (t1 a a') (t2 b b'))
-  combine = Op $ \(Tannen fp) -> gbimap Tannen Tannen (getOp (F.combine @Op @to @to) (fmap (getOp (combine @Op @t1 @t2 @to)) fp))
+instance (F.Semigroupal Op tD tD f, Semigroupal Op tC1 tC2 tD p, Functor f, Associative (->) tC1, Associative (->) tC2, Bifunctor tD) => Semigroupal Op tC1 tC2 tD (Tannen f p) where
+  combine :: Op (tD (Tannen f p a b) (Tannen f p a' b')) (Tannen f p (tC1 a a') (tC2 b b'))
+  combine = Op $ \(Tannen fp) -> gbimap Tannen Tannen (getOp (F.combine @Op @tD @tD) (fmap (getOp (combine @Op @tC1 @tC2 @tD)) fp))
 
 -- | 'Biff' applies a functor to each parameter before the bifunctor. Each
--- parameter's functor splits into the codomain tensor @to@, then the bifunctor
--- splits at @Op to to to@. Fixing the intermediate tensors to @to@ keeps them
+-- parameter's functor splits into the codomain tensor @tD@, then the bifunctor
+-- splits at @Op tD tD tD@. Fixing the intermediate tensors to @tD@ keeps them
 -- determined by the instance head.
 instance
-  ( F.Semigroupal Op t1 to f,
-    F.Semigroupal Op t2 to g,
-    Semigroupal Op to to to p,
+  ( F.Semigroupal Op tC1 tD f,
+    F.Semigroupal Op tC2 tD g,
+    Semigroupal Op tD tD tD p,
     Functor f,
     Functor g,
     Bifunctor p,
-    Associative (->) t1,
-    Associative (->) t2,
-    Bifunctor to
+    Associative (->) tC1,
+    Associative (->) tC2,
+    Bifunctor tD
   ) =>
-  Semigroupal Op t1 t2 to (Biff p f g)
+  Semigroupal Op tC1 tC2 tD (Biff p f g)
   where
-  combine :: Op (to (Biff p f g a b) (Biff p f g a' b')) (Biff p f g (t1 a a') (t2 b b'))
+  combine :: Op (tD (Biff p f g a b) (Biff p f g a' b')) (Biff p f g (tC1 a a') (tC2 b b'))
   combine = Op $ \(Biff pv) ->
-    gbimap Biff Biff (getOp (combine @Op @to @to @to) (bimap (getOp (F.combine @Op @t1 @to)) (getOp (F.combine @Op @t2 @to)) pv))
+    gbimap Biff Biff (getOp (combine @Op @tD @tD @tD) (bimap (getOp (F.combine @Op @tC1 @tD)) (getOp (F.combine @Op @tC2 @tD)) pv))
 
 deriving via FromBiapplicative ((,,) x) instance (Monoid x) => Semigroupal (->) (,) (,) (,) ((,,) x)
 
@@ -282,10 +282,10 @@ deriving via FromBiapplicative (WrappedBifunctor p) instance (Biapplicative p) =
 -- delegating to each component's own 'Semigroupal'. It subsumes the former
 -- @FromBiapplicative@ instance and covers profunctor components and the
 -- 'Either' \/ 'These' tensors.
-instance (Semigroupal (->) t1 t2 (,) f, Semigroupal (->) t1 t2 (,) g) => Semigroupal (->) t1 t2 (,) (Product f g) where
-  combine :: (Product f g x y, Product f g x' y') -> Product f g (t1 x x') (t2 y y')
+instance (Semigroupal (->) tC1 tC2 (,) f, Semigroupal (->) tC1 tC2 (,) g) => Semigroupal (->) tC1 tC2 (,) (Product f g) where
+  combine :: (Product f g x y, Product f g x' y') -> Product f g (tC1 x x') (tC2 y y')
   combine (Pair fxy gxy, Pair fxy' gxy') =
-    Pair (combine @(->) @t1 @t2 @(,) (fxy, fxy')) (combine @(->) @t1 @t2 @(,) (gxy, gxy'))
+    Pair (combine @(->) @tC1 @tC2 @(,) (fxy, fxy')) (combine @(->) @tC1 @tC2 @(,) (gxy, gxy'))
 
 deriving via FromBiapplicative (Tannen f p) instance (Applicative f, Biapplicative p) => Semigroupal (->) (,) (,) (,) (Tannen f p)
 
@@ -424,7 +424,7 @@ instance (Alternative f) => Semigroupal (->) (,) Either (,) (Forget (f r)) where
 
 infixr 9 |??|
 
-(|??|) :: (Semigroupal (->) t1 t2 (,) p) => p a b -> p a' b' -> p (a `t1` a') (b `t2` b')
+(|??|) :: (Semigroupal (->) tC1 tC2 (,) p) => p a b -> p a' b' -> p (a `tC1` a') (b `tC2` b')
 (|??|) = curry combine
 
 infixr 9 |**|
@@ -477,7 +477,7 @@ infixr 9 |&+|
 -- | Given monoidal categories \((\mathcal{C}, \otimes, I_{\mathcal{C}})\) and \((\mathcal{D}, \bullet, I_{\mathcal{D}})\).
 -- A bifunctor \(F : \mathcal{C_1} \times \mathcal{C_2} \to \mathcal{D}\) is 'Unital' if it supports a morphism
 -- \(\phi : I_{\mathcal{D}} \to F\ I_{\mathcal{C_1}}\ I_{\mathcal{C_2}}\), which we call 'introduce'.
-class Unital cat i1 i2 io f where
+class Unital cat iC1 iC2 iD f where
   -- | @introduce@ maps from the identity in \(\mathcal{C_1} \times \mathcal{C_2}\) to the
   -- identity in \(\mathcal{D}\).
   --
@@ -488,7 +488,7 @@ class Unital cat i1 i2 io f where
   --
   -- >>> introduce @(->) @Void @() @() @Either ()
   -- Right ()
-  introduce :: cat io (f i1 i2)
+  introduce :: cat iD (f iC1 iC2)
 
 instance (Biapplicative p) => Unital (->) () () () (FromBiapplicative p) where
   introduce :: () -> FromBiapplicative p () ()
@@ -524,9 +524,9 @@ deriving via FromBiapplicative (WrappedBifunctor p) instance (Biapplicative p) =
 
 -- | Componentwise 'introduce', delegating to each component's 'Unital'. Covers
 -- every unit pair that both components support, covariant and profunctor alike.
-instance (Unital (->) i1 i2 () f, Unital (->) i1 i2 () g) => Unital (->) i1 i2 () (Product f g) where
-  introduce :: () -> Product f g i1 i2
-  introduce () = Pair (introduce @(->) @i1 @i2 @() ()) (introduce @(->) @i1 @i2 @() ())
+instance (Unital (->) iC1 iC2 () f, Unital (->) iC1 iC2 () g) => Unital (->) iC1 iC2 () (Product f g) where
+  introduce :: () -> Product f g iC1 iC2
+  introduce () = Pair (introduce @(->) @iC1 @iC2 @() ()) (introduce @(->) @iC1 @iC2 @() ())
 
 deriving via FromBiapplicative (Tannen f p) instance (Applicative f, Biapplicative p) => Unital (->) () () () (Tannen f p)
 
@@ -640,13 +640,13 @@ instance (Alternative f) => Unital (->) () Void () (Kleisli f) where
 -- 'combine' 'Control.Category..' 'Control.Category.Tensor.glmap' 'introduce' ≡ 'fmap' ('bwd' 'unitl') 'Control.Category..' 'fwd' 'unitl'
 -- @
 class
-  ( Tensor cat t1 i1,
-    Tensor cat t2 i2,
-    Tensor cat to io,
-    Semigroupal cat t1 t2 to f,
-    Unital cat i1 i2 io f
+  ( Tensor cat tC1 iC1,
+    Tensor cat tC2 iC2,
+    Tensor cat tD iD,
+    Semigroupal cat tC1 tC2 tD f,
+    Unital cat iC1 iC2 iD f
   ) =>
-  Monoidal cat t1 i1 t2 i2 to io f
+  Monoidal cat tC1 iC1 tC2 iC2 tD iD f
 
 instance Monoidal (->) (,) () (,) () (,) () (,)
 
@@ -676,7 +676,7 @@ instance (Applicative g) => Monoidal (->) (,) () (,) () (,) () (Joker g)
 
 instance (Biapplicative p) => Monoidal (->) (,) () (,) () (,) () (WrappedBifunctor p)
 
-instance (Semigroupal (->) t1 t2 (,) f, Semigroupal (->) t1 t2 (,) g, Unital (->) i1 i2 () f, Unital (->) i1 i2 () g, Tensor (->) t1 i1, Tensor (->) t2 i2) => Monoidal (->) t1 i1 t2 i2 (,) () (Product f g)
+instance (Semigroupal (->) tC1 tC2 (,) f, Semigroupal (->) tC1 tC2 (,) g, Unital (->) iC1 iC2 () f, Unital (->) iC1 iC2 () g, Tensor (->) tC1 iC1, Tensor (->) tC2 iC2) => Monoidal (->) tC1 iC1 tC2 iC2 (,) () (Product f g)
 
 instance (Applicative f, Biapplicative p) => Monoidal (->) (,) () (,) () (,) () (Tannen f p)
 

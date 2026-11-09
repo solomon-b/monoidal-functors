@@ -108,7 +108,7 @@ instance Unital (->) (Joker V1) Void EmptyHKD where introduce = absurd
 instance Monoidal (->) Sum (Joker V1) Either Void EmptyHKD
 
 --------------------------------------------------------------------------------
--- Monomorphic call sites (fix @cat@, @t1@, @t0@ for the derived instances).
+-- Monomorphic call sites (fix @cat@, @tC@, @tD@ for the derived instances).
 
 combineHKD :: TestHKD p -> TestHKD q -> TestHKD (Product p q)
 combineHKD x y = combine @(->) @Product @(,) (x, y)

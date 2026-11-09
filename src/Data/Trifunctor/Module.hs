@@ -12,14 +12,14 @@ where
 
 --------------------------------------------------------------------------------
 
-class LeftModule cat t1 t2 t3 f where
-  lstrength :: cat (f a b c) (f (t1 a x) (t2 b x) (t3 c x))
+class LeftModule cat tC1 tC2 tC3 f where
+  lstrength :: cat (f a b c) (f (tC1 a x) (tC2 b x) (tC3 c x))
 
 --------------------------------------------------------------------------------
 
-class RightModule cat t1 t2 t3 f where
-  rstrength :: cat (f a b c) (f (t1 x a) (t2 x b) (t3 x c))
+class RightModule cat tC1 tC2 tC3 f where
+  rstrength :: cat (f a b c) (f (tC1 x a) (tC2 x b) (tC3 x c))
 
 --------------------------------------------------------------------------------
 
-class (LeftModule cat t1 t2 t3 f, RightModule cat t1 t2 t3 f) => Bimodule cat t1 t2 t3 f
+class (LeftModule cat tC1 tC2 tC3 f, RightModule cat tC1 tC2 tC3 f) => Bimodule cat tC1 tC2 tC3 f
