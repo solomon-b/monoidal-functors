@@ -18,11 +18,13 @@
           hsPkgs = pkgs.haskell.packages.${compiler}.override (old: {
             overrides = pkgs.lib.composeExtensions (old.overrides or (_: _: { }))
               (hfinal: hprev: {
-                kindly-functors = hfinal.callHackageDirect {
-                  pkg = "kindly-functors";
-                  ver = "0.2.0.0";
-                  sha256 = "sha256-pKhloiSuZeomzYq+NXFot5Zd0zaKfapXtF7q9lJXe3g=";
-                } {};
+                kindly-functors = hfinal.callHackageDirect
+                  {
+                    pkg = "kindly-functors";
+                    ver = "0.2.0.0";
+                    sha256 = "sha256-pKhloiSuZeomzYq+NXFot5Zd0zaKfapXtF7q9lJXe3g=";
+                  }
+                  { };
                 monoidal-functors = hfinal.callCabal2nix "monoidal-functors" ./. { };
               });
           });
