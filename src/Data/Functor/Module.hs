@@ -47,7 +47,7 @@ newtype FromFunctor f a = FromFunctor (f a)
 
 --------------------------------------------------------------------------------
 
-class LeftModule cat t1 f where
+class LeftModule cat tC f where
   -- | ==== __Examples__
   --
   -- >>> :t lstrength @(->) @(,) @Predicate (Predicate @Int (> 10))
@@ -55,7 +55,7 @@ class LeftModule cat t1 f where
   --
   -- >>> lstrength @(->) @Either @[] [True, False]
   -- [Left True,Left False]
-  lstrength :: cat (f a) (f (t1 a x))
+  lstrength :: cat (f a) (f (tC a x))
 
 instance (Contravariant f) => LeftModule (->) (,) (FromContra f) where
   lstrength :: FromContra f a -> FromContra f (a, x)
@@ -231,7 +231,7 @@ deriving via (FromFunctor ((,,,) x1 x2 x3)) instance LeftModule Op (,) ((,,,) x1
 
 --------------------------------------------------------------------------------
 
-class RightModule cat t1 f where
+class RightModule cat tC f where
   -- | ==== __Examples__
   --
   -- >>> :t rstrength @(->) @(,) @Predicate (Predicate @Int (> 10))
@@ -239,7 +239,7 @@ class RightModule cat t1 f where
   --
   -- >>> rstrength @(->) @Either @[] [True, False]
   -- [Right True,Right False]
-  rstrength :: cat (f a) (f (t1 x a))
+  rstrength :: cat (f a) (f (tC x a))
 
 instance (Contravariant f) => RightModule (->) (,) (FromContra f) where
   rstrength :: FromContra f a -> FromContra f (x, a)
@@ -417,7 +417,7 @@ deriving via (FromFunctor ((,,,) x1 x2 x3)) instance RightModule Op (,) ((,,,) x
 
 --------------------------------------------------------------------------------
 
-class (LeftModule cat t1 f, RightModule cat t1 f) => Bimodule cat t1 f
+class (LeftModule cat tC f, RightModule cat tC f) => Bimodule cat tC f
 
 instance (Contravariant f) => Bimodule (->) (,) (FromContra f)
 

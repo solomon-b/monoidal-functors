@@ -18,7 +18,7 @@
 -- "Data.Functor.Rank2.Monoidal" siblings and unlike "Data.Bifunctor.Monoidal".
 -- A bifunctor's domain is a product category \(\mathcal{C_1} \times \mathcal{C_2}\),
 -- so a tensor on it is a pair of tensors, which is why
--- 'Data.Bifunctor.Monoidal.Semigroupal' carries both @t1@ and @t2@. The
+-- 'Data.Bifunctor.Monoidal.Semigroupal' carries both @tC1@ and @tC2@. The
 -- bifunctor category is one category, so a rank-2 bifunctor needs only one
 -- tensor. The extra arity shows up in the tensors themselves
 -- ('Data.Bifunctor.Product.Product' rather than 'Data.Functor.Product.Product')
@@ -118,8 +118,8 @@ import GHC.Generics (Generic (..), K1 (..), M1 (..), U1 (..), type (:*:) (..))
 -- we call 'combine'.
 --
 -- * @cat@ is the codomain category (@Hask@, or 'Op' for the oplax dual).
--- * @t1@ is the domain tensor, acting on bifunctors (e.g. 'Product', 'Sum').
--- * @t0@ is the codomain tensor, acting on @Hask@ (e.g. @(,)@, 'Either').
+-- * @tC@ is the domain tensor, acting on bifunctors (e.g. 'Product', 'Sum').
+-- * @tD@ is the codomain tensor, acting on @Hask@ (e.g. @(,)@, 'Either').
 -- * @b@ is the higher-kinded record.
 --
 -- The empty-instance default derives the covariant 'Product' instantiation. For
@@ -131,7 +131,7 @@ type Semigroupal ::
   (Type -> Type -> Type) ->
   ((Type -> Type -> Type) -> Type) ->
   Constraint
-class Semigroupal cat t1 t0 b where
+class Semigroupal cat tC tD b where
   -- | ==== __Examples__
   --
   -- Zip two records field-wise (the covariant 'Product' instantiation):
@@ -143,18 +143,18 @@ class Semigroupal cat t1 t0 b where
   --
   -- >>> combine @(->) @Sum @Either (Left (Rec (1, True) ("hi", 2)) :: Either (Rec (,)) (Rec Either))
   -- Rec {rFst = L2 (1,True), rSnd = L2 ("hi",2)}
-  combine :: forall p q. cat (t0 (b p) (b q)) (b (t1 p q))
+  combine :: forall p q. cat (tD (b p) (b q)) (b (tC p q))
   default combine ::
     forall p q.
     ( cat ~ (->),
-      t1 ~ Product,
-      t0 ~ (,),
+      tC ~ Product,
+      tD ~ (,),
       Generic (b p),
       Generic (b q),
       Generic (b (Product p q)),
       GSemigroupal (Rep (b p)) (Rep (b q)) (Rep (b (Product p q)))
     ) =>
-    cat (t0 (b p) (b q)) (b (t1 p q))
+    cat (tD (b p) (b q)) (b (tC p q))
   combine = gcombineProduct
 
 --------------------------------------------------------------------------------
@@ -164,9 +164,9 @@ class Semigroupal cat t1 t0 b where
 -- domain unit, which we call 'introduce'.
 --
 -- * @cat@ is the codomain category (@Hask@, or 'Op' for the oplax dual).
--- * @i1@ is the domain unit, a bifunctor (the unit of @t1@;
+-- * @iC@ is the domain unit, a bifunctor (the unit of @tC@;
 --   @'Joker' 'Data.Proxy.Proxy'@ for 'Product', @'Joker' V1@ for 'Sum').
--- * @i0@ is the codomain unit (the unit of @t0@; @()@ for @(,)@, 'Data.Void.Void'
+-- * @iD@ is the codomain unit (the unit of @tD@; @()@ for @(,)@, 'Data.Void.Void'
 --   for 'Either').
 -- * @b@ is the higher-kinded record.
 --
@@ -180,20 +180,20 @@ type Unital ::
   Type ->
   ((Type -> Type -> Type) -> Type) ->
   Constraint
-class Unital cat i1 i0 b where
+class Unital cat iC iD b where
   -- | ==== __Examples__
   --
   -- >>> introduce @(->) @(Joker Proxy) @() @Rec ()
   -- Rec {rFst = Joker {runJoker = Proxy}, rSnd = Joker {runJoker = Proxy}}
-  introduce :: cat i0 (b i1)
+  introduce :: cat iD (b iC)
   default introduce ::
     ( cat ~ (->),
-      i1 ~ Joker Proxy,
-      i0 ~ (),
+      iC ~ Joker Proxy,
+      iD ~ (),
       Generic (b (Joker Proxy)),
       GUnital (Rep (b (Joker Proxy)))
     ) =>
-    cat i0 (b i1)
+    cat iD (b iC)
   introduce () = to gintroduce
 
 --------------------------------------------------------------------------------
@@ -210,10 +210,10 @@ type Monoidal ::
   ((Type -> Type -> Type) -> Type) ->
   Constraint
 class
-  ( Semigroupal cat t1 t0 b,
-    Unital cat i1 i0 b
+  ( Semigroupal cat tC tD b,
+    Unital cat iC iD b
   ) =>
-  Monoidal cat t1 i1 t0 i0 b
+  Monoidal cat tC iC tD iD b
 
 --------------------------------------------------------------------------------
 -- Generic derivation helpers.

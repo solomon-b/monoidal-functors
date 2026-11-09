@@ -11,9 +11,9 @@
 -- > main :: IO Bool
 -- > main = lawsCheck (monoidalLaws @(,) @() @(,) @() genMyBifunctor)
 --
--- Each law is stated at category @('->')@ over the /product/ domain tensor
--- @(,)@, general in the two codomain tensors @t1@ \/ @t2@ (and, for the unit
--- laws, their units @i1@ \/ @i2@). One function covers whichever pair of
+-- Each law is stated at category @('->')@ over the /product/ codomain tensor
+-- @(,)@, general in the two domain tensors @tC1@ \/ @tC2@ (and, for the unit
+-- laws, their units @iC1@ \/ @iC2@). One function covers whichever pair of
 -- tensors an instance uses. This is the bifunctor analog of the covariant half
 -- of "Data.Functor.Monoidal.Laws". The coherence squares are compared with 'Eq'
 -- and re-association happens with 'bimap' over both tensor positions.
@@ -60,39 +60,39 @@ genInt = Gen.int (Range.linear (-100) 100)
 -- | 'combine' laws. It commutes with the codomain tensors' associators
 -- (associativity) and with maps into them (naturality of the laxator).
 semigroupalLaws ::
-  forall t1 t2 f.
-  ( Semigroupal (->) t1 t2 (,) f,
-    Associative (->) t1,
-    Associative (->) t2,
+  forall tC1 tC2 f.
+  ( Semigroupal (->) tC1 tC2 (,) f,
+    Associative (->) tC1,
+    Associative (->) tC2,
     Bifunctor f,
     forall a b. (Eq a, Eq b) => Eq (f a b),
     forall a b. (Show a, Show b) => Show (f a b),
-    forall a b. (Eq a, Eq b) => Eq (t1 a b),
-    forall a b. (Show a, Show b) => Show (t1 a b),
-    forall a b. (Eq a, Eq b) => Eq (t2 a b),
-    forall a b. (Show a, Show b) => Show (t2 a b)
+    forall a b. (Eq a, Eq b) => Eq (tC1 a b),
+    forall a b. (Show a, Show b) => Show (tC1 a b),
+    forall a b. (Eq a, Eq b) => Eq (tC2 a b),
+    forall a b. (Show a, Show b) => Show (tC2 a b)
   ) =>
   (forall a b. Gen a -> Gen b -> Gen (f a b)) ->
   Laws
 semigroupalLaws genF =
   Laws
     "Semigroupal"
-    [ ("Associativity", semigroupalAssoc @t1 @t2 genF),
-      ("Naturality", semigroupalNaturality @t1 @t2 genF)
+    [ ("Associativity", semigroupalAssoc @tC1 @tC2 genF),
+      ("Naturality", semigroupalNaturality @tC1 @tC2 genF)
     ]
 
 semigroupalAssoc ::
-  forall t1 t2 f.
-  ( Semigroupal (->) t1 t2 (,) f,
-    Associative (->) t1,
-    Associative (->) t2,
+  forall tC1 tC2 f.
+  ( Semigroupal (->) tC1 tC2 (,) f,
+    Associative (->) tC1,
+    Associative (->) tC2,
     Bifunctor f,
     forall a b. (Eq a, Eq b) => Eq (f a b),
     forall a b. (Show a, Show b) => Show (f a b),
-    forall a b. (Eq a, Eq b) => Eq (t1 a b),
-    forall a b. (Show a, Show b) => Show (t1 a b),
-    forall a b. (Eq a, Eq b) => Eq (t2 a b),
-    forall a b. (Show a, Show b) => Show (t2 a b)
+    forall a b. (Eq a, Eq b) => Eq (tC1 a b),
+    forall a b. (Show a, Show b) => Show (tC1 a b),
+    forall a b. (Eq a, Eq b) => Eq (tC2 a b),
+    forall a b. (Show a, Show b) => Show (tC2 a b)
   ) =>
   (forall a b. Gen a -> Gen b -> Gen (f a b)) ->
   Property
@@ -100,21 +100,21 @@ semigroupalAssoc genF = property $ do
   x <- forAll (genF genInt genInt)
   y <- forAll (genF genInt genInt)
   z <- forAll (genF genInt genInt)
-  bimap (bwd (assoc @(->) @t1)) (bwd (assoc @(->) @t2)) (combine @(->) @t1 @t2 @(,) (combine @(->) @t1 @t2 @(,) (x, y), z))
-    === combine @(->) @t1 @t2 @(,) (x, combine @(->) @t1 @t2 @(,) (y, z))
+  bimap (bwd (assoc @(->) @tC1)) (bwd (assoc @(->) @tC2)) (combine @(->) @tC1 @tC2 @(,) (combine @(->) @tC1 @tC2 @(,) (x, y), z))
+    === combine @(->) @tC1 @tC2 @(,) (x, combine @(->) @tC1 @tC2 @(,) (y, z))
 
 semigroupalNaturality ::
-  forall t1 t2 f.
-  ( Semigroupal (->) t1 t2 (,) f,
-    Associative (->) t1,
-    Associative (->) t2,
+  forall tC1 tC2 f.
+  ( Semigroupal (->) tC1 tC2 (,) f,
+    Associative (->) tC1,
+    Associative (->) tC2,
     Bifunctor f,
     forall a b. (Eq a, Eq b) => Eq (f a b),
     forall a b. (Show a, Show b) => Show (f a b),
-    forall a b. (Eq a, Eq b) => Eq (t1 a b),
-    forall a b. (Show a, Show b) => Show (t1 a b),
-    forall a b. (Eq a, Eq b) => Eq (t2 a b),
-    forall a b. (Show a, Show b) => Show (t2 a b)
+    forall a b. (Eq a, Eq b) => Eq (tC1 a b),
+    forall a b. (Show a, Show b) => Show (tC1 a b),
+    forall a b. (Eq a, Eq b) => Eq (tC2 a b),
+    forall a b. (Show a, Show b) => Show (tC2 a b)
   ) =>
   (forall a b. Gen a -> Gen b -> Gen (f a b)) ->
   Property
@@ -123,19 +123,19 @@ semigroupalNaturality genF = property $ do
   y <- forAll (genF genInt genInt)
   let g = (+ 1) :: Int -> Int
       h = (* 2) :: Int -> Int
-  bimap (gbimap @(->) @(->) @(->) @t1 g g) (gbimap @(->) @(->) @(->) @t2 h h) (combine @(->) @t1 @t2 @(,) (x, y))
-    === combine @(->) @t1 @t2 @(,) (bimap g h x, bimap g h y)
+  bimap (gbimap @(->) @(->) @(->) @tC1 g g) (gbimap @(->) @(->) @(->) @tC2 h h) (combine @(->) @tC1 @tC2 @(,) (x, y))
+    === combine @(->) @tC1 @tC2 @(,) (bimap g h x, bimap g h y)
 
 --------------------------------------------------------------------------------
 
 -- | Left and right unit laws: 'introduce' is a unit for 'combine', up to the
 -- codomain tensors' unitors.
 unitalLaws ::
-  forall t1 i1 t2 i2 f.
-  ( Semigroupal (->) t1 t2 (,) f,
-    Unital (->) i1 i2 () f,
-    Tensor (->) t1 i1,
-    Tensor (->) t2 i2,
+  forall tC1 iC1 tC2 iC2 f.
+  ( Semigroupal (->) tC1 tC2 (,) f,
+    Unital (->) iC1 iC2 () f,
+    Tensor (->) tC1 iC1,
+    Tensor (->) tC2 iC2,
     Bifunctor f,
     forall a b. (Eq a, Eq b) => Eq (f a b),
     forall a b. (Show a, Show b) => Show (f a b)
@@ -145,16 +145,16 @@ unitalLaws ::
 unitalLaws genF =
   Laws
     "Unital"
-    [ ("Left Unit", unitalLeft @t1 @i1 @t2 @i2 genF),
-      ("Right Unit", unitalRight @t1 @i1 @t2 @i2 genF)
+    [ ("Left Unit", unitalLeft @tC1 @iC1 @tC2 @iC2 genF),
+      ("Right Unit", unitalRight @tC1 @iC1 @tC2 @iC2 genF)
     ]
 
 unitalLeft ::
-  forall t1 i1 t2 i2 f.
-  ( Semigroupal (->) t1 t2 (,) f,
-    Unital (->) i1 i2 () f,
-    Tensor (->) t1 i1,
-    Tensor (->) t2 i2,
+  forall tC1 iC1 tC2 iC2 f.
+  ( Semigroupal (->) tC1 tC2 (,) f,
+    Unital (->) iC1 iC2 () f,
+    Tensor (->) tC1 iC1,
+    Tensor (->) tC2 iC2,
     Bifunctor f,
     forall a b. (Eq a, Eq b) => Eq (f a b),
     forall a b. (Show a, Show b) => Show (f a b)
@@ -163,15 +163,15 @@ unitalLeft ::
   Property
 unitalLeft genF = property $ do
   fab <- forAll (genF genInt genInt)
-  bimap (fwd (unitl @(->) @t1)) (fwd (unitl @(->) @t2)) (combine @(->) @t1 @t2 @(,) (introduce @(->) @i1 @i2 @() (), fab))
+  bimap (fwd (unitl @(->) @tC1)) (fwd (unitl @(->) @tC2)) (combine @(->) @tC1 @tC2 @(,) (introduce @(->) @iC1 @iC2 @() (), fab))
     === fab
 
 unitalRight ::
-  forall t1 i1 t2 i2 f.
-  ( Semigroupal (->) t1 t2 (,) f,
-    Unital (->) i1 i2 () f,
-    Tensor (->) t1 i1,
-    Tensor (->) t2 i2,
+  forall tC1 iC1 tC2 iC2 f.
+  ( Semigroupal (->) tC1 tC2 (,) f,
+    Unital (->) iC1 iC2 () f,
+    Tensor (->) tC1 iC1,
+    Tensor (->) tC2 iC2,
     Bifunctor f,
     forall a b. (Eq a, Eq b) => Eq (f a b),
     forall a b. (Show a, Show b) => Show (f a b)
@@ -180,7 +180,7 @@ unitalRight ::
   Property
 unitalRight genF = property $ do
   fab <- forAll (genF genInt genInt)
-  bimap (fwd (unitr @(->) @t1)) (fwd (unitr @(->) @t2)) (combine @(->) @t1 @t2 @(,) (fab, introduce @(->) @i1 @i2 @() ()))
+  bimap (fwd (unitr @(->) @tC1)) (fwd (unitr @(->) @tC2)) (combine @(->) @tC1 @tC2 @(,) (fab, introduce @(->) @iC1 @iC2 @() ()))
     === fab
 
 --------------------------------------------------------------------------------
@@ -188,119 +188,119 @@ unitalRight genF = property $ do
 -- | Every 'semigroupalLaws' and 'unitalLaws' property together, for a full
 -- covariant bifunctor 'Monoidal' instance.
 monoidalLaws ::
-  forall t1 i1 t2 i2 f.
-  ( Monoidal (->) t1 i1 t2 i2 (,) () f,
+  forall tC1 iC1 tC2 iC2 f.
+  ( Monoidal (->) tC1 iC1 tC2 iC2 (,) () f,
     Bifunctor f,
     forall a b. (Eq a, Eq b) => Eq (f a b),
     forall a b. (Show a, Show b) => Show (f a b),
-    forall a b. (Eq a, Eq b) => Eq (t1 a b),
-    forall a b. (Show a, Show b) => Show (t1 a b),
-    forall a b. (Eq a, Eq b) => Eq (t2 a b),
-    forall a b. (Show a, Show b) => Show (t2 a b)
+    forall a b. (Eq a, Eq b) => Eq (tC1 a b),
+    forall a b. (Show a, Show b) => Show (tC1 a b),
+    forall a b. (Eq a, Eq b) => Eq (tC2 a b),
+    forall a b. (Show a, Show b) => Show (tC2 a b)
   ) =>
   (forall a b. Gen a -> Gen b -> Gen (f a b)) ->
   Laws
 monoidalLaws genF =
   Laws
     "Monoidal"
-    ( lawsProperties (semigroupalLaws @t1 @t2 genF)
-        <> lawsProperties (unitalLaws @t1 @i1 @t2 @i2 genF)
+    ( lawsProperties (semigroupalLaws @tC1 @tC2 genF)
+        <> lawsProperties (unitalLaws @tC1 @iC1 @tC2 @iC2 genF)
     )
 
 --------------------------------------------------------------------------------
 -- Colax (Op) bifunctors
 
 -- | 'combine' laws for the colax (@'Op'@) direction. The split
--- @f (t1 x x') (t2 y y') -> to (f x y) (f x' y')@ is coassociative and natural,
+-- @f (tC1 x x') (tC2 y y') -> tD (f x y) (f x' y')@ is coassociative and natural,
 -- general in all three tensors. Covariant bifunctors compared with 'Eq'.
 opSemigroupalLaws ::
-  forall t1 t2 to f.
-  ( Semigroupal Op t1 t2 to f,
-    Associative (->) t1,
-    Associative (->) t2,
-    Associative (->) to,
+  forall tC1 tC2 tD f.
+  ( Semigroupal Op tC1 tC2 tD f,
+    Associative (->) tC1,
+    Associative (->) tC2,
+    Associative (->) tD,
     Bifunctor f,
-    Bifunctor t1,
-    Bifunctor t2,
-    Bifunctor to,
+    Bifunctor tC1,
+    Bifunctor tC2,
+    Bifunctor tD,
     forall a b. (Eq a, Eq b) => Eq (f a b),
     forall a b. (Show a, Show b) => Show (f a b),
-    forall a b. (Eq a, Eq b) => Eq (to a b),
-    forall a b. (Show a, Show b) => Show (to a b),
-    forall a b. (Show a, Show b) => Show (t1 a b),
-    forall a b. (Show a, Show b) => Show (t2 a b)
+    forall a b. (Eq a, Eq b) => Eq (tD a b),
+    forall a b. (Show a, Show b) => Show (tD a b),
+    forall a b. (Show a, Show b) => Show (tC1 a b),
+    forall a b. (Show a, Show b) => Show (tC2 a b)
   ) =>
   (forall a b. Gen a -> Gen b -> Gen (f a b)) ->
-  (forall a b. Gen a -> Gen b -> Gen (t1 a b)) ->
-  (forall a b. Gen a -> Gen b -> Gen (t2 a b)) ->
+  (forall a b. Gen a -> Gen b -> Gen (tC1 a b)) ->
+  (forall a b. Gen a -> Gen b -> Gen (tC2 a b)) ->
   Laws
 opSemigroupalLaws genF genT1 genT2 =
   Laws
     "Semigroupal (Op)"
-    [ ("Coassociativity", opCoassoc @t1 @t2 @to genF genT1 genT2),
-      ("Conaturality", opConaturality @t1 @t2 @to genF genT1 genT2)
+    [ ("Coassociativity", opCoassoc @tC1 @tC2 @tD genF genT1 genT2),
+      ("Conaturality", opConaturality @tC1 @tC2 @tD genF genT1 genT2)
     ]
 
 opCoassoc ::
-  forall t1 t2 to f.
-  ( Semigroupal Op t1 t2 to f,
-    Associative (->) t1,
-    Associative (->) t2,
-    Associative (->) to,
+  forall tC1 tC2 tD f.
+  ( Semigroupal Op tC1 tC2 tD f,
+    Associative (->) tC1,
+    Associative (->) tC2,
+    Associative (->) tD,
     Bifunctor f,
-    Bifunctor t1,
-    Bifunctor t2,
-    Bifunctor to,
+    Bifunctor tC1,
+    Bifunctor tC2,
+    Bifunctor tD,
     forall a b. (Eq a, Eq b) => Eq (f a b),
     forall a b. (Show a, Show b) => Show (f a b),
-    forall a b. (Eq a, Eq b) => Eq (to a b),
-    forall a b. (Show a, Show b) => Show (to a b),
-    forall a b. (Show a, Show b) => Show (t1 a b),
-    forall a b. (Show a, Show b) => Show (t2 a b)
+    forall a b. (Eq a, Eq b) => Eq (tD a b),
+    forall a b. (Show a, Show b) => Show (tD a b),
+    forall a b. (Show a, Show b) => Show (tC1 a b),
+    forall a b. (Show a, Show b) => Show (tC2 a b)
   ) =>
   (forall a b. Gen a -> Gen b -> Gen (f a b)) ->
-  (forall a b. Gen a -> Gen b -> Gen (t1 a b)) ->
-  (forall a b. Gen a -> Gen b -> Gen (t2 a b)) ->
+  (forall a b. Gen a -> Gen b -> Gen (tC1 a b)) ->
+  (forall a b. Gen a -> Gen b -> Gen (tC2 a b)) ->
   Property
 opCoassoc genF genT1 genT2 = property $ do
   w <- forAll (genF (genT1 genInt (genT1 genInt genInt)) (genT2 genInt (genT2 genInt genInt)))
-  let split :: forall x x' y y'. f (t1 x x') (t2 y y') -> to (f x y) (f x' y')
-      split = getOp (combine @Op @t1 @t2 @to)
-      lhs = grmap @(->) @(->) @(->) @to split (split w)
+  let split :: forall x x' y y'. f (tC1 x x') (tC2 y y') -> tD (f x y) (f x' y')
+      split = getOp (combine @Op @tC1 @tC2 @tD)
+      lhs = grmap @(->) @(->) @(->) @tD split (split w)
       rhs =
-        bwd (assoc @(->) @to) $
-          glmap @(->) @(->) @(->) @to split (split (bimap (fwd (assoc @(->) @t1)) (fwd (assoc @(->) @t2)) w))
+        bwd (assoc @(->) @tD) $
+          glmap @(->) @(->) @(->) @tD split (split (bimap (fwd (assoc @(->) @tC1)) (fwd (assoc @(->) @tC2)) w))
   lhs === rhs
 
 opConaturality ::
-  forall t1 t2 to f.
-  ( Semigroupal Op t1 t2 to f,
-    Associative (->) t1,
-    Associative (->) t2,
-    Associative (->) to,
+  forall tC1 tC2 tD f.
+  ( Semigroupal Op tC1 tC2 tD f,
+    Associative (->) tC1,
+    Associative (->) tC2,
+    Associative (->) tD,
     Bifunctor f,
-    Bifunctor t1,
-    Bifunctor t2,
-    Bifunctor to,
+    Bifunctor tC1,
+    Bifunctor tC2,
+    Bifunctor tD,
     forall a b. (Eq a, Eq b) => Eq (f a b),
     forall a b. (Show a, Show b) => Show (f a b),
-    forall a b. (Eq a, Eq b) => Eq (to a b),
-    forall a b. (Show a, Show b) => Show (to a b),
-    forall a b. (Show a, Show b) => Show (t1 a b),
-    forall a b. (Show a, Show b) => Show (t2 a b)
+    forall a b. (Eq a, Eq b) => Eq (tD a b),
+    forall a b. (Show a, Show b) => Show (tD a b),
+    forall a b. (Show a, Show b) => Show (tC1 a b),
+    forall a b. (Show a, Show b) => Show (tC2 a b)
   ) =>
   (forall a b. Gen a -> Gen b -> Gen (f a b)) ->
-  (forall a b. Gen a -> Gen b -> Gen (t1 a b)) ->
-  (forall a b. Gen a -> Gen b -> Gen (t2 a b)) ->
+  (forall a b. Gen a -> Gen b -> Gen (tC1 a b)) ->
+  (forall a b. Gen a -> Gen b -> Gen (tC2 a b)) ->
   Property
 opConaturality genF genT1 genT2 = property $ do
   w <- forAll (genF (genT1 genInt genInt) (genT2 genInt genInt))
   let g = (+ 1) :: Int -> Int
       h = (* 2) :: Int -> Int
-      split :: forall x x' y y'. f (t1 x x') (t2 y y') -> to (f x y) (f x' y')
-      split = getOp (combine @Op @t1 @t2 @to)
-  split (bimap (gbimap @(->) @(->) @(->) @t1 g g) (gbimap @(->) @(->) @(->) @t2 h h) w)
-    === gbimap @(->) @(->) @(->) @to (bimap g h) (bimap g h) (split w)
+      split :: forall x x' y y'. f (tC1 x x') (tC2 y y') -> tD (f x y) (f x' y')
+      split = getOp (combine @Op @tC1 @tC2 @tD)
+  split (bimap (gbimap @(->) @(->) @(->) @tC1 g g) (gbimap @(->) @(->) @(->) @tC2 h h) w)
+    === gbimap @(->) @(->) @(->) @tD (bimap g h) (bimap g h) (split w)
 
 --------------------------------------------------------------------------------
 -- Profunctors
@@ -317,21 +317,21 @@ opConaturality genF genT1 genT2 = property $ do
 -- | 'combine' laws for a /profunctor/. Associativity and naturality of the
 -- laxator, observed through @run@.
 profunctorSemigroupalLaws ::
-  forall t1 t2 p obs.
-  ( Semigroupal (->) t1 t2 (,) p,
+  forall tC1 tC2 p obs.
+  ( Semigroupal (->) tC1 tC2 (,) p,
     Profunctor p,
-    Associative (->) t1,
-    Associative (->) t2,
-    Eq (obs (t2 Int (t2 Int Int))),
-    Show (obs (t2 Int (t2 Int Int))),
-    Eq (obs (t2 Int Int)),
-    Show (obs (t2 Int Int)),
-    Show (t1 Int (t1 Int Int)),
-    Show (t1 Int Int)
+    Associative (->) tC1,
+    Associative (->) tC2,
+    Eq (obs (tC2 Int (tC2 Int Int))),
+    Show (obs (tC2 Int (tC2 Int Int))),
+    Eq (obs (tC2 Int Int)),
+    Show (obs (tC2 Int Int)),
+    Show (tC1 Int (tC1 Int Int)),
+    Show (tC1 Int Int)
   ) =>
   (forall a b. p a b -> a -> obs b) ->
   Gen (p Int Int) ->
-  (forall x y. Gen x -> Gen y -> Gen (t1 x y)) ->
+  (forall x y. Gen x -> Gen y -> Gen (tC1 x y)) ->
   Laws
 profunctorSemigroupalLaws run genP genT1 =
   Laws
@@ -342,8 +342,8 @@ profunctorSemigroupalLaws run genP genT1 =
           y <- forAllWith (const "<opaque>") genP
           z <- forAllWith (const "<opaque>") genP
           inp <- forAll (genT1 genInt (genT1 genInt genInt))
-          run (dimap (fwd (assoc @(->) @t1)) (bwd (assoc @(->) @t2)) (combine @(->) @t1 @t2 @(,) (combine @(->) @t1 @t2 @(,) (x, y), z))) inp
-            === run (combine @(->) @t1 @t2 @(,) (x, combine @(->) @t1 @t2 @(,) (y, z))) inp
+          run (dimap (fwd (assoc @(->) @tC1)) (bwd (assoc @(->) @tC2)) (combine @(->) @tC1 @tC2 @(,) (combine @(->) @tC1 @tC2 @(,) (x, y), z))) inp
+            === run (combine @(->) @tC1 @tC2 @(,) (x, combine @(->) @tC1 @tC2 @(,) (y, z))) inp
       ),
       ( "Naturality",
         property $ do
@@ -352,20 +352,20 @@ profunctorSemigroupalLaws run genP genT1 =
           inp <- forAll (genT1 genInt genInt)
           let g = (+ 1) :: Int -> Int
               h = (* 2) :: Int -> Int
-          run (dimap (gbimap @(->) @(->) @(->) @t1 g g) (gbimap @(->) @(->) @(->) @t2 h h) (combine @(->) @t1 @t2 @(,) (x, y))) inp
-            === run (combine @(->) @t1 @t2 @(,) (dimap g h x, dimap g h y)) inp
+          run (dimap (gbimap @(->) @(->) @(->) @tC1 g g) (gbimap @(->) @(->) @(->) @tC2 h h) (combine @(->) @tC1 @tC2 @(,) (x, y))) inp
+            === run (combine @(->) @tC1 @tC2 @(,) (dimap g h x, dimap g h y)) inp
       )
     ]
 
 -- | Left and right unit laws for a /profunctor/, observed through @run@ on a
 -- generated element.
 profunctorUnitalLaws ::
-  forall t1 i1 t2 i2 p obs.
-  ( Semigroupal (->) t1 t2 (,) p,
-    Unital (->) i1 i2 () p,
+  forall tC1 iC1 tC2 iC2 p obs.
+  ( Semigroupal (->) tC1 tC2 (,) p,
+    Unital (->) iC1 iC2 () p,
     Profunctor p,
-    Tensor (->) t1 i1,
-    Tensor (->) t2 i2,
+    Tensor (->) tC1 iC1,
+    Tensor (->) tC2 iC2,
     Eq (obs Int),
     Show (obs Int)
   ) =>
@@ -379,14 +379,14 @@ profunctorUnitalLaws run genP =
         property $ do
           pab <- forAllWith (const "<opaque>") genP
           inp <- forAll genInt
-          run (dimap (bwd (unitl @(->) @t1)) (fwd (unitl @(->) @t2)) (combine @(->) @t1 @t2 @(,) (introduce @(->) @i1 @i2 @() (), pab))) inp
+          run (dimap (bwd (unitl @(->) @tC1)) (fwd (unitl @(->) @tC2)) (combine @(->) @tC1 @tC2 @(,) (introduce @(->) @iC1 @iC2 @() (), pab))) inp
             === run pab inp
       ),
       ( "Right Unit",
         property $ do
           pab <- forAllWith (const "<opaque>") genP
           inp <- forAll genInt
-          run (dimap (bwd (unitr @(->) @t1)) (fwd (unitr @(->) @t2)) (combine @(->) @t1 @t2 @(,) (pab, introduce @(->) @i1 @i2 @() ()))) inp
+          run (dimap (bwd (unitr @(->) @tC1)) (fwd (unitr @(->) @tC2)) (combine @(->) @tC1 @tC2 @(,) (pab, introduce @(->) @iC1 @iC2 @() ()))) inp
             === run pab inp
       )
     ]
@@ -394,25 +394,25 @@ profunctorUnitalLaws run genP =
 -- | Every 'profunctorSemigroupalLaws' and 'profunctorUnitalLaws' property
 -- together, for a full profunctor 'Monoidal' instance.
 profunctorMonoidalLaws ::
-  forall t1 i1 t2 i2 p obs.
-  ( Monoidal (->) t1 i1 t2 i2 (,) () p,
+  forall tC1 iC1 tC2 iC2 p obs.
+  ( Monoidal (->) tC1 iC1 tC2 iC2 (,) () p,
     Profunctor p,
-    Eq (obs (t2 Int (t2 Int Int))),
-    Show (obs (t2 Int (t2 Int Int))),
-    Eq (obs (t2 Int Int)),
-    Show (obs (t2 Int Int)),
+    Eq (obs (tC2 Int (tC2 Int Int))),
+    Show (obs (tC2 Int (tC2 Int Int))),
+    Eq (obs (tC2 Int Int)),
+    Show (obs (tC2 Int Int)),
     Eq (obs Int),
     Show (obs Int),
-    Show (t1 Int (t1 Int Int)),
-    Show (t1 Int Int)
+    Show (tC1 Int (tC1 Int Int)),
+    Show (tC1 Int Int)
   ) =>
   (forall a b. p a b -> a -> obs b) ->
   Gen (p Int Int) ->
-  (forall x y. Gen x -> Gen y -> Gen (t1 x y)) ->
+  (forall x y. Gen x -> Gen y -> Gen (tC1 x y)) ->
   Laws
 profunctorMonoidalLaws run genP genT1 =
   Laws
     "Monoidal"
-    ( lawsProperties (profunctorSemigroupalLaws @t1 @t2 run genP genT1)
-        <> lawsProperties (profunctorUnitalLaws @t1 @i1 @t2 @i2 run genP)
+    ( lawsProperties (profunctorSemigroupalLaws @tC1 @tC2 run genP genT1)
+        <> lawsProperties (profunctorUnitalLaws @tC1 @iC1 @tC2 @iC2 run genP)
     )

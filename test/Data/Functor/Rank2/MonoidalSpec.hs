@@ -107,7 +107,7 @@ instance Semigroupal (->) These1 These EmptyHKD where combine = gcombineThese
 instance Monoidal (->) These1 V1 These Void EmptyHKD
 
 --------------------------------------------------------------------------------
--- Monomorphic call sites (fix @cat@, @t1@, @t0@ for the derived instances).
+-- Monomorphic call sites (fix @cat@, @tC@, @tD@ for the derived instances).
 
 combineHKD :: TestHKD f -> TestHKD g -> TestHKD (Product f g)
 combineHKD x y = combine @(->) @Product @(,) (x, y)

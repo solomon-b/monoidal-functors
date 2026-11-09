@@ -69,19 +69,19 @@ import Prelude (Either, curry)
 -- 'combine' 'Control.Category..' 'Control.Category.Tensor.grmap' 'Control.Category.Tensor.combine' 'Control.Category..' 'Control.Category.Tensor.bwd' 'Control.Category.Tensor.assoc' ≡ 'Data.Functor.fmap' ('Control.Category.Tensor.bwd' 'Control.Category.Tensor.assoc') 'Control.Category..' 'combine' 'Control.Category..' 'Control.Category.Tensor.glmap' 'combine'
 -- @
 class
-  ( Associative cat t1,
-    Associative cat t2,
-    Associative cat t3,
-    Associative cat to
+  ( Associative cat tC1,
+    Associative cat tC2,
+    Associative cat tC3,
+    Associative cat tD
   ) =>
-  Semigroupal cat t1 t2 t3 to f
+  Semigroupal cat tC1 tC2 tC3 tD f
   where
   -- | A natural transformation \(\phi_{ABC,XYZ} : F\ A\ B\ C \bullet F\ X\ Y\ Z \to F\ (A \otimes X)\ (B \otimes Y) (C \otimes Z)\).
-  combine :: to (f x y z) (f x' y' z') `cat` f (t1 x x') (t2 y y') (t3 z z')
+  combine :: tD (f x y z) (f x' y' z') `cat` f (tC1 x x') (tC2 y y') (tC3 z z')
 
 infixr 9 |???|
 
-(|???|) :: (Semigroupal (->) t1 t2 t3 (,) p) => p a b c -> p a' b' c' -> p (a `t1` a') (b `t2` b') (c `t3` c')
+(|???|) :: (Semigroupal (->) tC1 tC2 tC3 (,) p) => p a b c -> p a' b' c' -> p (a `tC1` a') (b `tC2` b') (c `tC3` c')
 (|???|) = curry combine
 
 infixr 9 |***|
@@ -224,10 +224,10 @@ infixr 9 |&&&|
 -- | Given monoidal categories \((\mathcal{C}, \otimes, I_{\mathcal{C}})\) and \((\mathcal{D}, \bullet, I_{\mathcal{D}})\).
 -- A trifunctor \(F : \mathcal{C_1} \times \mathcal{C_2} \times \mathcal{C_3} \to \mathcal{D}\) is 'Unital' if it supports a morphism
 -- \(\phi : I_{\mathcal{D}} \to F\ I_{\mathcal{C_1}}\ I_{\mathcal{C_2}}\ I_{\mathcal{C_3}}\), which we call 'introduce'.
-class Unital cat i1 i2 i3 o f where
+class Unital cat iC1 iC2 iC3 iD f where
   -- | @introduce@ maps from the identity in \(\mathcal{C_1} \times \mathcal{C_2} \times \mathcal{C_3}\) to the
   -- identity in \(\mathcal{D}\).
-  introduce :: o `cat` f i1 i2 i3
+  introduce :: iD `cat` f iC1 iC2 iC3
 
 --------------------------------------------------------------------------------
 
@@ -269,11 +269,11 @@ class Unital cat i1 i2 i3 o f where
 -- 'combine' 'Control.Category..' 'Control.Category.Tensor.glmap' 'introduce' ≡ 'Data.Functor.fmap' ('Control.Category.Tensor.bwd' 'Control.Category.Tensor.unitl') 'Control.Category..' 'Control.Category.Tensor.fwd' 'Control.Category.Tensor.unitl'
 -- @
 class
-  ( Tensor cat t1 i1,
-    Tensor cat t2 i2,
-    Tensor cat t3 i3,
-    Tensor cat to io,
-    Semigroupal cat t1 t2 t3 to f,
-    Unital cat i1 i2 i3 io f
+  ( Tensor cat tC1 iC1,
+    Tensor cat tC2 iC2,
+    Tensor cat tC3 iC3,
+    Tensor cat tD iD,
+    Semigroupal cat tC1 tC2 tC3 tD f,
+    Unital cat iC1 iC2 iC3 iD f
   ) =>
-  Monoidal cat t1 i1 t2 i2 t3 i3 to io f
+  Monoidal cat tC1 iC1 tC2 iC2 tC3 iC3 tD iD f

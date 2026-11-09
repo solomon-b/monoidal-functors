@@ -16,13 +16,13 @@
 -- laws. 'checkCov' and 'checkOp' run the two directions.
 --
 -- 'semigroupalLaws' \/ 'unitalLaws' \/ 'monoidalLaws' cover the covariant family,
--- general in the codomain tensor @t1@ (and, for units, its unit @i1@). One
+-- general in the domain tensor @tC@ (and, for units, its unit @iC@). One
 -- function handles @(,)@ (Applicative \/ Divisible), @Either@ (Alternative \/
 -- Decidable), and @These@ (Semialign). 'opSemigroupalLaws' covers the @'Op'@
--- family, general in @t1@ and the split tensor @t0@. It handles the unzip
--- @f (a, b) -> (f a, f b)@ (@t0 = (,)@), the @Unalign@ split
+-- family, general in @tC@ and the split tensor @tD@. It handles the unzip
+-- @f (a, b) -> (f a, f b)@ (@tD = (,)@), the @Unalign@ split
 -- @f ('Data.These.These' a b) -> (f a, f b)@, and
--- @f ('Either' a b) -> 'Either' (f a) (f b)@ (@t0 = 'Either'@).
+-- @f ('Either' a b) -> 'Either' (f a) (f b)@ (@tD = 'Either'@).
 --
 -- The @contravariant*@ family covers contravariant functors (@Divisible@ \/
 -- @Decidable@), which lack 'Eq' \/ 'Show'. Each is observed on a generated input
@@ -93,33 +93,33 @@ instance (Functor f) => MapF Op f where
 -- | Associativity of the laxator. @'combine'@ commutes with the domain and
 -- codomain associators. This is the coherence square documented on 'Semigroupal'.
 assocSquare ::
-  forall cat t1 t0 f a b c.
-  ( Semigroupal cat t1 t0 f,
-    Associative cat t0,
-    Associative cat t1,
+  forall cat tC tD f a b c.
+  ( Semigroupal cat tC tD f,
+    Associative cat tD,
+    Associative cat tC,
     MapF cat f
   ) =>
-  Square cat (t0 (t0 (f a) (f b)) (f c)) (f (t1 a (t1 b c)))
+  Square cat (tD (tD (f a) (f b)) (f c)) (f (tC a (tC b c)))
 assocSquare =
   Square
-    (combine @cat @t1 @t0 . grmap (combine @cat @t1 @t0) . bwd (assoc @cat @t0))
-    (mapF (bwd (assoc @cat @t1)) . combine @cat @t1 @t0 . glmap (combine @cat @t1 @t0))
+    (combine @cat @tC @tD . grmap (combine @cat @tC @tD) . bwd (assoc @cat @tD))
+    (mapF (bwd (assoc @cat @tC)) . combine @cat @tC @tD . glmap (combine @cat @tC @tD))
 
 -- | Naturality of the laxator. @'combine'@ commutes with maps into either tensor.
 natSquare ::
-  forall cat t1 t0 f a a' b b'.
-  ( Semigroupal cat t1 t0 f,
-    Associative cat t0,
-    Associative cat t1,
+  forall cat tC tD f a a' b b'.
+  ( Semigroupal cat tC tD f,
+    Associative cat tD,
+    Associative cat tC,
     MapF cat f
   ) =>
   cat a a' ->
   cat b b' ->
-  Square cat (t0 (f a) (f b)) (f (t1 a' b'))
+  Square cat (tD (f a) (f b)) (f (tC a' b'))
 natSquare g h =
   Square
-    (mapF (gbimap @cat @cat @cat @t1 g h) . combine @cat @t1 @t0)
-    (combine @cat @t1 @t0 . gbimap @cat @cat @cat @t0 (mapF g) (mapF h))
+    (mapF (gbimap @cat @cat @cat @tC g h) . combine @cat @tC @tD)
+    (combine @cat @tC @tD . gbimap @cat @cat @cat @tD (mapF g) (mapF h))
 
 -- | Run a covariant square. Apply each side to a generated source, compare with
 -- 'Eq'.
@@ -150,67 +150,67 @@ checkOp gen (Square (Op l) (Op r)) = property $ do
 -- | 'combine' laws. It commutes with the codomain tensor's associator
 -- (associativity) and with maps into it (naturality of the laxator).
 semigroupalLaws ::
-  forall t1 f.
-  ( Semigroupal (->) t1 (,) f,
-    Associative (->) t1,
+  forall tC f.
+  ( Semigroupal (->) tC (,) f,
+    Associative (->) tC,
     Functor f,
     forall x. (Eq x) => Eq (f x),
     forall x. (Show x) => Show (f x),
-    forall a b. (Eq a, Eq b) => Eq (t1 a b),
-    forall a b. (Show a, Show b) => Show (t1 a b)
+    forall a b. (Eq a, Eq b) => Eq (tC a b),
+    forall a b. (Show a, Show b) => Show (tC a b)
   ) =>
   (forall x. Gen x -> Gen (f x)) ->
   Laws
 semigroupalLaws genF =
   Laws
     "Semigroupal"
-    [ ("Associativity", semigroupalAssoc @t1 genF),
-      ("Naturality", semigroupalNaturality @t1 genF)
+    [ ("Associativity", semigroupalAssoc @tC genF),
+      ("Naturality", semigroupalNaturality @tC genF)
     ]
 
 semigroupalNaturality ::
-  forall t1 f.
-  ( Semigroupal (->) t1 (,) f,
-    Associative (->) t1,
+  forall tC f.
+  ( Semigroupal (->) tC (,) f,
+    Associative (->) tC,
     Functor f,
     forall x. (Eq x) => Eq (f x),
     forall x. (Show x) => Show (f x),
-    forall a b. (Eq a, Eq b) => Eq (t1 a b),
-    forall a b. (Show a, Show b) => Show (t1 a b)
+    forall a b. (Eq a, Eq b) => Eq (tC a b),
+    forall a b. (Show a, Show b) => Show (tC a b)
   ) =>
   (forall x. Gen x -> Gen (f x)) ->
   Property
 semigroupalNaturality genF =
   checkCov
     (genPair (genF genInt) (genF genInt))
-    (natSquare @(->) @t1 @(,) ((+ 1) :: Int -> Int) ((* 2) :: Int -> Int))
+    (natSquare @(->) @tC @(,) ((+ 1) :: Int -> Int) ((* 2) :: Int -> Int))
 
 semigroupalAssoc ::
-  forall t1 f.
-  ( Semigroupal (->) t1 (,) f,
-    Associative (->) t1,
+  forall tC f.
+  ( Semigroupal (->) tC (,) f,
+    Associative (->) tC,
     Functor f,
     forall x. (Eq x) => Eq (f x),
     forall x. (Show x) => Show (f x),
-    forall a b. (Eq a, Eq b) => Eq (t1 a b),
-    forall a b. (Show a, Show b) => Show (t1 a b)
+    forall a b. (Eq a, Eq b) => Eq (tC a b),
+    forall a b. (Show a, Show b) => Show (tC a b)
   ) =>
   (forall x. Gen x -> Gen (f x)) ->
   Property
 semigroupalAssoc genF =
   checkCov
     (genPair (genPair (genF genInt) (genF genInt)) (genF genInt))
-    (assocSquare @(->) @t1 @(,))
+    (assocSquare @(->) @tC @(,))
 
 --------------------------------------------------------------------------------
 
 -- | Left and right unit laws. 'introduce' is a unit for 'combine', up to the
 -- codomain tensor's unitors.
 unitalLaws ::
-  forall t1 i1 f.
-  ( Semigroupal (->) t1 (,) f,
-    Unital (->) i1 () f,
-    Tensor (->) t1 i1,
+  forall tC iC f.
+  ( Semigroupal (->) tC (,) f,
+    Unital (->) iC () f,
+    Tensor (->) tC iC,
     Functor f,
     forall x. (Eq x) => Eq (f x),
     forall x. (Show x) => Show (f x)
@@ -220,15 +220,15 @@ unitalLaws ::
 unitalLaws genF =
   Laws
     "Unital"
-    [ ("Left Unit", unitalLeft @t1 @i1 genF),
-      ("Right Unit", unitalRight @t1 @i1 genF)
+    [ ("Left Unit", unitalLeft @tC @iC genF),
+      ("Right Unit", unitalRight @tC @iC genF)
     ]
 
 unitalLeft ::
-  forall t1 i1 f.
-  ( Semigroupal (->) t1 (,) f,
-    Unital (->) i1 () f,
-    Tensor (->) t1 i1,
+  forall tC iC f.
+  ( Semigroupal (->) tC (,) f,
+    Unital (->) iC () f,
+    Tensor (->) tC iC,
     Functor f,
     forall x. (Eq x) => Eq (f x),
     forall x. (Show x) => Show (f x)
@@ -237,13 +237,13 @@ unitalLeft ::
   Property
 unitalLeft genF = property $ do
   fa <- forAll (genF genInt)
-  fmap (fwd (unitl @(->) @t1)) (combine @(->) @t1 @(,) (introduce @(->) @i1 @() (), fa)) === fa
+  fmap (fwd (unitl @(->) @tC)) (combine @(->) @tC @(,) (introduce @(->) @iC @() (), fa)) === fa
 
 unitalRight ::
-  forall t1 i1 f.
-  ( Semigroupal (->) t1 (,) f,
-    Unital (->) i1 () f,
-    Tensor (->) t1 i1,
+  forall tC iC f.
+  ( Semigroupal (->) tC (,) f,
+    Unital (->) iC () f,
+    Tensor (->) tC iC,
     Functor f,
     forall x. (Eq x) => Eq (f x),
     forall x. (Show x) => Show (f x)
@@ -252,95 +252,95 @@ unitalRight ::
   Property
 unitalRight genF = property $ do
   fa <- forAll (genF genInt)
-  fmap (fwd (unitr @(->) @t1)) (combine @(->) @t1 @(,) (fa, introduce @(->) @i1 @() ())) === fa
+  fmap (fwd (unitr @(->) @tC)) (combine @(->) @tC @(,) (fa, introduce @(->) @iC @() ())) === fa
 
 --------------------------------------------------------------------------------
 
 -- | Every 'semigroupalLaws' and 'unitalLaws' property together, for a full
 -- 'Monoidal' instance.
 monoidalLaws ::
-  forall t1 i1 f.
-  ( Monoidal (->) t1 i1 (,) () f,
+  forall tC iC f.
+  ( Monoidal (->) tC iC (,) () f,
     Functor f,
     forall x. (Eq x) => Eq (f x),
     forall x. (Show x) => Show (f x),
-    forall a b. (Eq a, Eq b) => Eq (t1 a b),
-    forall a b. (Show a, Show b) => Show (t1 a b)
+    forall a b. (Eq a, Eq b) => Eq (tC a b),
+    forall a b. (Show a, Show b) => Show (tC a b)
   ) =>
   (forall x. Gen x -> Gen (f x)) ->
   Laws
 monoidalLaws genF =
   Laws
     "Monoidal"
-    ( lawsProperties (semigroupalLaws @t1 genF)
-        <> lawsProperties (unitalLaws @t1 @i1 genF)
+    ( lawsProperties (semigroupalLaws @tC genF)
+        <> lawsProperties (unitalLaws @tC @iC genF)
     )
 
 --------------------------------------------------------------------------------
 
 -- | Laws for the /Op/ (comonoidal) laxator @'combine' \@'Op'@, the split
--- @f (a \`t1\` b) -> t0 (f a) (f b)@. General in the codomain tensor @t1@ and the
--- split tensor @t0@. It builds the same 'assocSquare' \/ 'natSquare' as
+-- @f (a \`tC\` b) -> tD (f a) (f b)@. General in the domain tensor @tC@ and the
+-- split tensor @tD@. It builds the same 'assocSquare' \/ 'natSquare' as
 -- 'semigroupalLaws' and runs them through 'checkOp'. One function covers every
 -- shipped @'Op'@ 'Semigroupal' instance. The unzip @f (a, b) -> (f a, f b)@
--- (@t0 = (,)@), the @Unalign@ split @f ('Data.These.These' a b) -> (f a, f b)@,
--- and @f ('Either' a b) -> 'Either' (f a) (f b)@ (@t0 = 'Either'@). @genT@ builds
--- the @t1@-shaped payloads the split consumes. Covariant functors only.
+-- (@tD = (,)@), the @Unalign@ split @f ('Data.These.These' a b) -> (f a, f b)@,
+-- and @f ('Either' a b) -> 'Either' (f a) (f b)@ (@tD = 'Either'@). @genT@ builds
+-- the @tC@-shaped payloads the split consumes. Covariant functors only.
 opSemigroupalLaws ::
-  forall t1 t0 f.
-  ( Semigroupal Op t1 t0 f,
+  forall tC tD f.
+  ( Semigroupal Op tC tD f,
     Functor f,
     forall x. (Eq x) => Eq (f x),
     forall x. (Show x) => Show (f x),
-    forall a b. (Eq a, Eq b) => Eq (t0 a b),
-    forall a b. (Show a, Show b) => Show (t0 a b),
-    forall a b. (Show a, Show b) => Show (t1 a b)
+    forall a b. (Eq a, Eq b) => Eq (tD a b),
+    forall a b. (Show a, Show b) => Show (tD a b),
+    forall a b. (Show a, Show b) => Show (tC a b)
   ) =>
   (forall x. Gen x -> Gen (f x)) ->
-  (forall a b. Gen a -> Gen b -> Gen (t1 a b)) ->
+  (forall a b. Gen a -> Gen b -> Gen (tC a b)) ->
   Laws
 opSemigroupalLaws genF genT =
   Laws
     "Semigroupal (Op)"
-    [ ("Coassociativity", opCoassoc @t1 @t0 genF genT),
-      ("Conaturality", opConaturality @t1 @t0 genF genT)
+    [ ("Coassociativity", opCoassoc @tC @tD genF genT),
+      ("Conaturality", opConaturality @tC @tD genF genT)
     ]
 
 opCoassoc ::
-  forall t1 t0 f.
-  ( Semigroupal Op t1 t0 f,
+  forall tC tD f.
+  ( Semigroupal Op tC tD f,
     Functor f,
     forall x. (Eq x) => Eq (f x),
     forall x. (Show x) => Show (f x),
-    forall a b. (Eq a, Eq b) => Eq (t0 a b),
-    forall a b. (Show a, Show b) => Show (t0 a b),
-    forall a b. (Show a, Show b) => Show (t1 a b)
+    forall a b. (Eq a, Eq b) => Eq (tD a b),
+    forall a b. (Show a, Show b) => Show (tD a b),
+    forall a b. (Show a, Show b) => Show (tC a b)
   ) =>
   (forall x. Gen x -> Gen (f x)) ->
-  (forall a b. Gen a -> Gen b -> Gen (t1 a b)) ->
+  (forall a b. Gen a -> Gen b -> Gen (tC a b)) ->
   Property
 opCoassoc genF genT =
   checkOp
     (genF (genT genInt (genT genInt genInt)))
-    (assocSquare @Op @t1 @t0)
+    (assocSquare @Op @tC @tD)
 
 opConaturality ::
-  forall t1 t0 f.
-  ( Semigroupal Op t1 t0 f,
+  forall tC tD f.
+  ( Semigroupal Op tC tD f,
     Functor f,
     forall x. (Eq x) => Eq (f x),
     forall x. (Show x) => Show (f x),
-    forall a b. (Eq a, Eq b) => Eq (t0 a b),
-    forall a b. (Show a, Show b) => Show (t0 a b),
-    forall a b. (Show a, Show b) => Show (t1 a b)
+    forall a b. (Eq a, Eq b) => Eq (tD a b),
+    forall a b. (Show a, Show b) => Show (tD a b),
+    forall a b. (Show a, Show b) => Show (tC a b)
   ) =>
   (forall x. Gen x -> Gen (f x)) ->
-  (forall a b. Gen a -> Gen b -> Gen (t1 a b)) ->
+  (forall a b. Gen a -> Gen b -> Gen (tC a b)) ->
   Property
 opConaturality genF genT =
   checkOp
     (genF (genT genInt genInt))
-    (natSquare @Op @t1 @t0 (Op ((+ 1) :: Int -> Int)) (Op ((* 2) :: Int -> Int)))
+    (natSquare @Op @tC @tD (Op ((+ 1) :: Int -> Int)) (Op ((* 2) :: Int -> Int)))
 
 --------------------------------------------------------------------------------
 
@@ -402,36 +402,36 @@ combineAfterSplit genF = property $ do
 -- @\\ga gb -> 'Gen.choice' [Left '<$>' ga, Right '<$>' gb]@ for @Either@. It
 -- assembles the associativity and naturality observation points.
 contravariantSemigroupalLaws ::
-  forall t1 f r.
-  ( Semigroupal (->) t1 (,) f,
+  forall tC f r.
+  ( Semigroupal (->) tC (,) f,
     Contravariant f,
-    Associative (->) t1,
+    Associative (->) tC,
     Eq r,
     Show r,
-    forall a b. (Show a, Show b) => Show (t1 a b)
+    forall a b. (Show a, Show b) => Show (tC a b)
   ) =>
   Gen (f Int) ->
-  (forall a b. Gen a -> Gen b -> Gen (t1 a b)) ->
+  (forall a b. Gen a -> Gen b -> Gen (tC a b)) ->
   (forall a. f a -> a -> r) ->
   Laws
 contravariantSemigroupalLaws genF genT obs =
   Laws
     "Semigroupal"
-    [ ("Associativity", contravariantAssoc @t1 genF genT obs),
-      ("Naturality", contravariantNaturality @t1 genF genT obs)
+    [ ("Associativity", contravariantAssoc @tC genF genT obs),
+      ("Naturality", contravariantNaturality @tC genF genT obs)
     ]
 
 contravariantAssoc ::
-  forall t1 f r.
-  ( Semigroupal (->) t1 (,) f,
+  forall tC f r.
+  ( Semigroupal (->) tC (,) f,
     Contravariant f,
-    Associative (->) t1,
+    Associative (->) tC,
     Eq r,
     Show r,
-    forall a b. (Show a, Show b) => Show (t1 a b)
+    forall a b. (Show a, Show b) => Show (tC a b)
   ) =>
   Gen (f Int) ->
-  (forall a b. Gen a -> Gen b -> Gen (t1 a b)) ->
+  (forall a b. Gen a -> Gen b -> Gen (tC a b)) ->
   (forall a. f a -> a -> r) ->
   Property
 contravariantAssoc genF genT obs = property $ do
@@ -439,20 +439,20 @@ contravariantAssoc genF genT obs = property $ do
   y <- forAllWith (const "<opaque>") genF
   z <- forAllWith (const "<opaque>") genF
   t <- forAll (genT genInt (genT genInt genInt))
-  obs (contramap (fwd (assoc @(->) @t1)) (combine @(->) @t1 @(,) (combine @(->) @t1 @(,) (x, y), z))) t
-    === obs (combine @(->) @t1 @(,) (x, combine @(->) @t1 @(,) (y, z))) t
+  obs (contramap (fwd (assoc @(->) @tC)) (combine @(->) @tC @(,) (combine @(->) @tC @(,) (x, y), z))) t
+    === obs (combine @(->) @tC @(,) (x, combine @(->) @tC @(,) (y, z))) t
 
 contravariantNaturality ::
-  forall t1 f r.
-  ( Semigroupal (->) t1 (,) f,
+  forall tC f r.
+  ( Semigroupal (->) tC (,) f,
     Contravariant f,
-    Associative (->) t1,
+    Associative (->) tC,
     Eq r,
     Show r,
-    forall a b. (Show a, Show b) => Show (t1 a b)
+    forall a b. (Show a, Show b) => Show (tC a b)
   ) =>
   Gen (f Int) ->
-  (forall a b. Gen a -> Gen b -> Gen (t1 a b)) ->
+  (forall a b. Gen a -> Gen b -> Gen (tC a b)) ->
   (forall a. f a -> a -> r) ->
   Property
 contravariantNaturality genF genT obs = property $ do
@@ -461,17 +461,17 @@ contravariantNaturality genF genT obs = property $ do
   t <- forAll (genT genInt genInt)
   let g = (+ 1) :: Int -> Int
       h = (* 2) :: Int -> Int
-  obs (contramap (gbimap @(->) @(->) @(->) @t1 g h) (combine @(->) @t1 @(,) (x, y))) t
-    === obs (combine @(->) @t1 @(,) (contramap g x, contramap h y)) t
+  obs (contramap (gbimap @(->) @(->) @(->) @tC g h) (combine @(->) @tC @(,) (x, y))) t
+    === obs (combine @(->) @tC @(,) (contramap g x, contramap h y)) t
 
 -- | Left and right unit laws for a /contravariant/ functor, observed through
 -- @obs@ at a generated element. The unit laws need no tensor-shaped input.
 contravariantUnitalLaws ::
-  forall t1 i1 f r.
-  ( Semigroupal (->) t1 (,) f,
-    Unital (->) i1 () f,
+  forall tC iC f r.
+  ( Semigroupal (->) tC (,) f,
+    Unital (->) iC () f,
     Contravariant f,
-    Tensor (->) t1 i1,
+    Tensor (->) tC iC,
     Eq r,
     Show r
   ) =>
@@ -481,16 +481,16 @@ contravariantUnitalLaws ::
 contravariantUnitalLaws genF obs =
   Laws
     "Unital"
-    [ ("Left Unit", contravariantUnitL @t1 @i1 genF obs),
-      ("Right Unit", contravariantUnitR @t1 @i1 genF obs)
+    [ ("Left Unit", contravariantUnitL @tC @iC genF obs),
+      ("Right Unit", contravariantUnitR @tC @iC genF obs)
     ]
 
 contravariantUnitL ::
-  forall t1 i1 f r.
-  ( Semigroupal (->) t1 (,) f,
-    Unital (->) i1 () f,
+  forall tC iC f r.
+  ( Semigroupal (->) tC (,) f,
+    Unital (->) iC () f,
     Contravariant f,
-    Tensor (->) t1 i1,
+    Tensor (->) tC iC,
     Eq r,
     Show r
   ) =>
@@ -500,15 +500,15 @@ contravariantUnitL ::
 contravariantUnitL genF obs = property $ do
   x <- forAllWith (const "<opaque>") genF
   a <- forAll genInt
-  obs (contramap (bwd (unitl @(->) @t1)) (combine @(->) @t1 @(,) (introduce @(->) @i1 @() (), x))) a
+  obs (contramap (bwd (unitl @(->) @tC)) (combine @(->) @tC @(,) (introduce @(->) @iC @() (), x))) a
     === obs x a
 
 contravariantUnitR ::
-  forall t1 i1 f r.
-  ( Semigroupal (->) t1 (,) f,
-    Unital (->) i1 () f,
+  forall tC iC f r.
+  ( Semigroupal (->) tC (,) f,
+    Unital (->) iC () f,
     Contravariant f,
-    Tensor (->) t1 i1,
+    Tensor (->) tC iC,
     Eq r,
     Show r
   ) =>
@@ -518,26 +518,26 @@ contravariantUnitR ::
 contravariantUnitR genF obs = property $ do
   x <- forAllWith (const "<opaque>") genF
   a <- forAll genInt
-  obs (contramap (bwd (unitr @(->) @t1)) (combine @(->) @t1 @(,) (x, introduce @(->) @i1 @() ()))) a
+  obs (contramap (bwd (unitr @(->) @tC)) (combine @(->) @tC @(,) (x, introduce @(->) @iC @() ()))) a
     === obs x a
 
 -- | Every 'contravariantSemigroupalLaws' and 'contravariantUnitalLaws' property
 -- together, for a full contravariant 'Monoidal' instance.
 contravariantMonoidalLaws ::
-  forall t1 i1 f r.
-  ( Monoidal (->) t1 i1 (,) () f,
+  forall tC iC f r.
+  ( Monoidal (->) tC iC (,) () f,
     Contravariant f,
     Eq r,
     Show r,
-    forall a b. (Show a, Show b) => Show (t1 a b)
+    forall a b. (Show a, Show b) => Show (tC a b)
   ) =>
   Gen (f Int) ->
-  (forall a b. Gen a -> Gen b -> Gen (t1 a b)) ->
+  (forall a b. Gen a -> Gen b -> Gen (tC a b)) ->
   (forall a. f a -> a -> r) ->
   Laws
 contravariantMonoidalLaws genF genT obs =
   Laws
     "Monoidal"
-    ( lawsProperties (contravariantSemigroupalLaws @t1 genF genT obs)
-        <> lawsProperties (contravariantUnitalLaws @t1 @i1 genF obs)
+    ( lawsProperties (contravariantSemigroupalLaws @tC genF genT obs)
+        <> lawsProperties (contravariantUnitalLaws @tC @iC genF obs)
     )
