@@ -24,6 +24,7 @@ import Data.Bifunctor.Wrapped (WrappedBifunctor (..))
 import Data.Functor.Const (Const (..))
 import Data.Functor.Contravariant (Op (..))
 import Data.Functor.Identity (Identity (..))
+import Data.Functor.Product qualified as F
 import Data.Tagged (Tagged (..))
 import Data.These (These (..))
 import Data.Profunctor (Forget (..), Star (..), lmap)
@@ -87,6 +88,20 @@ genStar =
     [ (\n -> Star (\x -> Just (x + n))) <$> genInt,
       (\n -> Star (\x -> if even x then Just (x * n) else Nothing)) <$> genInt
     ]
+
+-- A 'Product' of profunctors runs both components on the same input.
+
+runProductFun :: Product (->) (->) a b -> a -> F.Product Identity Identity b
+runProductFun (Pair f g) a = F.Pair (Identity (f a)) (Identity (g a))
+
+runProductFunStar :: Product (->) (Star Maybe) a b -> a -> F.Product Identity Maybe b
+runProductFunStar (Pair f s) a = F.Pair (Identity (f a)) (runStar s a)
+
+genProductFun :: Gen (Product (->) (->) Int Int)
+genProductFun = Pair <$> genFun <*> genFun
+
+genProductFunStar :: Gen (Product (->) (Star Maybe) Int Int)
+genProductFunStar = Pair <$> genFun <*> genStar
 
 genKleisli :: Gen (Kleisli Maybe Int Int)
 genKleisli =
@@ -170,7 +185,8 @@ tests = do
         concat
           [ labeled "(,)" (monoidalLaws @(,) @() @(,) @() genPair),
             labeled "(,,) ()" (monoidalLaws @(,) @() @(,) @() genTriple),
-            labeled "(,,,) () ()" (monoidalLaws @(,) @() @(,) @() genQuad)
+            labeled "(,,,) () ()" (monoidalLaws @(,) @() @(,) @() genQuad),
+            labeled "Product (,) (,)" (monoidalLaws @(,) @() @(,) @() genProduct)
           ]
   colax <-
     checkSequential $
@@ -202,7 +218,10 @@ tests = do
           [ labeled "(->) (,)" (profunctorMonoidalLaws @(,) @() @(,) @() runFun genFun genPairT),
             labeled "(->) Either" (profunctorMonoidalLaws @Either @Void @Either @Void runFun genFun genEitherT),
             labeled "Star Maybe (,)" (profunctorMonoidalLaws @(,) @() @(,) @() runStarMaybe genStar genPairT),
-            labeled "Kleisli Maybe (,)" (profunctorMonoidalLaws @(,) @() @(,) @() runKleisliMaybe genKleisli genPairT)
+            labeled "Kleisli Maybe (,)" (profunctorMonoidalLaws @(,) @() @(,) @() runKleisliMaybe genKleisli genPairT),
+            labeled "Product (->) (->) (,)" (profunctorMonoidalLaws @(,) @() @(,) @() runProductFun genProductFun genPairT),
+            labeled "Product (->) (->) Either" (profunctorMonoidalLaws @Either @Void @Either @Void runProductFun genProductFun genEitherT),
+            labeled "Product (->) (Star Maybe) (,)" (profunctorMonoidalLaws @(,) @() @(,) @() runProductFunStar genProductFunStar genPairT)
           ]
   forget <-
     checkSequential $
