@@ -20,12 +20,12 @@ import Data.Functor.Identity (Identity (..))
 import Data.Functor.Monoidal (Monoidal)
 import Data.Functor.Rank2.Traversable qualified as Rank2
 import Data.Kind (Type)
-import Kindly qualified
 import Data.Maybe (maybeToList)
 import GHC.Generics (Generic)
 import Hedgehog (Gen, Group (..), Property, checkSequential, forAll, property, withTests, (===))
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
+import Kindly qualified
 import Prelude
 
 --------------------------------------------------------------------------------

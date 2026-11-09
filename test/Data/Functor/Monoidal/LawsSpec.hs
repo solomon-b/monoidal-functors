@@ -12,8 +12,8 @@ module Data.Functor.Monoidal.LawsSpec (tests) where
 
 import Data.Functor.Const (Const (..))
 import Data.Functor.Contravariant (Op (..), Predicate (..))
-import Data.Functor.Monoidal (Semigroupal (..))
 import Data.Functor.Identity (Identity (..))
+import Data.Functor.Monoidal (Semigroupal (..))
 import Data.Functor.Monoidal.Laws
   ( contravariantMonoidalLaws,
     monoidalLaws,
