@@ -26,6 +26,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      # GHC 9.2 links with -fuse-ld=gold. Ubuntu 26.04 ships gold as a
+      # separate package that the runner image does not install.
+      - name: Install gold
+        if: startsWith(matrix.ghc, '9.2.')
+        run: sudo apt-get update && sudo apt-get install -y binutils-gold
+
       - name: Setup
         uses: haskell-actions/setup@v2
         id: setup-haskell-cabal
