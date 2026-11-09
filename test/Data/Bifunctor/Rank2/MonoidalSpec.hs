@@ -18,6 +18,13 @@
 -- 'combine' commutes with 'bmap1'. The associators/unitors would collapse into
 -- the shared "Data.Bifunctor.Monoidal.Laws" machinery once the @Nat@-category
 -- 'Control.Category.Tensor.Tensor' instances for 'Product' exist.
+--
+-- A last group relates this class to "Data.Bifunctor.Rank2.Traversable".
+-- 'Rank2.sequence' must preserve the product structure: sequencing a combined
+-- record gives the 'Pair' of the component sequences, and sequencing the unit
+-- record gives the unit. Only covariant interpretations are checked, because
+-- 'Product' is 'Data.Bifunctor.Monoidal.Monoidal' only at 'Biapplicative'
+-- components.
 module Data.Bifunctor.Rank2.MonoidalSpec (tests) where
 
 --------------------------------------------------------------------------------
@@ -26,6 +33,7 @@ import Control.Category.LawsSupport (genInt)
 import Data.Bifunctor.Joker (Joker (..))
 import Data.Bifunctor.Product (Product (..))
 import Data.Bifunctor.Rank2.Monoidal (Monoidal, Semigroupal (..), Unital (..), gcombineSum, gsplitProduct)
+import Data.Bifunctor.Rank2.Traversable qualified as Rank2
 import Data.Bifunctor.Sum (Sum (..))
 import Data.Functor.Const (Const (..))
 import Data.Functor.Contravariant (Op (..), getOp)
@@ -68,6 +76,8 @@ instance Semigroupal Op Product (,) TestHKD where combine = Op gsplitProduct
 instance Unital Op (Joker Proxy) () TestHKD where introduce = Op (const ())
 
 instance Monoidal Op Product (Joker Proxy) (,) () TestHKD
+
+instance Rank2.Traversable TestHKD
 
 -- | 'TestHKD' as a @kindly-functors@ rank-2 functor, so the law properties can
 -- map interpretations through it with 'bmap1'. The domain is the bifunctor
@@ -185,6 +195,12 @@ genProductHKD :: Gen (TestHKD (Product (,) Either))
 genProductHKD =
   genHKD (\ga gb -> Pair <$> ((,) <$> ga <*> gb) <*> Gen.choice [Left <$> ga, Right <$> gb])
 
+-- | A record of 'Pair's with 'Biapplicative' components, so 'Rank2.sequence'
+-- applies at the 'Product' interpretation.
+genPairConstHKD :: Gen (TestHKD (Product (,) Const))
+genPairConstHKD =
+  genHKD (\ga gb -> Pair <$> ((,) <$> ga <*> gb) <*> (Const <$> ga))
+
 --------------------------------------------------------------------------------
 -- Covariant product: agreement with the reference
 
@@ -285,6 +301,32 @@ emptyRecord = withTests 1 $ property $ do
   combine @(->) @Sum @Either (Left EmptyHKD :: Either (EmptyHKD (,)) (EmptyHKD Either)) === EmptyHKD
 
 --------------------------------------------------------------------------------
+-- Coherence with Rank2.Traversable
+
+-- TODO: Check the profunctor interpretation too. That needs a
+-- variance-agnostic 'Data.Bifunctor.Monoidal.Monoidal' instance for 'Product'.
+
+-- | Sequencing a combined record gives the 'Pair' of the component sequences.
+sequencePreservesProduct :: Property
+sequencePreservesProduct = property $ do
+  x <- forAll genPairHKD
+  y <- forAll genConstHKD
+  Rank2.sequence (combineHKD x y) === Pair (Rank2.sequence x) (Rank2.sequence y)
+
+-- | Sequencing the unit record gives the unit bifunctor.
+sequencePreservesUnit :: Property
+sequencePreservesUnit = withTests 1 $ property $ do
+  Rank2.sequence introduceHKD === Joker Proxy
+
+-- | Sequencing a record of 'Pair's agrees with splitting it first and
+-- sequencing each half.
+sequenceAgreesWithSplit :: Property
+sequenceAgreesWithSplit = property $ do
+  z <- forAll genPairConstHKD
+  let (x, y) = splitHKD z
+  Rank2.sequence z === Pair (Rank2.sequence x) (Rank2.sequence y)
+
+--------------------------------------------------------------------------------
 
 tests :: IO Bool
 tests =
@@ -302,5 +344,8 @@ tests =
         ("coproduct injects right", coproductInjectsRight),
         ("split . combine = id", splitAfterCombine),
         ("combine . split = id", combineAfterSplit),
-        ("empty record at every instantiation", emptyRecord)
+        ("empty record at every instantiation", emptyRecord),
+        ("sequence preserves the product", sequencePreservesProduct),
+        ("sequence preserves the unit", sequencePreservesUnit),
+        ("sequence agrees with split", sequenceAgreesWithSplit)
       ]

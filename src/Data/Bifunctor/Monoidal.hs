@@ -278,7 +278,14 @@ deriving via FromBiapplicative (Joker g) instance (Applicative g) => Semigroupal
 
 deriving via FromBiapplicative (WrappedBifunctor p) instance (Biapplicative p) => Semigroupal (->) (,) (,) (,) (WrappedBifunctor p)
 
-deriving via FromBiapplicative (Product f g) instance (Biapplicative f, Biapplicative g) => Semigroupal (->) (,) (,) (,) (Product f g)
+-- | A single variance-agnostic 'Product' instance. @combine@ is componentwise,
+-- delegating to each component's own 'Semigroupal'. It subsumes the former
+-- @FromBiapplicative@ instance and covers profunctor components and the
+-- 'Either' \/ 'These' tensors.
+instance (Semigroupal (->) t1 t2 (,) f, Semigroupal (->) t1 t2 (,) g) => Semigroupal (->) t1 t2 (,) (Product f g) where
+  combine :: (Product f g x y, Product f g x' y') -> Product f g (t1 x x') (t2 y y')
+  combine (Pair fxy gxy, Pair fxy' gxy') =
+    Pair (combine @(->) @t1 @t2 @(,) (fxy, fxy')) (combine @(->) @t1 @t2 @(,) (gxy, gxy'))
 
 deriving via FromBiapplicative (Tannen f p) instance (Applicative f, Biapplicative p) => Semigroupal (->) (,) (,) (,) (Tannen f p)
 
@@ -515,7 +522,11 @@ deriving via FromBiapplicative (Joker g) instance (Applicative g) => Unital (->)
 
 deriving via FromBiapplicative (WrappedBifunctor p) instance (Biapplicative p) => Unital (->) () () () (WrappedBifunctor p)
 
-deriving via FromBiapplicative (Product f g) instance (Biapplicative f, Biapplicative g) => Unital (->) () () () (Product f g)
+-- | Componentwise 'introduce', delegating to each component's 'Unital'. Covers
+-- every unit pair that both components support, covariant and profunctor alike.
+instance (Unital (->) i1 i2 () f, Unital (->) i1 i2 () g) => Unital (->) i1 i2 () (Product f g) where
+  introduce :: () -> Product f g i1 i2
+  introduce () = Pair (introduce @(->) @i1 @i2 @() ()) (introduce @(->) @i1 @i2 @() ())
 
 deriving via FromBiapplicative (Tannen f p) instance (Applicative f, Biapplicative p) => Unital (->) () () () (Tannen f p)
 
@@ -665,7 +676,7 @@ instance (Applicative g) => Monoidal (->) (,) () (,) () (,) () (Joker g)
 
 instance (Biapplicative p) => Monoidal (->) (,) () (,) () (,) () (WrappedBifunctor p)
 
-instance (Biapplicative f, Biapplicative g) => Monoidal (->) (,) () (,) () (,) () (Product f g)
+instance (Semigroupal (->) t1 t2 (,) f, Semigroupal (->) t1 t2 (,) g, Unital (->) i1 i2 () f, Unital (->) i1 i2 () g, Tensor (->) t1 i1, Tensor (->) t2 i2) => Monoidal (->) t1 i1 t2 i2 (,) () (Product f g)
 
 instance (Applicative f, Biapplicative p) => Monoidal (->) (,) () (,) () (,) () (Tannen f p)
 
